@@ -147,11 +147,6 @@
                     fc += 1; \
                 n->data.str->len = fc - n->data.str->ptr + 1; \
             } \
-            else \
-            { \
-                n->data.str->ptr[n->data.str->len] = '\n'; \
-                n->data.str->len++; \
-            } \
         } \
         yylval->nodeData = n; \
         return BLOCK; \
@@ -762,7 +757,10 @@ INDENT              {   char *pacer;
 
                         if ( indt_len > parentIndent && lvl->status != syck_lvl_block )
                         {
-                            ADD_LEVEL( forceIndent > 0 ? forceIndent : indt_len, syck_lvl_block );
+                            int new_spaces = forceIndent > 0 ? forceIndent : indt_len;
+                            ADD_LEVEL( new_spaces, syck_lvl_block );
+                            lastIndent = indt_len - new_spaces;
+                            YYCURSOR -= lastIndent;
                             goto ScalarBlock2;
                         }
 
