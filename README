@@ -1,15 +1,10 @@
 
  
+
                              . syck .
 
+                         [ version 0.08 ]
 
-
-
-                ~ the ~
-              ~ scripters' ~
-                    ~ yaml ~
-                       ~ cobble-yourself-together-a-parser ~
-                                                      ~ kit ~
 
 
 
@@ -19,7 +14,7 @@ INSTALLATION
    ./configure
    make
    make check
-   make install
+   sudo make install
 
 If the unit tests don't pass, notify me immediately.  This distribution
 is tested on FreeBSD and Linux.  I don't release it unless the tests
@@ -35,6 +30,41 @@ simple for scripting languages through C bindings.  It doesn't strive
 to be a pull parser or very extendible.  It just is concerned with
 loading a YAML document into a C structure which can be easily 
 translated into a scripting language's internal native data type.
+
+RUBY INSTALLATION
+
+You don't need to `make install', but please configure and make libsyck
+as outlined above.
+
+   cd ext/ruby/
+   ruby extconf.rb
+   make
+   sudo make install
+
+Syck works best with Ruby.  Ruby's symbol table is leveraged, as well
+as Ruby's VALUE system.  (You can read more about that below.)
+
+I'm pushing for Syck to appear in coming Ruby distributions.  Please
+voice your support for Syck/YAML in Ruby distributions on the various
+platforms.
+
+PYTHON INSTALLATION
+
+You'll need to `make install' as described above.
+
+   cd ext/python/
+   python setup.py build
+   sudo python setup.py install
+
+PHP INSTALLATION
+
+You'll need to `make install' as described above.
+
+   cd ext/php/
+   sh make_module.sh
+   sudo make install
+
+HOW SYCK IS SO GREAT
 
 For example, in Ruby everything evaluates to a VALUE.  I merely
 supply a handler to Syck that will take a SyckNode and transform
