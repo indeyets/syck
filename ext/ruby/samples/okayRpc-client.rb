@@ -10,7 +10,7 @@ c = Okay::RPC::Client.new( host )
 # Wrapping strings for display
 class String
   def wordwrap( len )
-    gsub( /\n/, "\n\n" ).gsub( /.{#{len},}?\s+/, "\\0\n" )
+    gsub( /\n/, "\n\n" ).gsub( /(.{1,#{len}})(\s+|$)/, "\\1\n" )
   end
 end
 
