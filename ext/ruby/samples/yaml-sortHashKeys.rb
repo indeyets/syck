@@ -81,7 +81,7 @@ puts
 test3 = YAML::Omap[ 
     'name', 'Alto Saxophone', 
     'key', 'Eb', 
-    'is_woodwind', 'true'
+    'is_woodwind', true
 ]
 
 puts "-- 3. Instrument Omap --"

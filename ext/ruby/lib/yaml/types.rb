@@ -88,9 +88,9 @@ module YAML
         end
         def self.[]( *vals )
             o = Omap.new
-            0.step( vals.length - 1, 2 ) { |i|
+            0.step( vals.length - 1, 2 ) do |i|
                 o[vals[i]] = vals[i+1]
-            }
+            end
             o
         end
         def []( k )
@@ -113,7 +113,7 @@ module YAML
         end
         def to_yaml( opts = {} )
             YAML::quick_emit( self.object_id, opts ) do |out|
-                out.seq( tag_as ) do |seq|
+                out.seq( taguri ) do |seq|
                     self.each do |v|
                         seq.add( Hash[ *v ] )
                     end
@@ -163,7 +163,7 @@ module YAML
         end
         def to_yaml( opts = {} )
             YAML::quick_emit( self.object_id, opts ) do |out|
-                out.seq( tag_as ) do |seq|
+                out.seq( taguri ) do |seq|
                     self.each do |v|
                         seq.add( Hash[ *v ] )
                     end
