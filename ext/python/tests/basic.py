@@ -259,6 +259,38 @@ string: '12345'
 """
         )
 
+    def testDocComments(self):
+        self.parseOnly(
+			[1, 2, 3], """
+# This is a test of root-level comments
+# surrounding a document
+---
+# We want comments to be
+- 1
+# Interspersed in the
+- 2
+# Sequence merely for testing.
+- 3
+"""
+        )
+
+    def testDocComments2(self):
+        self.parseOnly(
+            {"this": "contains three lines of text.\nThe third one starts with a\n# character. This isn't a comment.\n", "and": "okay"}, """
+### These are four throwaway comment  ###
+
+### lines (the second line is empty). ###
+and: okay   # no way!
+this: |     # Comments may trail lines.
+    contains three lines of text.
+    The third one starts with a
+    # character. This isn't a comment.
+
+# These are three throwaway comment
+# lines (the first line is empty).
+"""
+        )
+
     def testExampleInvoice(self):
         id001 = { 'given': 'Chris', 'family': 'Dumars', 'address':
             { 'lines': "458 Walkman Dr.\nSuite #292\n", 'city': 'Royal Oak',
@@ -303,6 +335,94 @@ comments: >
 """
         )
 
+    def testOverrideAnchor(self):
+        a001 = "The alias node below is a repeated use of this value.\n"
+        self.parseOnly(
+			{ 'anchor': 'This scalar has an anchor.', 'override': a001, 'alias': a001 }, """
+anchor : &A001 This scalar has an anchor.
+override : &A001 >
+ The alias node below is a
+ repeated use of this value.
+alias : *A001
+"""
+        )
+
+    def testSpecBuiltinSeq(self):
+        self.parseOnly(
+			 {'nested': ['First item in top sequence', ['Subordinate sequence entry'], 'A multi-line sequence entry \n', 'Sixth item in top sequence'], 'empty': [], 'in-line': ['one', 'two', 'three', 'four', 'five']}, """
+empty: []
+in-line: [ one, two, three # May span lines,
+         , four,           # indentation is
+           five ]          # mostly ignored.
+nested:
+ - First item in top sequence
+ -
+  - Subordinate sequence entry
+ - >
+   A multi-line
+   sequence entry
+ - Sixth item in top sequence
+"""
+    )
+
+    def testSpecBuiltinMap(self):
+        self.parseOnly(
+			{ 'empty': {}, 'in-line': { 'one': 1, 'two': 2 },
+			  'spanning': { 'one': 1, 'two': 2 },
+			  'nested': { 'first': 'First entry', 'second':
+			  	{ 'key': 'Subordinate mapping' }, 'third':
+				  [ 'Subordinate sequence', {}, 'Previous mapping is empty.',
+					{ 'A key': 'value pair in a sequence.', 'A second': 'key:value pair.' },
+					'The previous entry is equal to the following one.',
+					{ 'A key': 'value pair in a sequence.', 'A second': 'key:value pair.' } ],
+				  12.0: 'This key is a float.', "?\n": 'This key had to be protected.',
+				  "\\a": 'This key had to be escaped.',
+				  "This is a multi-line folded key \n": "Whose value is also multi-line.\n" } }, """
+empty: {}
+in-line: { one: 1, two: 2 }
+spanning: { one: 1,
+   two: 2 }
+nested:
+ first : First entry
+ second:
+  key: Subordinate mapping
+ third:
+  - Subordinate sequence
+  - { }
+  - Previous mapping is empty.
+  - A key: value pair in a sequence.
+    A second: key:value pair.
+  - The previous entry is equal to the following one.
+  -
+    A key: value pair in a sequence.
+    A second: key:value pair.
+ !float 12 : This key is a float.
+ ? >
+  ?
+ : This key had to be protected.
+ "\\a" : This key had to be escaped.
+ ? >
+   This is a
+   multi-line
+   folded key
+ : >
+   Whose value is
+   also multi-line.
+# The following parses correctly,
+# but Python cannot hash!
+# ?
+#  - This key
+#  - is a sequence
+# :
+#  - With a sequence value.
+# ?
+#  This: key
+#  is a: mapping
+# :
+#  with a: mapping value.
+"""
+        )
+
 class SyckTestSuite(unittest.TestSuite):
     def __init__(self):
         unittest.TestSuite.__init__(self,map(BasicTests,     
@@ -320,7 +440,12 @@ class SyckTestSuite(unittest.TestSuite):
              "testSpecSequenceKeyEmpties",
              "testSingleLiteral",
              "testSingleFolded",
-             "testIndentationScope"
+             "testIndentationScope",
+             "testDocComments", 
+             "testDocComments2", 
+             "testOverrideAnchor",
+             "testSpecBuiltinSeq",
+             "testSpecBuiltinMap"
              )))
 
 if __name__ == '__main__':

@@ -142,6 +142,11 @@
 SyckParser *syck_parser_ptr = NULL;
 
 //
+// Accessory funcs later in this file.
+//
+void eat_comments( SyckParser * );
+
+//
 // My own re-entrant yylex() using re2c.
 // You really get used to the limited regexp.
 // It's really nice to not rely on backtracking and such.
@@ -204,6 +209,10 @@ Header:
                         }
                     }
 
+"#"                 {   eat_comments( parser ); 
+                        goto Header;
+                    }
+
 NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
                         ENSURE_IEND(lvl, -1);
                         return 0; 
@@ -211,7 +220,8 @@ NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
 
 INDENT              {   int indt_len;
                         GOBBLE_UP_INDENT( indt_len, YYTOKEN );
-                        goto Header; }
+                        goto Header; 
+                    }
 
 ANY                 {   YYPOS(0);
                         goto Document; 
@@ -258,8 +268,11 @@ CDELIMS             {   POP_LEVEL();
 
 [-?] ENDSPC         {   ENSURE_IOPEN(lvl, YYTOKEN - YYLINEPTR, 1);
                         FORCE_NEXT_TOKEN(IOPEN);
+                        if ( *( YYCURSOR - 1 ) == '\n' )
+                        {
+                            YYCURSOR--; 
+                        }
                         ADD_LEVEL(YYCURSOR - YYLINEPTR, syck_lvl_doc);
-                        YYCURSOR--; 
                         return YYTOKEN[0]; 
                     }
 
@@ -279,7 +292,9 @@ CDELIMS             {   POP_LEVEL();
 
 BLOCK               {   YYCURSOR--; goto ScalarBlock; }
 
-"#"                 {   goto Comment; }
+"#"                 {   eat_comments( parser ); 
+                        goto Document;
+                    }
 
 [ ]+                {   goto Document; }
 
@@ -334,28 +349,15 @@ NULL                {   RETURN_IMPLICIT(); }
 
 LF                  {   RETURN_IMPLICIT(); }
 
-[ ]+                {   goto Plain3; }
+" #"                {   eat_comments( parser ); 
+                        RETURN_IMPLICIT();
+                    }
+
+[ ]                 {   goto Plain3; }
 
 ANY                 {   goto Plain2; }
 
 */
-    }
-
-Comment:
-    {
-        YYTOKTMP = YYCURSOR;
-
-/*!re2c
-
-( LF | NULL )       {   YYCURSOR = YYTOKTMP;
-                        goto Document; 
-                    }
-
-ANY                 {   goto Comment; 
-                    }
-
-*/
-
     }
 
 SingleQuote:
@@ -511,7 +513,7 @@ INDENT              {   int indt_len;
                         GOBBLE_UP_INDENT( indt_len, YYTOKTMP );
                         lvl = CURRENT_LEVEL();
 
-                        if ( indt_len > lvl->spaces && lvl->status != syck_lvl_block )
+                        if ( lvl->status != syck_lvl_block )
                         {
                             ADD_LEVEL( forceIndent > 0 ? forceIndent : indt_len, syck_lvl_block );
                         }
@@ -536,9 +538,43 @@ NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
                         return BLOCK; 
                     }
 
+"#"                 {   SyckLevel *lvl = CURRENT_LEVEL();
+                        if ( lvl->status != syck_lvl_block )
+                        {
+                            eat_comments( parser );
+                            YYTOKEN = YYCURSOR;
+                        }
+                        goto ScalarBlock2;
+                    }
+
 ANY                 {   goto ScalarBlock2; }
 
 */
+    }
+
+}
+
+void
+eat_comments( SyckParser *parser )
+{
+    char *tok;
+
+Comment:
+    {
+        tok = YYCURSOR;
+
+/*!re2c
+
+( LF | NULL )       {   SyckLevel *lvl = CURRENT_LEVEL();
+                        YYCURSOR = tok;
+                        return;
+                    }
+
+ANY                 {   goto Comment; 
+                    }
+
+*/
+
     }
 
 }

@@ -64,7 +64,7 @@ python_syck_handler(p, n)
                 i2 = strtol( n->data.str->ptr, NULL, 10 );
                 o = syck_PyIntMaker( i2 );
             }
-            else if ( strcmp( n->type_id, "float#exp" ) == 0 || strcmp( n->type_id, "float#fix" ) == 0 )
+            else if ( strcmp( n->type_id, "float" ) == 0 || strcmp( n->type_id, "float#exp" ) == 0 || strcmp( n->type_id, "float#fix" ) == 0 )
             {
                 double f;
                 syck_str_blow_away_commas( n );
