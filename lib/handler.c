@@ -72,6 +72,7 @@ syck_hdlr_get_anchor( SyckParser *p, char *a )
         {
             if ( n != (void *)1 )
             {    
+                S_FREE( a );
                 return n;
             }
             else
@@ -93,7 +94,16 @@ syck_hdlr_get_anchor( SyckParser *p, char *a )
     {
         n = (p->bad_anchor_handler)( p, a );
     }
-    n->anchor = a;
+
+    if ( n->anchor )
+    {
+        S_FREE( a );
+    } 
+    else
+    {
+        n->anchor = a;
+    }
+
     return n;
 }
 

@@ -115,7 +115,7 @@ syck_parser_assign_io(parser, port)
 	SyckParser *parser;
 	VALUE port;
 {
-    int taint = Qfalse;
+    int taint = Qtrue;
     if (rb_respond_to(port, rb_intern("to_str"))) {
 	    taint = OBJ_TAINTED(port); /* original taintedness */
 	    StringValue(port);	       /* possible conversion */
@@ -1092,7 +1092,7 @@ syck_emitter_flush_m( self )
  */
 VALUE
 syck_emitter_write_m( self, str )
-    VALUE str;
+    VALUE self, str;
 {
     SyckEmitter *emitter;
 
@@ -1106,7 +1106,7 @@ syck_emitter_write_m( self, str )
  */
 VALUE
 syck_emitter_simple_write( self, str )
-    VALUE str;
+    VALUE self, str;
 {
     SyckEmitter *emitter;
 
