@@ -153,7 +153,7 @@ END = "E" LF ;
 SCA = "S" ;
 SCC = "C" ;
 NNL = "N" [0-9]*;
-NUL = "Z" ;
+NLZ = "Z" ;
 ANC = "A" ;
 REF = "R" ;
 TAG = "T" ;
@@ -257,11 +257,62 @@ REF     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_str);
             return YAML_ALIAS;
         }
 
-TAG     {   sycklval->name = get_inline( parser );
-            if ( sycklval->name[0] == '!' )
+TAG     {   char *qstr;
+            ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_open);
+            qstr = get_inline( parser );
+            if ( qstr[0] == '!' )
             {
-                S_MEMCPY( sycklval->name, sycklval->name + 1, char, strlen( sycklval->name ) );
+                int qidx = strlen( qstr );
+                if ( qstr[1] == '\0' )
+                {
+                    free( qstr );
+                    return YAML_ITRANSFER;
+                }
+
+                lvl = CURRENT_LEVEL();
+
+                /*
+                 * URL Prefixing
+                 */
+                if ( qstr[1] == '^' )
+                {
+                    sycklval->name = S_ALLOC_N( char, qidx + strlen( lvl->domain ) );
+                    sycklval->name[0] = '\0';
+                    strcat( sycklval->name, lvl->domain );
+                    strncat( sycklval->name, qstr + 2, qidx - 2 );
+                    free( qstr );
+                }
+                else
+                {
+                    char *carat = qstr + 1;
+                    char *qend = qstr + qidx;
+                    while ( (++carat) < qend )
+                    {
+                        if ( *carat == '^' )
+                            break;
+                    }
+
+                    if ( carat < qend )
+                    {
+                        free( lvl->domain );
+                        lvl->domain = syck_strndup( qstr + 1, carat - ( qstr + 1 ) );
+                        sycklval->name = S_ALLOC_N( char, ( qend - carat ) + strlen( lvl->domain ) );
+                        sycklval->name[0] = '\0';
+                        strcat( sycklval->name, lvl->domain );
+                        strncat( sycklval->name, carat + 1, ( qend - carat ) - 1 );
+                        free( qstr );
+                    }
+                    else
+                    {
+                        sycklval->name = S_ALLOC_N( char, strlen( qstr ) );
+                        sycklval->name[0] = '\0';
+                        S_MEMCPY( sycklval->name, qstr + 1, char, strlen( qstr ) );
+                        free( qstr );
+                    }
+                }
+                return YAML_TRANSFER;
             }
+            sycklval->name = qstr;
             return YAML_TAGURI;
         }
 
@@ -325,6 +376,8 @@ Scalar:
     char *str = S_ALLOC_N( char, cap );
     char *tok;
 
+    str[0] = '\0';
+
 Scalar2:
     tok = YYCURSOR;
 
@@ -349,7 +402,7 @@ LF NNL  {   if ( tok + 2 < YYCURSOR )
             goto Scalar2;
         }
 
-LF NUL  {   CAT(str, cap, idx, '\0');
+LF NLZ  {   CAT(str, cap, idx, '\0');
             goto Scalar2; 
         }
 
@@ -391,6 +444,8 @@ get_inline( SyckParser *parser )
     int cap = 100;
     char *str = S_ALLOC_N( char, cap );
     char *tok;
+
+    str[0] = '\0';
 
 Inline:
     {

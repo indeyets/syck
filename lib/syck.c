@@ -87,7 +87,7 @@ syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
     }
     if ( beg < str->ptr )
     {
-        len = str->ptr - beg;
+        len = ( str->ptr - beg ) + 1;
         S_MEMCPY( buf + skip, beg, char, len );
     }
     len += skip;

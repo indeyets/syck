@@ -18,6 +18,7 @@ class YAML_Unit_Tests < RUNIT::TestCase
         assert_equal( obj, YAML::load(
 			obj.to_yaml( :UseVersion => true, :UseHeader => true, :SortKeys => true ) 
 		) )
+        assert_equal( obj, YAML::Syck::Parser.new( :Input => :Bytecode ).load( YAML::Syck::compile( yaml ) ) )
 	end
 
     #
@@ -33,6 +34,7 @@ class YAML_Unit_Tests < RUNIT::TestCase
 	def assert_parse_only( obj, yaml )
 		assert_equal( obj, YAML::load( yaml ) )
 		assert_equal( obj, YAML::parse( yaml ).transform )
+        assert_equal( obj, YAML::Syck::Parser.new( :Input => :Bytecode ).load( YAML::Syck::compile( yaml ) ) )
 	end
 
     def assert_path_segments( path, segments )
@@ -806,7 +808,7 @@ EOY
 
 		doc_ct = 0
 		YAML::Syck::Parser.new( :Input => :Bytecode, :Model => :Generic )::load_documents( 
-            "c Private types are per-document.\nD\nM\nSpool\nT!!ball\n" +
+            "D\nc Private types are per-document.\nM\nSpool\nT!!ball\n" +
                 "M\nSnumber\nS8\nScolor\nSblack\nE\nE\n" +
             "D\nM\nSbearing\nT!!ball\nM\nSmaterial\nSsteel\nE\nE\n"
 		) { |doc|

@@ -14,13 +14,14 @@ libsyck_a_SOURCES = \
             syck.c \
             syck_st.c \
             gram.y \
-            bytecode.c \
-            token.c \
-            implicit.c
+            bytecode.re \
+			yaml2byte.c \
+            token.re \
+            implicit.re
 
 # libsyck_a_LIBADD = $(LEXLIB)
 
 REC = re2c
 .re.c:
-	$(REC) -s $< > $@.new && mv $@.new $@
+	$(REC) $< > $@.new && mv $@.new $@
 

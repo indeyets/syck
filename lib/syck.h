@@ -360,6 +360,8 @@ long syck_parser_readlen( SyckParser *, long );
 void syck_parser_init( SyckParser *, int );
 SYMID syck_parse( SyckParser * );
 void syck_default_error_handler( SyckParser *, char * );
+SYMID syck_yaml2byte_handler( SyckParser *, SyckNode * );
+char *syck_yaml2byte( char * );
 
 /*
  * Allocation prototypes
