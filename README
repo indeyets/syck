@@ -1,4 +1,16 @@
 
+INSTALLATION
+
+   ./configure
+   make
+   make check
+   make install
+
+If the unit tests don't pass, notify me immediately.  This distribution
+is tested on FreeBSD and Linux.  I don't release it unless the tests
+pass on those machines.  If tests aren't passing, then that's a problem.
+
+ABOUT
 
 Syck is the Scripting YAML Cobbling Together a Parser Kit.  I don't
 much care if the acronym works, as long as the library does!

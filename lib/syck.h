@@ -99,14 +99,16 @@ struct SyckNode {
 //
 // API prototypes
 //
-struct SyckNode *new_str_node( char *str );
-char *read_str_node( struct SyckNode *n );
-struct SyckNode *new_map_node( struct SyckNode *key, struct SyckNode *value );
-void add_map_pair( struct SyckNode *map, struct SyckNode *key, struct SyckNode *value );
-struct SyckNode *read_map_node( struct SyckNode *map, enum map_part p, long idx );
-struct SyckNode *new_seq_node( struct SyckNode *value );
-void add_seq_item( struct SyckNode *arr, struct SyckNode *value );
-struct SyckNode *read_seq_node( struct SyckNode *seq, long idx );
+struct SyckNode *new_str_node( char * );
+char *read_str_node( struct SyckNode * );
+struct SyckNode *new_map_node( struct SyckNode *, struct SyckNode * );
+void add_map_pair( struct SyckNode *, struct SyckNode *, struct SyckNode * );
+struct SyckNode *read_map_node( struct SyckNode *, enum map_part, long );
+long read_map_count( struct SyckNode * );
+struct SyckNode *new_seq_node( struct SyckNode * );
+void add_seq_item( struct SyckNode *, struct SyckNode * );
+struct SyckNode *read_seq_node( struct SyckNode *, long );
+long read_seq_count( struct SyckNode * );
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

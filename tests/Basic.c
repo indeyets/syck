@@ -93,11 +93,7 @@ TestSyckLargeSeqAlloc( CuTest *tc )
     CuAssertStrEquals( tc, "THIRTEEN", read_str_node( read_seq_node( n, 13 ) ) );
     CuAssertStrEquals( tc, "NINETEEN", read_str_node( read_seq_node( n, 19 ) ) );
 
-    for ( i = 0; i < 20; i++ )
-    {
-        free( read_seq_node( n, i ) );
-    }
-    free( n );
+    free_node_deeply( n );
 }
 
 //
@@ -114,12 +110,7 @@ TestSyckNestedAlloc( CuTest *tc )
 
     CuAssertStrEquals( tc, "A", read_str_node( read_seq_node( read_map_node( n, map_value, 1 ), 0 ) ) );
 
-    free( read_seq_node( read_map_node( n, map_value, 1 ), 0 ) );
-    free( read_map_node( n, map_value, 1 ) );
-    free( read_map_node( n, map_key, 1 ) );
-    free( read_map_node( n, map_value, 0 ) );
-    free( read_map_node( n, map_key, 0 ) );
-    free( n );
+    free_node_deeply( n );
 }
 
 
