@@ -649,9 +649,9 @@ perl: |
   }
 ruby: |
   {
-    'canonical' => YAML::mktime( 2001, 12, 15, 2, 59, 43, .10 ),
-    'iso8601' => YAML::mktime( 2001, 12, 14, 21, 59, 43, .10, "-05:00" ),
-    'spaced' => YAML::mktime( 2001, 12, 14, 21, 59, 43, .10, "-05:00" ),
+    'canonical' => YAML::mktime( 2001, 12, 15, 2, 59, 43, 0.10 ),
+    'iso8601' => YAML::mktime( 2001, 12, 14, 21, 59, 43, 0.10, "-05:00" ),
+    'spaced' => YAML::mktime( 2001, 12, 14, 21, 59, 43, 0.10, "-05:00" ),
     'date' => Date.new( 2002, 12, 14 )
   }
 ---
@@ -694,7 +694,7 @@ yaml: |
 
 ruby-setup: |
   YAML.add_domain_type( "somewhere.com,2002", /^type$/ ) { |type, val|
-    return "SOMEWHERE: #{val}"
+    "SOMEWHERE: #{val}"
   }
 ruby: |
   {
@@ -722,15 +722,16 @@ ruby-setup: |
   YAML.add_domain_type( "clarkevans.com,2002", /^graph\/shape/ ) { |type, val|
     if Array === val
       val << "Shape Container"
-      return val
+      val
     else
       raise YAML::Error, "Invalid graph of class #{ val.class }: " + val.inspect
     end
   }
   one_shape_proc = Proc.new { |type, val|
+    scheme, domain, type = type.split( /:/, 3 )
     if val.is_a? Kernel::Hash
       val['TYPE'] = "Shape: #{type}"
-      return val
+      val
     else
       raise YAML::Error, "Invalid graph of class #{ val.class }: " + val.inspect
     end
@@ -970,14 +971,13 @@ yaml: |
 ruby: | 
   y = Stream.new 
   y.add( 
-    { 'sent at' => YAML::mktime( 2002, 6, 6, 11, 46, 25, .10 ), 
+    { 'sent at' => YAML::mktime( 2002, 6, 6, 11, 46, 25, 0.10 ), 
       'payload' => 'Whatever' } 
   ) 
   y.add(  
-    { "payload" => "Whatever", "sent at" => YAML::mktime( 2002, 6, 6, 12, 5, 53, .47 ) } 
+    { "payload" => "Whatever", "sent at" => YAML::mktime( 2002, 6, 6, 12, 5, 53, 0.47 ) } 
   ) 
-  y.add( nil ) 
-documents: 3 
+documents: 2 
  
 --- 
 test: Explicit typing 
@@ -1074,8 +1074,9 @@ yaml: |
 ruby-setup: | 
   YAML.add_domain_type( "domain.tld,2002", /(invoice|customer)/ ) { |type, val| 
     if val.is_a? Kernel::Hash 
+      scheme, domain, type = type.split( /:/, 3 )
       val['type'] = "domain #{type}" 
-      return val 
+      val 
     else 
       raise YAML::Error, "Not a Hash in domain.tld/invoice: " + val.inspect 
     end 
@@ -1182,8 +1183,6 @@ ruby: |
       end 
     end 
   } 
-no-round-trip: 
-  - ruby 
  
 --- 
 test: Literal explicit indentation
@@ -1621,8 +1620,6 @@ ruby: |
   if obj_y['not a number'].nan?   # NaN comparison doesn't work right against 0.0/0.0 
     obj_r['not a number'] = obj_y['not a number'] 
   end 
-no-round-trip: 
-  - ruby 
  
 --- 
 test: Timestamp 
@@ -1633,9 +1630,9 @@ yaml: |
    date (noon UTC): 2002-12-14 
 ruby: | 
    { 
-     'canonical' => YAML::mktime( 2001, 12, 15, 2, 59, 43, .10 ), 
-     'valid iso8601' => YAML::mktime( 2001, 12, 14, 21, 59, 43, .10, "-05:00" ), 
-     'space separated' => YAML::mktime( 2001, 12, 14, 21, 59, 43, .10, "-05:00" ), 
+     'canonical' => YAML::mktime( 2001, 12, 15, 2, 59, 43, 0.10 ), 
+     'valid iso8601' => YAML::mktime( 2001, 12, 14, 21, 59, 43, 0.10, "-05:00" ), 
+     'space separated' => YAML::mktime( 2001, 12, 14, 21, 59, 43, 0.10, "-05:00" ), 
      'date (noon UTC)' => Date.new( 2002, 12, 14 ) 
    } 
  
@@ -1700,32 +1697,20 @@ ruby-setup: |
   left = { 'x' => 0, 'y' => 2 }
   big = { 'r' => 10 } 
   small = { 'r' => 1 }
+  node1 = { 'x' => 1, 'y' => 2, 'r' => 10, 'label' => 'center/big' }
+  node2 = center.dup
+  node2.update( { 'r' => 10, 'label' => 'center/big' } )
+  node3 = big.dup
+  node3.update( center )
+  node3.update( { 'label' => 'center/big' } )
+  node4 = small.dup
+  node4.update( left )
+  node4.update( big )
+  node4.update( { 'x' => 1, 'label' => 'center/big' } )
+
 ruby: |
   [
-    center, left, big, small,
-    {
-      'x' => 1,
-      'y' => 2,
-      'r' => 10,
-      'label' => 'center/big'
-    },
-    {
-      'r' => 10,
-      'label' => 'center/big'
-    }.
-      update( center ),
-    {
-      'label' => 'center/big'
-    }.
-      update( big ).
-      update( center ),
-    {
-      'x' => 1,
-      'label' => 'center/big'
-    }.
-      update( small ).
-      update( left ).
-      update( big )
+    center, left, big, small, node1, node2, node3, node4
   ]
 
 --- 

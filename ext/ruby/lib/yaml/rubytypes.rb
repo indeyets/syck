@@ -33,7 +33,7 @@ class Object
 	end
 end
 
-YAML.add_ruby_type( 'object' ) { |type, val|
+YAML.add_ruby_type( /^object/ ) { |type, val|
     type, obj_class = YAML.read_type_class( type, Object )
     YAML.object_maker( obj_class, val )
 }
@@ -89,7 +89,7 @@ hash_proc = Proc.new { |type, val|
 	val
 }
 YAML.add_builtin_type( 'map', &hash_proc )
-YAML.add_ruby_type( 'hash', &hash_proc ) 
+YAML.add_ruby_type( /^hash/, &hash_proc ) 
 
 module YAML
 
@@ -169,7 +169,7 @@ class Struct
 	end
 end
 
-YAML.add_ruby_type( 'struct' ) { |type, val|
+YAML.add_ruby_type( /^struct/ ) { |type, val|
 	if Hash === val
         struct_type = nil
 
@@ -241,7 +241,7 @@ array_proc = Proc.new { |type, val|
     end
 }
 YAML.add_builtin_type( 'seq', &array_proc )
-YAML.add_ruby_type( 'array', &array_proc ) 
+YAML.add_ruby_type( /^array/, &array_proc ) 
 
 #
 # Exception#to_yaml
@@ -265,7 +265,7 @@ class Exception
 	end
 end
 
-YAML.add_ruby_type( 'exception' ) { |type, val|
+YAML.add_ruby_type( /^exception/ ) { |type, val|
     type, obj_class = YAML.read_type_class( type, Exception )
     o = YAML.object_maker( obj_class, { 'mesg' => val.delete( 'message' ) }, true )
     val.each_pair { |k,v|
@@ -454,17 +454,9 @@ class Time
 	end
 end
 
-YAML.add_builtin_type( 'time' ) { |type, val|
-    if val =~ /\A(\d{4})\-(\d{1,2})\-(\d{1,2})[Tt](\d{2})\:(\d{2})\:(\d{2})(\.\d{1,2})?(Z|[-+][0-9][0-9](?:\:[0-9][0-9])?)\Z/
-        YAML.mktime( *$~.to_a[1,8] )
-    elsif val =~ /\A(\d{4})\-(\d{1,2})\-(\d{1,2})[ \t]+(\d{2})\:(\d{2})\:(\d{2})(\.\d+)?[ \t]+(Z|[-+][0-9][0-9](?:\:[0-9][0-9])?)\Z/
-        YAML.mktime( *$~.to_a[1,8] )
-    elsif val =~ /\A(\d{4})\-(\d{1,2})\-(\d{1,2})[ \t]+(\d{2})\:(\d{2})\:(\d{2})(\.\d{1,2})?\Z/
-        YAML.mktime( *$~.to_a[1,7] )
-	elsif val =~ /\A(\d{4})\-(\d{1,2})\-(\d{1,2})\Z/
+YAML.add_builtin_type( 'time#ymd' ) { |type, val|
+	if val =~ /\A(\d{4})\-(\d{1,2})\-(\d{1,2})\Z/
 		Date.new($1.to_i, $2.to_i, $3.to_i)
-    elsif type == :Implicit
-        :InvalidType
     else
         raise YAML::TypeError, "Invalid !time string: " + val.inspect
     end

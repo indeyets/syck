@@ -269,6 +269,20 @@ Header:
                         }
                     }
 
+"..." ENDSPC        {   SyckLevel *lvl = CURRENT_LEVEL();
+                        if ( lvl->status == syck_lvl_header )
+                        {
+                            goto Header; 
+                        }
+                        else
+                        {
+                            ENSURE_IEND(lvl, -1);
+                            YYPOS(0);
+                            return 0; 
+                        }
+                        return 0; 
+                    }
+
 "#"                 {   eat_comments( parser ); 
                         goto Header;
                     }
@@ -347,6 +361,13 @@ CDELIMS             {   POP_LEVEL();
 
 "&" WORDC+          {   ENSURE_IOPEN(lvl, 0, 1);
                         yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
+
+                        //
+                        // Remove previous anchors of the same name.  Since the parser will likely
+                        // construct deeper nodes first, we want those nodes to be placed in the
+                        // queue for matching at a higher level of indentation.
+                        //
+                        syck_hdlr_remove_anchor(parser, yylval->name);
                         return ANCHOR;
                     }
 

@@ -254,10 +254,10 @@ EOY
 
 	def test_spec_mapping_between_sequences
 		# Complex key #1
-		dj = Time.utc( 2001, 7, 23 )
+		dj = Date.new( 2001, 7, 23 )
 		assert_parse_only(
-			{ [ 'Detroit Tigers', 'Chicago Cubs' ] => [ Time.utc( 2001, 7, 23 ) ],
-			  [ 'New York Yankees', 'Atlanta Braves' ] => [ Time.utc( 2001, 7, 2 ), Time.utc( 2001, 8, 12 ), Time.utc( 2001, 8, 14 ) ] }, <<EOY
+			{ [ 'Detroit Tigers', 'Chicago Cubs' ] => [ Date.new( 2001, 7, 23 ) ],
+			  [ 'New York Yankees', 'Atlanta Braves' ] => [ Date.new( 2001, 7, 2 ), Date.new( 2001, 8, 12 ), Date.new( 2001, 8, 14 ) ] }, <<EOY
 ? # PLAY SCHEDULE
   - Detroit Tigers
   - Chicago Cubs
@@ -274,10 +274,10 @@ EOY
 		# Complex key #2
 		assert_parse_only(
 		  { [ 'New York Yankees', 'Atlanta Braves' ] =>
-		    [ Time.utc( 2001, 7, 2 ), Time.utc( 2001, 8, 12 ),
-			  Time.utc( 2001, 8, 14 ) ],
+		    [ Date.new( 2001, 7, 2 ), Date.new( 2001, 8, 12 ),
+			  Date.new( 2001, 8, 14 ) ],
 			[ 'Detroit Tigers', 'Chicago Cubs' ] =>
-			[ Time.utc( 2001, 7, 23 ) ]
+			[ Date.new( 2001, 7, 23 ) ]
 		  }, <<EOY
 ?
     - New York Yankees
@@ -298,7 +298,7 @@ EOY
 	def test_spec_sequence_key_shortcut
 		# Shortcut sequence map
 		assert_parse_only(
-		  { 'invoice' => 34843, 'date' => Time.utc( 2001, 1, 23 ),
+		  { 'invoice' => 34843, 'date' => Date.new( 2001, 1, 23 ),
 		    'bill-to' => 'Chris Dumars', 'product' =>
 			[ { 'item' => 'Super Hoop', 'quantity' => 1 },
 			  { 'item' => 'Basketball', 'quantity' => 4 },
@@ -477,7 +477,7 @@ EOY
 			{ 'lines' => "458 Walkman Dr.\nSuite #292\n", 'city' => 'Royal Oak',
 			  'state' => 'MI', 'postal' => 48046 } }
 		assert_parse_only(
-			{ 'invoice' => 34843, 'date' => Time.utc( 2001, 1, 23 ),
+			{ 'invoice' => 34843, 'date' => Date.new( 2001, 1, 23 ),
 			  'bill-to' => id001, 'ship-to' => id001, 'product' =>
 			  [ { 'sku' => 'BL394D', 'quantity' => 4,
 			      'description' => 'Basketball', 'price' => 450.00 },
@@ -588,7 +588,7 @@ date    : 2001-01-23
 total   : 4443.52
 EOY
 		)
-		assert_equals( y, { 'invoice' => 34843, 'date' => Time.utc( 2001, 1, 23 ), 'total' => 4443.52 } )
+		assert_equals( y, { 'invoice' => 34843, 'date' => Date.new( 2001, 1, 23 ), 'total' => 4443.52 } )
 	end
 
 	def test_spec_oneline_docs
@@ -685,10 +685,10 @@ EOY
 			case doc_ct
 				when 0
 					assert_equals( doc['pool'].type_id, 'x-private:ball' )
-					assert_equals( doc['pool'].transform, { 'number' => 8, 'color' => 'black' } )
+					assert_equals( doc['pool'].transform.value, { 'number' => 8, 'color' => 'black' } )
 				when 1
 					assert_equals( doc['bearing'].type_id, 'x-private:ball' ) 
-					assert_equals( doc['bearing'].transform, { 'material' => 'steel' } )
+					assert_equals( doc['bearing'].transform.value, { 'material' => 'steel' } )
 			end
 			doc_ct += 1
 		}
@@ -759,7 +759,7 @@ EOY
 		}
 		one_shape_proc = Proc.new { |type, val|
 			if Hash === val
-                type = type.split /:/
+                type = type.split( /:/ )
 				val['TYPE'] = "Shape: #{type[2]}"
 				val
 			else
@@ -984,7 +984,7 @@ EOY
 		assert_parse_only(
 			{ "space separated" => mktime( 2001, 12, 14, 21, 59, 43, ".10", "-05:00" ), 
 			  "canonical" => mktime( 2001, 12, 15, 2, 59, 43, ".10" ), 
-			  "date (noon UTC)" => Time.utc( 2002, 12, 14), 
+			  "date (noon UTC)" => Date.new( 2002, 12, 14), 
 			  "valid iso8601" => mktime( 2001, 12, 14, 21, 59, 43, ".10", "-05:00" ) }, <<EOY
 canonical: 2001-12-15T02:59:43.1Z
 valid iso8601: 2001-12-14t21:59:43.10-05:00
@@ -1146,6 +1146,14 @@ EOY
 
     end
 
+    #
+    # Circular references
+    #
+    def test_circular_references
+        a = []; a[0] = a; a[1] = a
+        inspect_str = "[[...], [...]]"
+        assert_equals( inspect_str, YAML::load( a.to_yaml ).inspect )
+    end
 end
 
 RUNIT::CUI::TestRunner.run( YAML_Unit_Tests.suite )

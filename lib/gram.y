@@ -80,6 +80,19 @@ ind_rep : struct_rep
         ;
 
 atom_or_empty   : atom
+                | indent_open indent_end
+                {
+                   SyckNode *n = syck_new_str( "" ); 
+                   if ( ((SyckParser *)parser)->taguri_expansion == 1 )
+                   {
+                       n->type_id = syck_taguri( YAML_DOMAIN, "null", 4 );
+                   }
+                   else
+                   {
+                       n->type_id = syck_strndup( "null", 4 );
+                   }
+                   $$ = n;
+                }
                 |
                 {
                    SyckNode *n = syck_new_str( "" ); 
@@ -140,7 +153,7 @@ word_rep	: TRANSFER word_rep
                 * _Aliases_: The anchor symbol table is scanned for the anchor name.
                 * The anchor's ID in the language's symbol table is returned.
                 */
-               $$ = syck_hdlr_add_alias( (SyckParser *)parser, $1 );
+               $$ = syck_hdlr_get_anchor( (SyckParser *)parser, $1 );
             }
 			| WORD
             { 
