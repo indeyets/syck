@@ -151,6 +151,8 @@ struct _syck_parser {
     char *buffer, *lineptr, *toktmp, *token, *cursor, *marker, *limit;
     // Line counter
     int linect;
+    // Last token from yylex()
+    int last_token;
     // EOF flag
     int eof;
     union {

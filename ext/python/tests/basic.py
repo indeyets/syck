@@ -115,15 +115,60 @@ Sammy Sosa:   {hr: 63,
 
     def testNestedComments(self):
         self.parseOnly(
-		  { 'hr': [ 'mark mcgwire', 'sammy sosa' ],
-		    'rbi': [ 'sammy sosa', 'ken griffey' ] }, """
+		  { 'hr': [ 'Mark McGwire', 'Sammy Sosa' ],
+		    'rbi': [ 'Sammy Sosa', 'Ken Griffey' ] }, """
 hr: # 1998 hr ranking
-  - mark mcgwire
-  - sammy sosa
+  - Mark McGwire
+  - Sammy Sosa
 rbi:
   # 1998 rbi ranking
-  - sammy sosa
-  - ken griffey
+  - Sammy Sosa
+  - Ken Griffey
+"""
+        )
+
+    def testAnchorsAndAliases(self):
+        self.parseOnly(
+            { 'hr':
+			  [ 'Mark McGwire', 'Sammy Sosa' ],
+              'rbi':
+			  [ 'Sammy Sosa', 'Ken Griffey' ] }, """
+hr:
+   - Mark McGwire
+   # Name "Sammy Sosa" scalar SS
+   - &SS Sammy Sosa
+rbi:
+   # So it can be referenced later.
+   - *SS
+   - Ken Griffey
+"""
+        )
+
+    def testSeqInSeqShortcut(self):
+        self.parseOnly(
+            [ [ [ 'one', 'two', 'three' ] ] ], """
+- - - one
+    - two
+    - three
+"""
+        )
+
+    def testSingleLiteral(self):
+        self.parseOnly(
+		    [ "\\/|\\/|\n/ |  |_\n" ], """
+- |
+    \\/|\\/|
+    / |  |_
+"""
+        )
+
+    def testSingleFolded(self):
+        self.parseOnly(
+			[ "Mark McGwire's year was crippled by a knee injury.\n" ], """
+- >
+    Mark McGwire's
+    year was crippled
+    by a knee injury.
 """
         )
 
@@ -137,7 +182,12 @@ class SyckTestSuite(unittest.TestSuite):
              "testSimpleMapWithNestedSequences",
              "testSimpleSequenceWithNestedMaps",
              "testSequenceOfSequences",
-             "testMappingOfMappings")))
+             "testMappingOfMappings",
+             "testAnchorsAndAliases",
+             "testSeqInSeqShortcut",
+             "testSingleLiteral",
+             "testSingleFolded"
+             )))
 
 if __name__ == '__main__':
     unittest.main()

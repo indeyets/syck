@@ -74,7 +74,7 @@ atom	: word_rep
             */
            $$ = syck_hdlr_add_alias( (SyckParser *)parser, $1 );
         }
-        | IOPEN atom IEND
+        | indent_open atom indent_end
         {
            $$ = $2;
         }
@@ -94,6 +94,19 @@ atom_or_empty   : atom
                    }
                    $$ = n;
                 }
+                ;
+
+//
+// Indentation abstractions
+//
+indent_open     : IOPEN
+                | indent_open INDENT
+                ;
+                
+indent_end      : IEND
+                ;
+
+indent_sep      : INDENT
                 ;
 
 //
@@ -159,7 +172,7 @@ struct_rep	: TRANSFER struct_rep
 //
 // Implicit sequence 
 //
-implicit_seq	: IOPEN in_implicit_seq	IEND	
+implicit_seq	: indent_open in_implicit_seq indent_end
                 { 
                     $$ = $2;
                 }
@@ -175,12 +188,12 @@ in_implicit_seq : basic_seq
                 {
                     $$ = syck_new_seq( $1 );
                 }
-				| in_implicit_seq INDENT basic_seq
+				| in_implicit_seq indent_sep basic_seq
 				{ 
                     syck_seq_add( $1, $3 );
                     $$ = $1;
 				}
-				| in_implicit_seq INDENT
+				| in_implicit_seq indent_sep
 				{ 
                     $$ = $1;
 				}
@@ -213,7 +226,7 @@ in_inline_seq   : atom
 //
 // Implicit maps
 //
-implicit_map	: IOPEN in_implicit_map IEND
+implicit_map	: indent_open in_implicit_map indent_end
                 { 
                     $$ = $2;
                 }
@@ -235,7 +248,7 @@ basic_mapping	: word_rep ':' atom_or_empty
 */
 
 complex_mapping : basic_mapping
-				| '?' atom INDENT ':' atom_or_empty
+				| '?' atom indent_sep ':' atom_or_empty
                 {
                     $$ = syck_new_map( 
                         syck_hdlr_add_node( (SyckParser *)parser, $2 ), 
@@ -247,12 +260,12 @@ in_implicit_map : complex_mapping
 				{
                     $$ = $1;
 				}
-				| in_implicit_map INDENT complex_mapping
+				| in_implicit_map indent_sep complex_mapping
                 { 
                     syck_map_update( $1, $3 );
                     $$ = $1;
                 }
-				| in_implicit_map INDENT
+				| in_implicit_map indent_sep
                 { 
                     $$ = $1;
                 }

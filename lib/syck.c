@@ -124,6 +124,7 @@ syck_parser_reset_cursor( SyckParser *p )
     p->limit = NULL;
     p->linect = 0;
     p->eof = 0;
+    p->last_token = 0;
 }
 
 //
