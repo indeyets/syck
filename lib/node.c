@@ -17,7 +17,7 @@ syck_alloc_node( enum syck_kind_tag type )
 {
     SyckNode *s;
 
-    s = ALLOC( SyckNode );
+    s = S_ALLOC( SyckNode );
     s->kind = type;
 
     return s;
@@ -29,11 +29,11 @@ syck_alloc_map()
     SyckNode *n;
     struct SyckMap *m;
 
-    m = ALLOC( struct SyckMap );
+    m = S_ALLOC( struct SyckMap );
     m->idx = 0;
     m->capa = ALLOC_CT;
-    m->keys = ALLOC_N( SYMID, m->capa );
-    m->values = ALLOC_N( SYMID, m->capa );
+    m->keys = S_ALLOC_N( SYMID, m->capa );
+    m->values = S_ALLOC_N( SYMID, m->capa );
 
     n = syck_alloc_node( syck_map_kind );
     n->data.pairs = m;
@@ -47,10 +47,10 @@ syck_alloc_seq()
     SyckNode *n;
     struct SyckSeq *s;
 
-    s = ALLOC( struct SyckSeq );
+    s = S_ALLOC( struct SyckSeq );
     s->idx = 0;
     s->capa = ALLOC_CT;
-    s->items = ALLOC_N( SYMID, s->capa );
+    s->items = S_ALLOC_N( SYMID, s->capa );
 
     n = syck_alloc_node( syck_seq_kind );
     n->data.list = s;
@@ -61,7 +61,17 @@ syck_alloc_seq()
 SyckNode *
 syck_alloc_str()
 {
-    return syck_alloc_node( syck_str_kind );
+    SyckNode *n;
+    struct SyckStr *s;
+
+    s = S_ALLOC( struct SyckStr );
+    s->len = 0;
+    s->ptr = NULL;
+
+    n = syck_alloc_node( syck_str_kind );
+    n->data.str = s;
+    
+    return n;
 }
 
 SyckNode *
@@ -70,7 +80,20 @@ syck_new_str( char *str )
     SyckNode *n;
 
     n = syck_alloc_str();
-    n->data.str = str;
+    n->data.str->ptr = str;
+    n->data.str->len = strlen( str );
+
+    return n;
+}
+
+SyckNode *
+syck_new_str2( char *str, long len )
+{
+    SyckNode *n;
+
+    n = syck_alloc_str();
+    n->data.str->ptr = str;
+    n->data.str->len = len;
 
     return n;
 }
@@ -79,7 +102,7 @@ char *
 syck_str_read( SyckNode *n )
 {
     ASSERT( n != NULL );
-    return n->data.str;
+    return n->data.str->ptr;
 }
 
 SyckNode *
@@ -108,8 +131,8 @@ syck_map_add( SyckNode *map, SYMID key, SYMID value )
     if ( m->idx > m->capa )
     {
         m->capa += ALLOC_CT;
-        REALLOC_N( m->keys, SYMID, m->capa );
-        REALLOC_N( m->values, SYMID, m->capa );
+        S_REALLOC_N( m->keys, SYMID, m->capa );
+        S_REALLOC_N( m->values, SYMID, m->capa );
     }
     m->keys[idx] = key;
     m->values[idx] = value;
@@ -137,8 +160,8 @@ syck_map_update( SyckNode *map1, SyckNode *map2 )
     if ( new_capa > m1->capa )
     {
         m1->capa = new_capa;
-        REALLOC_N( m1->keys, SYMID, m1->capa );
-        REALLOC_N( m1->values, SYMID, m1->capa );
+        S_REALLOC_N( m1->keys, SYMID, m1->capa );
+        S_REALLOC_N( m1->values, SYMID, m1->capa );
     }
     new_idx = 0;
     for ( new_idx = 0; new_idx < m2->idx; m1->idx++, new_idx++ )
@@ -200,7 +223,7 @@ syck_seq_add( SyckNode *arr, SYMID value )
     if ( s->idx > s->capa )
     {
         s->capa += ALLOC_CT;
-        REALLOC_N( s->items, SYMID, s->capa );
+        S_REALLOC_N( s->items, SYMID, s->capa );
     }
     s->items[idx] = value;
 }

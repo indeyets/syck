@@ -31,14 +31,14 @@ syck_assert( char *file_name, unsigned line_num )
 // Default IO functions
 //
 int
-syck_io_file_read( char *buf, SyckFile *file, int max_size )
+syck_io_file_read( char *buf, SyckIoFile *file, int max_size )
 {
     int len = 0;
     return len;
 }
 
 int
-syck_io_str_read( char *buf, SyckStr *str, int max_size )
+syck_io_str_read( char *buf, SyckIoStr *str, int max_size )
 {
     char *beg;
     int len = 0;
@@ -75,7 +75,7 @@ SyckParser *
 syck_new_parser()
 {
     SyckParser *p;
-    p = ALLOC( SyckParser );
+    p = S_ALLOC( SyckParser );
     return p;
 }
 
@@ -87,12 +87,12 @@ syck_parser_handler( SyckParser *p, SyckNodeHandler hdlr )
 }
 
 void
-syck_parser_file( SyckParser *p, FILE *fp, SyckFileRead read )
+syck_parser_file( SyckParser *p, FILE *fp, SyckIoFileRead read )
 {
     ASSERT( p != NULL );
     free_any_io( p );
     p->io_type = syck_io_file;
-    p->io.file = ALLOC( SyckFile );
+    p->io.file = S_ALLOC( SyckIoFile );
     p->io.file->ptr = fp;
     if ( read != NULL )
     {
@@ -105,12 +105,12 @@ syck_parser_file( SyckParser *p, FILE *fp, SyckFileRead read )
 }
 
 void
-syck_parser_str( SyckParser *p, char *ptr, long len, SyckStrRead read )
+syck_parser_str( SyckParser *p, char *ptr, long len, SyckIoStrRead read )
 {
     ASSERT( p != NULL );
     free_any_io( p );
     p->io_type = syck_io_str;
-    p->io.str = ALLOC( SyckStr );
+    p->io.str = S_ALLOC( SyckIoStr );
     p->io.str->ptr = ptr;
     p->io.str->end = ptr + len;
     if ( read != NULL )
@@ -124,7 +124,7 @@ syck_parser_str( SyckParser *p, char *ptr, long len, SyckStrRead read )
 }
 
 void
-syck_parser_str_auto( SyckParser *p, char *ptr, SyckStrRead read )
+syck_parser_str_auto( SyckParser *p, char *ptr, SyckIoStrRead read )
 {
     syck_parser_str( p, ptr, strlen( ptr ), read );
 }
@@ -136,11 +136,19 @@ free_any_io( SyckParser *p )
     switch ( p->io_type )
     {
         case syck_io_str:
-            free( p->io.str );
+            if ( p->io.str != NULL ) 
+            {
+                free( p->io.str );
+                p->io.str = NULL;
+            }
         break;
 
         case syck_io_file:
-            free( p->io.file );
+            if ( p->io.file != NULL ) 
+            {
+                free( p->io.file );
+                p->io.file = NULL;
+            }
         break;
     }
 }
@@ -181,5 +189,6 @@ syck_parse( SyckParser *p )
     ASSERT( p != NULL );
     syck_parser_init( p, 0 );
     yyparse( p );
+    return p->root;
 }
 

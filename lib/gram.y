@@ -25,7 +25,7 @@
 
 %token <name>       ANCHOR ALIAS TRANSFER FOLD
 %token <nodeData>   WORD PLAIN FSTART RAWTEXT
-%token              IOPEN INDENT IEND
+%token              IOPEN INDENT IEND DOCEND
 
 %type <nodeId>      doc basic_seq
 %type <nodeData>    atom word_rep struct_rep atom_or_empty
@@ -33,18 +33,19 @@
 %type <nodeData>    in_implicit_seq in_inline_seq basic_mapping
 %type <nodeData>    in_implicit_map in_inline_map complex_mapping
 
-%left               '+' '-' '[' ']' '{' '}' ':' ',' '?'
+%left               '-' ':'
+%left               '+' '[' ']' '{' '}' ',' '?'
 
 %%
 
 doc     : atom
         {
-           $$ = syck_hdlr_add_node( (SyckParser *)parser, $1 );
+           ((SyckParser *)parser)->root = syck_hdlr_add_node( (SyckParser *)parser, $1 );
         }
 
 atom	: word_rep
-	 	| struct_rep
-	 	| ANCHOR atom								
+        | struct_rep
+        | ANCHOR atom								
         { 
            /*
             * _Anchors_: The language binding must keep a separate symbol table

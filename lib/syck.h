@@ -24,16 +24,16 @@ extern "C" {
 #endif
 
 #define ALLOC_CT 8
-#define ALLOC_N(type,n) (type*)malloc(sizeof(type)*(n))
-#define ALLOC(type) (type*)malloc(sizeof(type))
-#define REALLOC_N(var,type,n) (var)=(type*)realloc((char*)(var),sizeof(type)*(n))
+#define S_ALLOC_N(type,n) (type*)malloc(sizeof(type)*(n))
+#define S_ALLOC(type) (type*)malloc(sizeof(type))
+#define S_REALLOC_N(var,type,n) (var)=(type*)realloc((char*)(var),sizeof(type)*(n))
 
-#define ALLOCA_N(type,n) (type*)alloca(sizeof(type)*(n))
+#define S_ALLOCA_N(type,n) (type*)alloca(sizeof(type)*(n))
 
-#define MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(n))
-#define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
-#define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
-#define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(n))
+#define S_MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(n))
+#define S_MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
+#define S_MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
+#define S_MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(n))
 
 #if DEBUG
   void syck_assert( char *, unsigned );
@@ -56,8 +56,8 @@ extern "C" {
 #define SYMID unsigned long
 
 typedef struct _syck_parser SyckParser;
-typedef struct _syck_file SyckFile;
-typedef struct _syck_str SyckStr;
+typedef struct _syck_file SyckIoFile;
+typedef struct _syck_str SyckIoStr;
 typedef struct _syck_node SyckNode;
 
 enum syck_kind_tag {
@@ -91,7 +91,10 @@ struct _syck_node {
             long idx;
         } *list;
         // Storage for string data
-        char *str;
+        struct SyckStr {
+            char *ptr;
+            long len;
+        } *str;
     } data;
 };
 
@@ -99,8 +102,8 @@ struct _syck_node {
 // Parser definitions
 //
 typedef SYMID (*SyckNodeHandler)(SyckNode *);
-typedef int (*SyckFileRead)(char *, SyckFile *, int); 
-typedef int (*SyckStrRead)(char *, SyckStr *, int);
+typedef int (*SyckIoFileRead)(char *, SyckIoFile *, int); 
+typedef int (*SyckIoStrRead)(char *, SyckIoStr *, int);
 
 enum syck_io_type {
     syck_io_str,
@@ -108,6 +111,8 @@ enum syck_io_type {
 };
 
 struct _syck_parser {
+    // Root node
+    SYMID root;
     // Scripting language function to handle nodes
     SyckNodeHandler handler;
     // IO type
@@ -115,11 +120,11 @@ struct _syck_parser {
     union {
         struct _syck_file {
             FILE *ptr;
-            SyckFileRead read;
+            SyckIoFileRead read;
         } *file;
         struct _syck_str {
             char *ptr, *end;
-            SyckStrRead read;
+            SyckIoStrRead read;
         } *str;
     } io;
 };
@@ -137,13 +142,13 @@ void syck_fold_format( char *, SyckNode * );
 //
 // API prototypes
 //
-int syck_io_file_read( char *, SyckFile *, int );
-int syck_io_str_read( char *, SyckStr *, int );
+int syck_io_file_read( char *, SyckIoFile *, int );
+int syck_io_str_read( char *, SyckIoStr *, int );
 SyckParser *syck_new_parser();
 void syck_parser_handler( SyckParser *, SyckNodeHandler );
-void syck_parser_file( SyckParser *, FILE *, SyckFileRead );
-void syck_parser_str( SyckParser *, char *, long, SyckStrRead );
-void syck_parser_str_auto( SyckParser *, char *, SyckStrRead );
+void syck_parser_file( SyckParser *, FILE *, SyckIoFileRead );
+void syck_parser_str( SyckParser *, char *, long, SyckIoStrRead );
+void syck_parser_str_auto( SyckParser *, char *, SyckIoStrRead );
 void free_any_io( SyckParser * );
 int syck_parser_readline( char *, SyckParser * );
 int syck_parser_read( char *, SyckParser *, int );
@@ -157,6 +162,7 @@ SyckNode *syck_alloc_map();
 SyckNode *syck_alloc_seq();
 SyckNode *syck_alloc_str();
 SyckNode *syck_new_str( char * );
+SyckNode *syck_new_str2( char *, long );
 char *syck_str_read( SyckNode * );
 SyckNode *syck_new_map( SYMID, SYMID );
 void syck_map_add( SyckNode *, SYMID, SYMID );

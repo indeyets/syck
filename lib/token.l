@@ -21,7 +21,6 @@ int
 syck_lex_read( char *buf, SyckParser *p, int max_size )
 {
     int len = syck_parser_read(buf, syck_lex_parser, max_size); 
-    printf( "READ: %s\n", buf );
 }
 
 void
@@ -33,15 +32,20 @@ syck_parser_init(SyckParser *p, int debug)
 
 %}
 
-COLON   :( |$)
-DASH    -( |$)
-
 %%
 
+"{"         return '{';
+"}"         return '}';
+
+":"[ $]+    return ':';
+","[ $]+    return ',';
+
 [a-z0-9]+   {
-               yylval.nodeData = syck_new_str( yytext );
+               yylval.nodeData = syck_new_str2( yytext, yyleng );
                return PLAIN;
             }
+
+.           printf( "Unrecognized character: %s\n", yytext );
 
 %%
 
