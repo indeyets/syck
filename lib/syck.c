@@ -30,7 +30,10 @@ alloc_map_node()
     struct SyckMap *m;
 
     m = ALLOC( struct SyckMap );
-    m->capa = 0;
+    m->idx = 0;
+    m->capa = ALLOC_CT;
+    m->keys = ALLOC_N( struct SyckNode *, m->capa );
+    m->values = ALLOC_N( struct SyckNode *, m->capa );
 
     n = alloc_node( map_kind );
     n->data.pairs = m;
@@ -45,7 +48,9 @@ alloc_seq_node()
     struct SyckSeq *s;
 
     s = ALLOC( struct SyckSeq );
-    s->capa = 0;
+    s->idx = 0;
+    s->capa = ALLOC_CT;
+    s->items = ALLOC_N( struct SyckNode *, s->capa );
 
     n = alloc_node( seq_kind );
     n->data.list = s;
@@ -98,10 +103,14 @@ add_map_pair( struct SyckNode *map, struct SyckNode *key, struct SyckNode *value
     //assert( map->data.pairs != NULL );
     
     m = map->data.pairs;
-    idx = m->capa;
-    m->capa += 1;
-    REALLOC_N( m->keys, struct SyckNode *, m->capa );
-    REALLOC_N( m->values, struct SyckNode *, m->capa );
+    idx = m->idx;
+    m->idx += 1;
+    if ( m->idx > m->capa )
+    {
+        m->capa += ALLOC_CT;
+        REALLOC_N( m->keys, struct SyckNode *, m->capa );
+        REALLOC_N( m->values, struct SyckNode *, m->capa );
+    }
     m->keys[idx] = key;
     m->values[idx] = value;
 }
@@ -145,9 +154,13 @@ add_seq_item( struct SyckNode *arr, struct SyckNode *value )
     //assert( arr->data.list != NULL );
     
     s = arr->data.list;
-    idx = s->capa;
-    s->capa += 1;
-    REALLOC_N( s->items, struct SyckNode *, s->capa );
+    idx = s->idx;
+    s->idx += 1;
+    if ( s->idx > s->capa )
+    {
+        s->capa += ALLOC_CT;
+        REALLOC_N( s->items, struct SyckNode *, s->capa );
+    }
     s->items[idx] = value;
 }
 

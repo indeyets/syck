@@ -21,6 +21,7 @@ extern "C" {
 #include <alloca.h>
 #endif
 
+#define ALLOC_CT 8
 #define ALLOC_N(type,n) (type*)malloc(sizeof(type)*(n))
 #define ALLOC(type) (type*)malloc(sizeof(type))
 #define REALLOC_N(var,type,n) (var)=(type*)realloc((char*)(var),sizeof(type)*(n))
@@ -61,11 +62,13 @@ struct SyckNode {
             struct SyckNode **keys;
             struct SyckNode **values;
             long capa;
+            long idx;
         } *pairs;
         // Storage for sequence data
         struct SyckSeq {
             struct SyckNode **items;
             long capa;
+            long idx;
         } *list;
         // Storage for string data
         char *str;

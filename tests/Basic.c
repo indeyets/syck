@@ -69,6 +69,60 @@ TestSyckMapAlloc( CuTest *tc )
     free( n );
 }
 
+//
+// Test building a large array
+//
+void
+TestSyckLargeSeqAlloc( CuTest *tc )
+{
+    struct SyckNode *n;
+    int i;
+    char *list[] = { 
+        "ONE", "TWO", "THREE", "FOUR", "FIVE",
+        "SIX", "SEVEN", "EIGHT", "NINE", "TEN",
+        "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN",
+        "SIXTEEN", "SEVENTEEN", "EIGHTEEN", "NINETEEN", "TWENTY"
+    };
+
+    n = new_seq_node( new_str_node( "ZERO" ) );
+    for ( i = 0; i < 20; i++ )
+    {
+        add_seq_item( n, new_str_node( list[i] ) );
+    }
+
+    CuAssertStrEquals( tc, "THIRTEEN", read_str_node( read_seq_node( n, 13 ) ) );
+    CuAssertStrEquals( tc, "NINETEEN", read_str_node( read_seq_node( n, 19 ) ) );
+
+    for ( i = 0; i < 20; i++ )
+    {
+        free( read_seq_node( n, i ) );
+    }
+    free( n );
+}
+
+//
+// Test a nested sequence and map
+//
+void
+TestSyckNestedAlloc( CuTest *tc )
+{
+    struct SyckNode *n;
+
+    n = new_map_node( new_str_node( "KEY1" ), new_str_node( "VALUE1" ) );
+    add_map_pair( n, new_str_node( "KEY2" ), 
+            new_seq_node( new_str_node( "A" ) ) );
+
+    CuAssertStrEquals( tc, "A", read_str_node( read_seq_node( read_map_node( n, map_value, 1 ), 0 ) ) );
+
+    free( read_seq_node( read_map_node( n, map_value, 1 ), 0 ) );
+    free( read_map_node( n, map_value, 1 ) );
+    free( read_map_node( n, map_key, 1 ) );
+    free( read_map_node( n, map_value, 0 ) );
+    free( read_map_node( n, map_key, 0 ) );
+    free( n );
+}
+
+
 CuSuite *
 SyckGetSuite()
 {
@@ -76,6 +130,8 @@ SyckGetSuite()
     SUITE_ADD_TEST( suite, TestSyckNodeAlloc );
     SUITE_ADD_TEST( suite, TestSyckSeqAlloc );
     SUITE_ADD_TEST( suite, TestSyckMapAlloc );
+    SUITE_ADD_TEST( suite, TestSyckLargeSeqAlloc );
+    SUITE_ADD_TEST( suite, TestSyckNestedAlloc );
     return suite;
 }
 
