@@ -10,6 +10,8 @@
       emission of nodes with folding routines and shortcut-checking
       built-in!
 
+   ext/ruby/ext/syck/rubyext.c: added hooks for the new emitter.
+
 - version: 0.45
   date: 2004-08-18
   changes:

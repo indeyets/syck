@@ -866,7 +866,7 @@ void syck_emit_item( SyckEmitter *e, st_data_t n )
             }
 
             /* seq-in-seq shortcut */
-            else if ( lvl->anctag == 0 && parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
+            else if ( parent->anctag == 0 && parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
                 int spcs = ( lvl->spaces - parent->spaces ) - 2;
                 if ( spcs >= 0 ) {
                     int i = 0;
@@ -888,7 +888,7 @@ void syck_emit_item( SyckEmitter *e, st_data_t n )
             SyckLevel *parent = syck_emitter_parent_level( e );
 
             /* map-in-seq shortcut */
-            if ( lvl->anctag == 0 && parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
+            if ( parent->anctag == 0 && parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
                 int spcs = ( lvl->spaces - parent->spaces ) - 2;
                 if ( spcs >= 0 ) {
                     int i = 0;
