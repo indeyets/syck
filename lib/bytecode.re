@@ -36,6 +36,11 @@ char *get_inline( SyckParser *parser );
 #define YYPOS(n)    YYCURSOR = YYTOKEN + n
 
 /*
+ * Track line numbers
+ */
+#define CHK_NL(ptr)    if ( *( ptr - 1 ) == '\n' && ptr > YYLINECTPTR ) { YYLINEPTR = ptr; YYLINE++; YYLINECTPTR = YYLINEPTR; }
+
+/*
  * I like seeing the level operations as macros...
  */
 #define ADD_LEVEL(len, status)  syck_parser_add_level( parser, len, status )
@@ -181,6 +186,7 @@ Header:
 
 DOC     {   if ( lvl->status == syck_lvl_header )
             {
+                CHK_NL(YYCURSOR);
                 goto Directive;
             }
             else
@@ -196,8 +202,6 @@ ANY     {   YYPOS(0);
         }
 
 */
-
-    lvl->status = syck_lvl_doc;
 
 Document:
     {
@@ -222,6 +226,7 @@ MAP     {   int complex = 0;
                 complex = 1;
             }
             ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_map); 
+            CHK_NL(YYCURSOR);
             if ( complex )
             {
                 FORCE_NEXT_TOKEN( YAML_IOPEN );
@@ -236,6 +241,7 @@ SEQ     {   int complex = 0;
                 complex = 1;
             }
             ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_seq);
+            CHK_NL(YYCURSOR);
             if ( complex )
             {
                 FORCE_NEXT_TOKEN( YAML_IOPEN );
@@ -276,6 +282,7 @@ END     {   if ( lvl->status == syck_lvl_seq && lvl->ncount == 0 )
                     FORCE_NEXT_TOKEN(YAML_INDENT);
                 }
             }
+            CHK_NL(YYCURSOR);
             return YAML_IEND;
         }
 
@@ -286,6 +293,7 @@ SCA     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_str);
 ANC     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_open);
             sycklval->name = get_inline( parser );
             syck_hdlr_remove_anchor( parser, sycklval->name );
+            CHK_NL(YYCURSOR);
             return YAML_ANCHOR;
         }
 
@@ -299,6 +307,7 @@ REF     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_str);
 TAG     {   char *qstr;
             ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_open);
             qstr = get_inline( parser );
+            CHK_NL(YYCURSOR);
             if ( qstr[0] == '!' )
             {
                 int qidx = strlen( qstr );
@@ -357,7 +366,8 @@ TAG     {   char *qstr;
 
 COM     {   goto Comment; }
 
-LF      {   if ( lvl->status == syck_lvl_seq )
+LF      {   CHK_NL(YYCURSOR);
+            if ( lvl->status == syck_lvl_seq )
             {
                 return YAML_INDENT; 
             }
@@ -380,13 +390,14 @@ NULL    {   ENSURE_YAML_IEND(lvl, -1);
 
 Directive:
     {
-        YYTOKTMP = YYCURSOR;
+        YYTOKEN = YYCURSOR;
 
 /*!re2c
 
-DIR        {   goto Directive; }
+DIR        {   CHK_NL(YYCURSOR);
+               goto Directive; }
 
-ANY        {   YYCURSOR = YYTOKTMP;
+ANY        {   YYCURSOR = YYTOKEN;
                return YAML_DOCSEP;
            }
 */
@@ -395,11 +406,12 @@ ANY        {   YYCURSOR = YYTOKTMP;
 
 Comment:
     {
-        YYTOKTMP = YYCURSOR;
+        YYTOKEN = YYCURSOR;
 
 /*!re2c
 
-LF          {   goto Document; }
+LF          {   CHK_NL(YYCURSOR);
+                goto Document; }
 
 ANY         {   goto Comment; }
 
@@ -421,9 +433,11 @@ Scalar2:
 
 /*!re2c
 
-LF SCC  {   goto Scalar2; }
+LF SCC  {   CHK_NL(tok+1);
+            goto Scalar2; }
 
-LF NNL  {   if ( tok + 2 < YYCURSOR )
+LF NNL  {   CHK_NL(tok+1);
+            if ( tok + 2 < YYCURSOR )
             {
                 char *count = tok + 2;
                 int total = strtod( count, NULL );
@@ -440,7 +454,8 @@ LF NNL  {   if ( tok + 2 < YYCURSOR )
             goto Scalar2;
         }
 
-LF NLZ  {   CAT(str, cap, idx, '\0');
+LF NLZ  {   CHK_NL(tok+1);
+            CAT(str, cap, idx, '\0');
             goto Scalar2; 
         }
 
@@ -491,7 +506,8 @@ Inline:
 
 /*!re2c
 
-LF          {   return str; }
+LF          {   CHK_NL(YYCURSOR);
+                return str; }
 
 NULL        {   YYCURSOR = tok;
                 return str;

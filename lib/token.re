@@ -116,7 +116,7 @@
 #define RETURN_IMPLICIT() \
     { \
         SyckNode *n = syck_alloc_str(); \
-        YYCURSOR = YYTOKTMP; \
+        YYCURSOR = YYTOKEN; \
         n->data.str->ptr = qstr; \
         n->data.str->len = qidx; \
         sycklval->nodeData = n; \
@@ -479,7 +479,7 @@ Plain:
         GET_TRUE_YAML_INDENT(parentIndent);
 
 Plain2: 
-        YYTOKTMP = YYCURSOR;
+        YYTOKEN = YYCURSOR;
 
 Plain3:
 
@@ -487,7 +487,7 @@ Plain3:
 
 YINDENT             {   int indt_len, nl_count = 0;
                         SyckLevel *lvl;
-                        char *tok = YYTOKTMP;
+                        char *tok = YYTOKEN;
                         GOBBLE_UP_YAML_INDENT( indt_len, tok );
                         lvl = CURRENT_LEVEL();
 
@@ -496,9 +496,9 @@ YINDENT             {   int indt_len, nl_count = 0;
                             RETURN_IMPLICIT();
                         }
 
-                        while ( YYTOKTMP < YYCURSOR )
+                        while ( YYTOKEN < YYCURSOR )
                         {
-                            if ( is_newline( YYTOKTMP++ ) )
+                            if ( is_newline( YYTOKEN++ ) )
                                 nl_count++;
                         }
                         if ( nl_count <= 1 )
@@ -525,7 +525,7 @@ INLINEX             {   if ( plvl->status != syck_lvl_inline )
                             {
                                 YYCURSOR--;
                             }
-                            QUOTECATS(qstr, qcapa, qidx, YYTOKTMP, YYCURSOR - YYTOKTMP);
+                            QUOTECATS(qstr, qcapa, qidx, YYTOKEN, YYCURSOR - YYTOKEN);
                             goto Plain2;
                         }
                         RETURN_IMPLICIT();
@@ -539,7 +539,7 @@ NULL                {   RETURN_IMPLICIT(); }
 
 SPC                 {   goto Plain3; }
 
-ANY                 {   QUOTECATS(qstr, qcapa, qidx, YYTOKTMP, YYCURSOR - YYTOKTMP);
+ANY                 {   QUOTECATS(qstr, qcapa, qidx, YYTOKEN, YYCURSOR - YYTOKEN);
                         goto Plain2;
                     }
 
@@ -553,14 +553,14 @@ SingleQuote:
         char *qstr = S_ALLOC_N( char, qcapa );
 
 SingleQuote2:
-        YYTOKTMP = YYCURSOR;
+        YYTOKEN = YYCURSOR;
 
 /*!re2c
 
 YINDENT             {   int indt_len;
                         int nl_count = 0;
                         SyckLevel *lvl;
-                        GOBBLE_UP_YAML_INDENT( indt_len, YYTOKTMP );
+                        GOBBLE_UP_YAML_INDENT( indt_len, YYTOKEN );
                         lvl = CURRENT_LEVEL();
 
                         if ( lvl->status != syck_lvl_str )
@@ -572,9 +572,9 @@ YINDENT             {   int indt_len;
                             /* Error! */
                         }
 
-                        while ( YYTOKTMP < YYCURSOR )
+                        while ( YYTOKEN < YYCURSOR )
                         {
-                            if ( is_newline( YYTOKTMP++ ) )
+                            if ( is_newline( YYTOKEN++ ) )
                                 nl_count++;
                         }
                         if ( nl_count <= 1 )
@@ -629,7 +629,7 @@ DoubleQuote:
         char *qstr = S_ALLOC_N( char, qcapa );
 
 DoubleQuote2:
-        YYTOKTMP = YYCURSOR;
+        YYTOKEN = YYCURSOR;
 
 
 /*!re2c
@@ -637,7 +637,7 @@ DoubleQuote2:
 YINDENT             {   int indt_len;
                         int nl_count = 0;
                         SyckLevel *lvl;
-                        GOBBLE_UP_YAML_INDENT( indt_len, YYTOKTMP );
+                        GOBBLE_UP_YAML_INDENT( indt_len, YYTOKEN );
                         lvl = CURRENT_LEVEL();
 
                         if ( lvl->status != syck_lvl_str )
@@ -651,9 +651,9 @@ YINDENT             {   int indt_len;
 
                         if ( keep_nl == 1 )
                         {
-                            while ( YYTOKTMP < YYCURSOR )
+                            while ( YYTOKEN < YYCURSOR )
                             {
-                                if ( is_newline( YYTOKTMP++ ) )
+                                if ( is_newline( YYTOKEN++ ) )
                                     nl_count++;
                             }
                             if ( nl_count <= 1 )
@@ -691,7 +691,7 @@ YINDENT             {   int indt_len;
                     }
 
 "\\x" HEX HEX       {   long ch;
-                        char *chr_text = syck_strndup( YYTOKTMP, 4 );
+                        char *chr_text = syck_strndup( YYTOKEN, 4 );
                         chr_text[0] = '0';
                         ch = strtol( chr_text, NULL, 16 );
                         free( chr_text );
@@ -847,12 +847,12 @@ ScalarBlock:
         YYTOKEN = YYCURSOR;
 
 ScalarBlock2:
-        YYTOKTMP = YYCURSOR;
+        YYTOKEN = YYCURSOR;
 
 /*!re2c
 
 YINDENT             {   char *pacer;
-                        char *tok = YYTOKTMP;
+                        char *tok = YYTOKEN;
                         int indt_len = 0, nl_count = 0, fold_nl = 0, nl_begin = 0;
                         GOBBLE_UP_YAML_INDENT( indt_len, tok );
                         lvl = CURRENT_LEVEL();
@@ -867,7 +867,7 @@ YINDENT             {   char *pacer;
                         }
                         else if ( lvl->status != syck_lvl_block )
                         {
-                            YYCURSOR = YYTOKTMP;
+                            YYCURSOR = YYTOKEN;
                             RETURN_YAML_BLOCK();
                         }
 
@@ -880,7 +880,7 @@ YINDENT             {   char *pacer;
                             fold_nl = 1;
                         }
 
-                        pacer = YYTOKTMP;
+                        pacer = YYTOKEN;
                         while ( pacer < YYCURSOR )
                         {
                             if ( is_newline( pacer++ ) )
@@ -911,7 +911,7 @@ YINDENT             {   char *pacer;
                         if ( indt_len < lvl->spaces )
                         {
                             POP_LEVEL();
-                            YYCURSOR = YYTOKTMP;
+                            YYCURSOR = YYTOKEN;
                             RETURN_YAML_BLOCK();
                         }
                         goto ScalarBlock2;
@@ -922,11 +922,11 @@ YINDENT             {   char *pacer;
                         if ( lvl->status != syck_lvl_block )
                         {
                             eat_comments( parser );
-                            YYTOKTMP = YYCURSOR;
+                            YYTOKEN = YYCURSOR;
                         }
                         else
                         {
-                            QUOTECAT(qstr, qcapa, qidx, *YYTOKTMP);
+                            QUOTECAT(qstr, qcapa, qidx, *YYTOKEN);
                         }
                         goto ScalarBlock2;
                     }
@@ -937,7 +937,7 @@ NULL                {   YYCURSOR--;
                         RETURN_YAML_BLOCK(); 
                     }
 
-ANY                 {   QUOTECAT(qstr, qcapa, qidx, *YYTOKTMP);
+ANY                 {   QUOTECAT(qstr, qcapa, qidx, *YYTOKEN);
                         goto ScalarBlock2;
                     }
 
@@ -952,15 +952,13 @@ ANY                 {   QUOTECAT(qstr, qcapa, qidx, *YYTOKTMP);
 void
 eat_comments( SyckParser *parser )
 {
-    char *tok;
-
 Comment:
     {
-        tok = YYCURSOR;
+        YYTOKEN = YYCURSOR;
 
 /*!re2c
 
-( LF+ | NULL )      {   YYCURSOR = tok;
+( LF+ | NULL )      {   YYCURSOR = YYTOKEN;
                         return;
                     }
 

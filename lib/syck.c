@@ -67,12 +67,13 @@ syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
 
     ASSERT( str != NULL );
     beg = str->ptr;
+    //printf( "---\nsyck_io_str_read( max_size: %d, skip: %d ) @ %lu\n", max_size, skip, beg );
     if ( max_size >= 0 )
     {
         max_size -= skip;
         if ( max_size < 0 ) max_size = 0;
 
-        str->ptr += max_size;
+        str->ptr += max_size - 1;
         if ( str->ptr > str->end )
         {
             str->ptr = str->end;
@@ -87,11 +88,14 @@ syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
     }
     if ( beg < str->ptr )
     {
+        //printf( "MEMCPY( %lu, %lu, char, %d )\n", buf + skip, beg, len );
         len = ( str->ptr - beg ) + 1;
         S_MEMCPY( buf + skip, beg, char, len );
     }
     len += skip;
+    //printf( "end( len: %d, skip: %d, buf: %lu )\n", len, skip, buf );
     buf[len] = '\0';
+    //printf( "buf close\n" );
 
     return len;
 }
