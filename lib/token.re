@@ -328,6 +328,12 @@ YINDENT             {   /* Isolate spaces */
                         lvl = CURRENT_LEVEL();
                         doc_level = 0;
 
+                        /* XXX: Comment lookahead */
+                        if ( *YYCURSOR == '#' )
+                        {
+                            goto Document;
+                        }
+
                         /* Check for open indent */
                         ENSURE_YAML_IEND(lvl, indt_len);
                         ENSURE_YAML_IOPEN(lvl, indt_len, 0);

@@ -34,6 +34,12 @@ syck_PyIntMaker( long num )
     }
 }
 
+static PyObject *
+py_syck_node_transform( SyckNode *self, PyObject *args )
+{
+    return Py_None;
+}
+
 /*
  * node object
  */
@@ -44,37 +50,134 @@ static struct PyMethodDef SyckNodeMethods[] = {
 };
 
 static SyckNode *
-py_syck_node_alloc( char *kind, char *type_id, char *value )
+py_syck_node_alloc( enum syck_kind_tag kind, char *type_id, PyObject *value )
 {
     SyckNode *self;
     self = PyObject_NEW( SyckNode, &SyckNodeType );
     if ( self == NULL ) return NULL;
     self->kind = kind;
-    self->type_id = type_id;
-    self->value = value;
+    self->type_id = syck_strndup( type_id, strlen( type_id ) );
+    self->id = 0;
+    Py_XINCREF( value );
+    self->shortcut = (void *)value;
     return self;
 }
 
 static PyObject *
-py_syck_node_new( PyObject *self, PyObject *args )
+py_syck_node_new( enum syck_kind_tag type, char *type_id, PyObject *value )
 {
-    char *kind, *type_id, *value;
-    if ( ! PyArg_ParseTuple( args, "sss", &kind, &type_id, &value ) )
+    return (PyObject *) py_syck_node_alloc( type, type_id, value );
+}
+
+static PyObject *
+py_syck_node_new2( PyObject *self, PyObject *args )
+{
+    enum syck_kind_tag type;
+    char *kind, *type_id;
+    PyObject *obj, *value;
+    if ( ! PyArg_ParseTuple( args, "ssO", &kind, &type_id, &value ) )
     {
         return NULL;
     }
-    return (PyObject *) py_syck_node_alloc( kind, type_id, value );
+    obj = py_syck_node_new( syck_str_kind, type_id, value );
+    //PyObject_SetAttrString( obj, "kind", PyString_FromString( kind ) );
+    return obj;
 }
 
 static void
 py_syck_node_free( SyckNode *self )
 {
+    PyObject *value = PyObject_GetAttrString( (PyObject *)self, "value" );
+    Py_XDECREF( value );
     if ( self->type_id != NULL )
         S_FREE( self->type_id );
     if ( self->anchor != NULL )
         S_FREE( self->anchor );
     S_FREE( self );
     PyMem_DEL( self );
+}
+
+static PyObject *
+py_syck_node_getattr( SyckNode *self, char *name )
+{
+    if ( strcmp( name, "kind" ) == 0 )
+    {
+        char *kind_str;
+        if ( self->kind == syck_map_kind )
+        {
+            kind_str = "map";
+        }
+        else if ( self->kind == syck_seq_kind )
+        {
+            kind_str = "seq";
+        }
+        else
+        {
+            kind_str = "str";
+        }
+        return PyString_FromString( kind_str ); 
+    }
+    else if ( strcmp( name, "type_id" ) == 0 )
+    {
+        return PyString_FromString( self->type_id );
+    }
+    else if ( strcmp( name, "value" ) == 0 )
+    {
+        return (PyObject *)self->shortcut;
+    }
+    return Py_FindMethod( SyckNodeMethods, (PyObject *)self, name );
+}
+
+static int
+py_syck_node_setattr( SyckNode *self, char *name, PyObject *value )
+{
+    if ( strcmp( name, "kind" ) == 0 )
+    {
+        enum syck_kind_tag type;
+        char *kind = PyString_AsString( value );
+        if ( strcmp( kind, "map" ) == 0 )
+        {
+            type = syck_map_kind;
+        }
+        else if ( strcmp( kind, "seq" ) == 0 )
+        {
+            type = syck_seq_kind;
+        }
+        else
+        {
+            type = syck_str_kind;
+        }
+        self->kind = type; 
+        return 1;
+    }
+    else if ( strcmp( name, "type_id" ) == 0 )
+    {
+        self->type_id = PyString_AsString( value );
+        return 1;
+    }
+    else if ( strcmp( name, "value" ) == 0 )
+    {
+        self->shortcut = (void *)value;
+        return 1;
+    }
+    return 0;
+}
+
+static PyObject *
+py_syck_node_repr( SyckNode *self )
+{
+    /*
+    PyObject *value = PyObject_GetAttrString( (PyObject *)self, "value" );
+    char *value_repr = PyString_AsString( PyObject_Repr( value ) );
+    char *kind_str = PyString_AsString( py_syck_node_getattr( self, "kind" ) );
+    char *type_id_str = PyString_AsString( py_syck_node_getattr( self, "type_id" ) );
+    char *repr = S_ALLOC_N( char, strlen( value_repr ) + strlen( kind_str ) +
+            strlen( type_id_str ) + 65 );
+    sprintf( repr, "<syck.Node, kind = %s, type_id = %s, value = %s at %x>",
+            kind_str, type_id_str, value_repr, self );
+    return PyString_FromString( repr );
+    */
+    return PyString_FromString( "<syck.Node>" );
 }
 
 static PyTypeObject SyckNodeType = {
@@ -87,7 +190,7 @@ static PyTypeObject SyckNodeType = {
     (destructor)  py_syck_node_free,
     (printfunc)   0,
     (getattrfunc) py_syck_node_getattr,
-    (setattrfunc) 0,
+    (setattrfunc) py_syck_node_setattr,
     (cmpfunc)     0,
     (reprfunc)    py_syck_node_repr,
 
@@ -289,12 +392,40 @@ py_syck_parse_handler(p, n)
     SyckNode *n;
 {
     SYMID oid;
-    PyObject *o;
+    PyObject *o, *o2, *o3;
+    PyObject *v = Py_None;
+    long i = 0;
+    
+    switch ( n->kind )
+    {
+        case syck_str_kind:
+            v = PyString_FromStringAndSize( n->data.str->ptr, n->data.str->len );
+        break;
 
-    /*
-     * Attempt common transfers
-     */
-    int transferred = yaml_org_handler( p, n, &o );
+        case syck_seq_kind:
+            v = PyList_New( n->data.list->idx );
+            for ( i = 0; i < n->data.list->idx; i++ )
+            {
+                oid = syck_seq_read( n, i );
+                syck_lookup_sym( p, oid, (char **)&o2 );
+                PyList_SetItem( v, i, o2 );
+            }
+        break;
+
+        case syck_map_kind:
+            v = PyDict_New();
+            for ( i = 0; i < n->data.pairs->idx; i++ )
+            {
+                oid = syck_map_read( n, map_key, i );
+                syck_lookup_sym( p, oid, (char **)&o2 );
+                oid = syck_map_read( n, map_value, i );
+                syck_lookup_sym( p, oid, (char **)&o3 );
+                PyDict_SetItem( v, o2, o3 );
+            }
+        break;
+    }
+
+    o = py_syck_node_new( n->kind, n->type_id, v );
     oid = syck_add_sym( p, (char *)o );
     return oid;
 }
@@ -333,7 +464,7 @@ static PyMethodDef SyckMethods[] = {
     { "parse", py_syck_parse, METH_VARARGS,
       "Parse a YAML string into objects representing nodes." },
 
-    { "Node", py_syck_node_new, METH_VARARGS,
+    { "Node", py_syck_node_new2, METH_VARARGS,
       "Create a syck.Node object." },
 
     { NULL, NULL, 0, NULL }        /* Sentinel */
@@ -343,7 +474,7 @@ static PyMethodDef SyckMethods[] = {
 void
 initsyck(void)
 {
-    PyObject *syck, *syck_node;
+    PyObject *syck;
     syck = Py_InitModule( "syck", SyckMethods );
 }
 
