@@ -1,4 +1,27 @@
 --- %YAML:1.0
+- version: 0.52
+  date: 2005-03-27
+  changes:
+    README.EXT: added detailed API docs for Syck!!
+
+    ext/syck/rubyext.c: consolidated all the diaspora of internal 
+      node types into the family below YAML::Syck::Node -- Map, 
+      Seq, Scalar -- all of whom are SyckNode structs pointing to 
+      Ruby data.
+    
+    lib/emitter.c: consolidated redundant block_styles struct into
+      the scalar_style struct.  (this means loaded nodes can now
+      be sent back to emitter and preserve at least its very basic
+      formatting.)
+
+    lib/token.re: ditto.
+
+    lib/node.c: new syck_replace_str methods and syck_empty_*
+      methods for rewriting node contents, while keeping the ID
+      and other setup info.
+
+    lib/syck.h: reflect block_styles and new node functions.
+
 - version: 0.51
   date: 2005-02-09
   changes:

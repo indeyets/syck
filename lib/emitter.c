@@ -115,7 +115,7 @@ syck_new_emitter()
     e->anchor_format = NULL;
     e->explicit_typing = 0;
     e->best_width = 80;
-    e->block_style = block_arbitrary;
+    e->style = scalar_none;
     e->stage = doc_open;
     e->indent = 2;
     e->level = -1;
@@ -606,10 +606,10 @@ syck_scan_scalar( int req_width, char *cursor, long len )
  * All scalars should be emitted through this function, which determines an appropriate style,
  * tag and indent.
  */
-void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style, int force_indent, int force_width,
+void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style, int force_indent, int force_width,
                        char keep_nl, char *str, long len )
 {
-    enum block_styles favor_style = block_literal;
+    enum scalar_style favor_style = scalar_literal;
     SyckLevel *parent = syck_emitter_parent_level( e );
     SyckLevel *lvl = syck_emitter_current_level( e );
     int scan;
@@ -629,41 +629,41 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
     /* quote strings which default to implicits */
     implicit = syck_taguri( YAML_DOMAIN, implicit, strlen( implicit ) );
     if ( syck_tagcmp( tag, implicit ) != 0 && syck_tagcmp( tag, "tag:yaml.org,2002:str" ) == 0 ) {
-        force_style = block_2quote;
+        force_style = scalar_2quote;
     } else {
         syck_emit_tag( e, tag, implicit );
     }
     S_FREE( implicit );
 
     /* if still arbitrary, sniff a good block style. */
-    if ( force_style == block_arbitrary ) {
+    if ( force_style == scalar_none ) {
         if ( scan & SCAN_NEWLINE ) {
-            force_style = block_literal;
+            force_style = scalar_literal;
         } else {
-            force_style = block_plain;
+            force_style = scalar_plain;
         }
     }
 
-    if ( e->block_style == block_fold ) {
-        favor_style = block_fold;
+    if ( e->style == scalar_fold ) {
+        favor_style = scalar_fold;
     }
 
     /* Determine block style */
     if ( scan & SCAN_NONPRINT ) {
-        force_style = block_2quote;
+        force_style = scalar_2quote;
     } else if ( scan & SCAN_WHITESTART ) {
-        force_style = block_2quote;
+        force_style = scalar_2quote;
     } else if ( scan & SCAN_INDENTED ) {
-        force_style = block_literal;
-    } else if ( force_style == block_plain && ( scan & SCAN_NEWLINE ) ) {
+        force_style = scalar_literal;
+    } else if ( force_style == scalar_plain && ( scan & SCAN_NEWLINE ) ) {
         force_style = favor_style;
-    } else if ( force_style == block_fold && ( ! ( scan & SCAN_WIDE ) ) ) {
-        force_style = block_literal;
-    } else if ( force_style == block_plain && ( scan & SCAN_INDIC_S || scan & SCAN_INDIC_C ) ) {
+    } else if ( force_style == scalar_fold && ( ! ( scan & SCAN_WIDE ) ) ) {
+        force_style = scalar_literal;
+    } else if ( force_style == scalar_plain && ( scan & SCAN_INDIC_S || scan & SCAN_INDIC_C ) ) {
         if ( scan & SCAN_NEWLINE ) {
             force_style = favor_style;
         } else {
-            force_style = block_2quote;
+            force_style = scalar_2quote;
         }
     }
 
@@ -673,8 +673,8 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
 
     /* For now, all ambiguous keys are going to be double-quoted */
     if ( parent->status == syck_lvl_map && lvl->ncount == 0 ) {
-        if ( force_style != block_plain ) {
-            force_style = block_2quote;
+        if ( force_style != scalar_plain ) {
+            force_style = scalar_2quote;
         }
     }
 
@@ -688,23 +688,23 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
     /* Write the text node */
     switch ( force_style )
     {
-        case block_1quote:
+        case scalar_1quote:
             syck_emit_1quoted( e, force_width, str, len );
         break;
 
-        case block_2quote:
+        case scalar_2quote:
             syck_emit_2quoted( e, force_width, str, len );
         break;
 
-        case block_fold:
+        case scalar_fold:
             syck_emit_folded( e, force_width, keep_nl, str, len );
         break;
 
-        case block_literal:
+        case scalar_literal:
             syck_emit_literal( e, keep_nl, str, len );
         break;
 
-        case block_plain:
+        case scalar_plain:
             syck_emitter_write( e, str, len );
         break;
     }

@@ -3,7 +3,7 @@
 
                              . syck .
 
-                         [ version 0.51 ]
+                         [ version 0.52 ]
 
 
 
@@ -101,3 +101,5 @@ A simple Ruby YAML::load could be built like so:
 For most C developers, it should be a no-brainer to bring
 basic YAML serialization to PHP, Tcl, Cocoa, etc.
 
+Instructions for using Syck's API are available in the
+README.EXT in this very same directory.

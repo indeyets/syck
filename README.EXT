@@ -1,0 +1,127 @@
+$Id$
+
+This is the documentation for libsyck and describes how to extend it.
+
+= Overview =
+
+Syck is designed to take a YAML stream and a symbol table and move
+data between the two.  Simply provide callback functions which
+understand the symbol table you are keeping.
+
+Syck also includes a simple symbol table implementation.
+
+== YAML Parser ==
+
+Syck's YAML parser is extremely simple.  After setting up a
+SyckParser struct, along with callback functions for loading
+node data, use syck_parse() to start reading data.  Since
+syck_parse() only reads single documents, the stream can be
+managed between calls to syck_parse().
+
+The parser has four callbacks: one for reading from the IO
+source, one for handling errors that show up, one for
+handling nodes as they come in, one for handling bad
+anchors in the document.  Nodes are loaded in the order they
+appear in the YAML document, however nested nodes are loaded 
+before their parent.
+
+=== How to Write a Node Handler ===
+
+Inside the node handler, the normal process should be:
+
+1. Convert the SyckNode data to a structure meaningful
+   to your application.
+
+2. Check for the bad anchor caveat described in the
+   next section.
+
+3. Add the new structure to the symbol table attached
+   to the parser.  Found at parser->syms.
+
+4. Return the SYMID reserved in the symbol table.
+
+=== A Note About Anchors in Parsing ===
+
+YAML anchors can be recursive.  This means deeper alias nodes
+can be loaded before the anchor.  This is the trickiest part
+of the loading process.
+
+Assuming this YAML document:
+
+  --- &a [*a]
+
+The loading process is:
+
+1. Load alias *a by calling parser->bad_anchor_handler, which
+   reserves a SYMID in the symbol table.
+
+2. The `a' anchor is added to Syck's own anchor table,
+   referencing the SYMID above.
+
+3. When the anchor &a is found, the SyckNode created is
+   given the SYMID of the bad anchor node above.  (Usually
+   nodes created at this stage have the `id' blank.)
+
+4. The parser->handler function is called with that node.
+   Check for node->id in the handler and overwrite the
+   bad anchor node with the new node.
+
+=== Parser API ===
+
+ See <syck.h> for layouts of SyckParser and SyckNode.
+
+ SyckParser * 
+ syck_new_parser()
+
+  Creates a new Syck parser.
+
+ void
+ syck_free_parser( SyckParser *p )
+
+  Frees the parser, as well as associated symbol tables
+  and buffers.
+
+ void
+ syck_parser_implicit_typing( SyckParser *p, int on )
+
+  Toggles implicit typing of builtin YAML types.  If
+  this is passed a zero, YAML builtin types will be
+  ignored (!int, !float, etc.)  The default is 1.
+
+ void
+ syck_parser_taguri_expansion( SyckParser *p, int on )
+
+  Toggles expansion of types in full taguri.  This
+  defaults to 1 and is recommended to stay as 1.
+  Turning this off removes a layer of abstraction
+  that will cause incompatibilities between YAML
+  documents of differing versions.
+
+ void 
+ syck_parser_handler( SyckParser *p, SyckNodeHandler h )
+
+  Assign a callback function as a node handler.  The
+  SyckNodeHandler signature looks like this:
+
+    SYMID node_handler( SyckParser *p, SyckNode *n )
+
+ void
+ syck_parser_error_handler( SyckParser *p, SyckErrorHandler h )
+
+  Assign a callback function as an error handler.  The
+  SyckErrorHandler signature looks like this:
+
+   void error_handler( SyckParser *p, char *str )
+
+ void
+ syck_parser_bad_anchor_handler( SyckParser *p, SyckBadAnchorHandler h ) 
+
+  Assign a callback function as a bad anchor handler.
+  The SyckBadAnchorHandler signature looks like this:
+
+   SyckNode *bad_anchor_handler( SyckParser *p, char *anchor )
+
+ void
+ syck_parser_file( SyckParser *p, FILE *f, SyckIoFileRead r )
+
+  

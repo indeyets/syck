@@ -13,7 +13,7 @@
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
-#define SYCK_VERSION    "0.51"
+#define SYCK_VERSION    "0.52"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
@@ -94,10 +94,11 @@ enum map_part {
 
 enum scalar_style {
     scalar_none,
-    scalar_plain,
     scalar_1quote,
     scalar_2quote,
-    scalar_block
+    scalar_fold,
+    scalar_literal,
+    scalar_plain
 };
 
 /*
@@ -268,15 +269,6 @@ enum doc_stage {
     doc_processing
 };
 
-enum block_styles {
-    block_arbitrary,
-    block_1quote,
-    block_2quote,
-    block_fold,
-    block_literal,
-    block_plain
-};
-
 /*
  * Emitter struct
  */
@@ -296,7 +288,7 @@ struct _syck_emitter {
     /* Best width on folded scalars */
     int best_width;
     /* Use literal[1] or folded[2] blocks on all text? */
-    enum block_styles block_style;
+    enum scalar_style style;
     /* Stage of written document */
     enum doc_stage stage;
     /* Level counter */
@@ -374,7 +366,7 @@ void syck_emitter_write( SyckEmitter *, char *, long );
 void syck_emitter_escape( SyckEmitter *, char *, long );
 void syck_emitter_flush( SyckEmitter *, long );
 void syck_emit( SyckEmitter *, st_data_t );
-void syck_emit_scalar( SyckEmitter *, char *, enum block_styles, int, int, char, char *, long );
+void syck_emit_scalar( SyckEmitter *, char *, enum scalar_style, int, int, char, char *, long );
 void syck_emit_1quoted( SyckEmitter *, int, char *, long );
 void syck_emit_2quoted( SyckEmitter *, int, char *, long );
 void syck_emit_folded( SyckEmitter *, int, char, char *, long );
@@ -424,15 +416,19 @@ void syck_free_node( SyckNode * );
 void syck_free_members( SyckNode * );
 SyckNode *syck_new_str( char *, enum scalar_style );
 SyckNode *syck_new_str2( char *, long, enum scalar_style );
+void syck_replace_str( SyckNode *, char *, enum scalar_style );
+void syck_replace_str2( SyckNode *, char *, long, enum scalar_style );
 void syck_str_blow_away_commas( SyckNode * );
 char *syck_str_read( SyckNode * );
 SyckNode *syck_new_map( SYMID, SYMID );
+void syck_map_empty( SyckNode * );
 void syck_map_add( SyckNode *, SYMID, SYMID );
 SYMID syck_map_read( SyckNode *, enum map_part, long );
 void syck_map_assign( SyckNode *, enum map_part, long, SYMID );
 long syck_map_count( SyckNode * );
 void syck_map_update( SyckNode *, SyckNode * );
 SyckNode *syck_new_seq( SYMID );
+void syck_seq_empty( SyckNode * );
 void syck_seq_add( SyckNode *, SYMID );
 SYMID syck_seq_read( SyckNode *, long );
 long syck_seq_count( SyckNode * );

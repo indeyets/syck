@@ -56,11 +56,11 @@ typedef struct {
  * symbols and constants
  */
 static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_input, s_intern, s_yaml_new, s_yaml_initialize, s_to_yaml, s_write, s_set_resolver;
-static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_value;
+static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_type_id_set, s_style, s_style_set, s_value, s_value_set;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
-static VALUE cDate, cParser, cResolver, cNode, cCNode, cPrivateType, cDomainType, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
-static VALUE cOut, cOutSeq, cOutMap, cOutSeq, cOutScalar;
+static VALUE sym_1quote, sym_2quote, sym_fold, sym_literal, sym_plain;
+static VALUE cDate, cNode, cMap, cSeq, cScalar, cOut, cParser, cResolver, cPrivateType, cDomainType, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
 static VALUE oDefaultResolver, oGenericResolver;
 
 /*
@@ -324,52 +324,6 @@ syck_merge_i( entry, hsh )
 		rb_funcall( hsh, s_update, 1, entry );
 	}
     return Qnil;
-}
-
-/*
- * build a syck node from a Ruby VALUE
- */
-SyckNode *
-rb_new_syck_node( obj, type_id )
-    VALUE obj, type_id;
-{
-    long i = 0;
-    SyckNode *n = NULL;
-
-    if (rb_respond_to(obj, s_to_str)) 
-    {
-	    StringValue(obj);	       /* possible conversion */
-        n = syck_alloc_str();
-        n->data.str->ptr = RSTRING(obj)->ptr;
-        n->data.str->len = RSTRING(obj)->len;
-    }
-	else if ( rb_obj_is_kind_of( obj, rb_cArray ) )
-    {
-        n = syck_alloc_seq();
-        for ( i = 0; i < RARRAY(obj)->len; i++ )
-        {
-            syck_seq_add(n, rb_ary_entry(obj, i));
-        }
-    }
-    else if ( rb_obj_is_kind_of( obj, rb_cHash ) )
-    {
-        VALUE keys;
-        n = syck_alloc_map();
-        keys = rb_funcall( obj, s_keys, 0 );
-        for ( i = 0; i < RARRAY(keys)->len; i++ )
-        {
-            VALUE key = rb_ary_entry(keys, i);
-            syck_map_add(n, key, rb_hash_aref(obj, key));
-        }
-    }
-
-    if ( n!= NULL && rb_respond_to( type_id, s_to_str ) ) 
-    {
-        StringValue(type_id);
-        n->type_id = syck_strndup( RSTRING(type_id)->ptr, RSTRING(type_id)->len );
-    }
-
-    return n;
 }
 
 /*
@@ -656,9 +610,9 @@ rb_syck_load_handler(p, n)
     }
 
     /*
-     * Check for resolver
+     * Create node, 
      */
-    obj = rb_funcall( resolver, s_node_import, 1, Data_Wrap_Struct( cCNode, NULL, NULL, n ) );
+    obj = rb_funcall( resolver, s_node_import, 1, Data_Wrap_Struct( cNode, NULL, NULL, n ) );
 
     /*
      * ID already set, let's alter the symbol table to accept the new object
@@ -1203,7 +1157,7 @@ syck_genericresolver_node_import( self, node )
 {
     SyckNode *n;
     int i = 0;
-    VALUE t, obj, v = Qnil;
+    VALUE t = Qnil, obj = Qnil, v = Qnil;
 	Data_Get_Struct(node, SyckNode, n);
 
     obj = rb_obj_alloc(cNode);
@@ -1298,15 +1252,333 @@ syck_privatetype_initialize( self, type_id, val )
 }
 
 /*
- * YAML::Syck::Node.initialize
+ * Mark node contents.
+ */
+static void
+syck_node_mark( n )
+    SyckNode *n;
+{
+    int i;
+    switch ( n->kind )
+    {
+        case syck_seq_kind:
+            for ( i = 0; i < n->data.list->idx; i++ )
+            {
+                rb_gc_mark( (VALUE)syck_seq_read( n, i ) );
+            }
+        break;
+
+        case syck_map_kind:
+            for ( i = 0; i < n->data.pairs->idx; i++ )
+            {
+				rb_gc_mark( syck_map_read( n, map_key, i ) );
+				rb_gc_mark( syck_map_read( n, map_value, i ) );
+            }
+        break;
+    }
+}
+
+/*
+ * YAML::Syck::Scalar.allocate
  */
 VALUE
-syck_node_initialize( self, type_id, val )
+syck_scalar_alloc( class )
+    VALUE class;
+{
+    SyckNode *node;
+    VALUE obj;
+    node = syck_alloc_str();
+    obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
+    node->id = obj;
+    return obj;
+}
+
+/*
+ * YAML::Syck::Scalar.initialize
+ */
+VALUE
+syck_scalar_initialize( self, type_id, val, style )
+    VALUE self, type_id, val, style;
+{
+    rb_ivar_set( self, s_kind, sym_scalar );
+    rb_funcall( self, s_type_id_set, 1, type_id );
+    rb_funcall( self, s_value_set, 1, val );
+    rb_funcall( self, s_style_set, 1, style );
+    return self;
+}
+
+/*
+ * YAML::Syck::Scalar.style=
+ */
+VALUE
+syck_scalar_style_set( self, style )
+    VALUE self, style;
+{
+    SyckNode *node;
+	Data_Get_Struct( self, SyckNode, node );
+
+    if ( NIL_P( style ) )
+    {
+        node->data.str->style = scalar_none;
+    } 
+    else if ( style == sym_1quote )
+    {
+        node->data.str->style = scalar_1quote;
+    } 
+    else if ( style == sym_2quote )
+    {
+        node->data.str->style = scalar_2quote;
+    } 
+    else if ( style == sym_fold )
+    {
+        node->data.str->style = scalar_fold;
+    } 
+    else if ( style == sym_literal )
+    {
+        node->data.str->style = scalar_literal;
+    } 
+    else if ( style == sym_plain )
+    {
+        node->data.str->style = scalar_plain;
+    }
+
+    rb_ivar_set( self, s_style, style );
+    return self;
+}
+
+/*
+ * YAML::Syck::Scalar.value=
+ */
+VALUE
+syck_scalar_value_set( self, val )
+    VALUE self, val;
+{
+    SyckNode *node;
+	Data_Get_Struct( self, SyckNode, node );
+
+    val = rb_check_string_type( val );
+    if ( !NIL_P( val ) ) {
+        StringValue( val );
+        syck_replace_str2( node, RSTRING(val)->ptr, RSTRING(val)->len, scalar_none );
+    }
+
+    rb_ivar_set( self, s_value, val );
+    return val;
+}
+
+/*
+ * YAML::Syck::Seq.allocate
+ */
+VALUE
+syck_seq_alloc( class )
+    VALUE class;
+{
+    SyckNode *node;
+    VALUE obj;
+    node = syck_alloc_seq();
+    obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
+    node->id = obj;
+    return obj;
+}
+
+/*
+ * YAML::Syck::Seq.initialize
+ */
+VALUE
+syck_seq_initialize( self, type_id, val )
     VALUE self, type_id, val;
 {
-    rb_ivar_set( self, s_type_id, type_id );
-    rb_ivar_set( self, s_value, val );
+    SyckNode *node;
+	Data_Get_Struct( self, SyckNode, node );
+
+    rb_ivar_set( self, s_kind, sym_seq );
+    rb_funcall( self, s_type_id_set, 1, type_id );
+    rb_funcall( self, s_value_set, 1, val );
     return self;
+}
+
+/*
+ * YAML::Syck::Seq.value=
+ */
+VALUE
+syck_seq_value_set( self, val )
+    VALUE self, val;
+{
+    SyckNode *node;
+	Data_Get_Struct( self, SyckNode, node );
+
+    val = rb_check_array_type( val );
+    if ( !NIL_P( val ) ) {
+        int i;
+        syck_seq_empty( node );
+        for ( i = 0; i < RARRAY( val )->len; i++ )
+        {
+            syck_seq_add( node, rb_ary_entry(val, i) );
+        }
+    }
+
+    rb_ivar_set( self, s_value, val );
+    return val;
+}
+
+/*
+ * YAML::Syck::Seq.add
+ */
+VALUE
+syck_seq_add_m( self, val )
+    VALUE self, val;
+{
+    SyckNode *node;
+	Data_Get_Struct( self, SyckNode, node );
+
+    syck_seq_add( node, val );
+    rb_ary_push( rb_ivar_get( self, s_value ), val );
+
+    return self;
+}
+
+/*
+ * YAML::Syck::Map.allocate
+ */
+VALUE
+syck_map_alloc( class )
+    VALUE class;
+{
+    SyckNode *node;
+    VALUE obj;
+    node = syck_alloc_map();
+    obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
+    node->id = obj;
+    return obj;
+}
+
+/*
+ * YAML::Syck::Map.initialize
+ */
+VALUE
+syck_map_initialize( self, type_id, val )
+    VALUE self, type_id, val;
+{
+    SyckNode *node;
+	Data_Get_Struct( self, SyckNode, node );
+
+
+    if ( !NIL_P( val ) )
+    {
+        VALUE keys;
+        int i;
+        if ( !rb_obj_is_kind_of( val, rb_cHash ) )
+        {
+            rb_raise( rb_eTypeError, "wrong argument type" );
+        }
+
+        keys = rb_funcall( val, s_keys, 0 );
+        for ( i = 0; i < RARRAY(keys)->len; i++ )
+        {
+            VALUE key = rb_ary_entry(keys, i);
+            syck_map_add( node, key, rb_hash_aref(val, key) );
+        }
+    }
+
+    rb_ivar_set( self, s_kind, sym_seq );
+    rb_funcall( self, s_type_id_set, 1, type_id );
+    rb_funcall( self, s_value_set, 1, val );
+    return self;
+}
+
+/*
+ * YAML::Syck::Map.value=
+ */
+VALUE
+syck_map_value_set( self, val )
+    VALUE self, val;
+{
+    SyckNode *node;
+	Data_Get_Struct( self, SyckNode, node );
+
+    if ( !NIL_P( val ) )
+    {
+        VALUE keys;
+        int i;
+        if ( !rb_obj_is_kind_of( val, rb_cHash ) )
+        {
+            rb_raise( rb_eTypeError, "wrong argument type" );
+        }
+
+        syck_map_empty( node );
+        keys = rb_funcall( val, s_keys, 0 );
+        for ( i = 0; i < RARRAY(keys)->len; i++ )
+        {
+            VALUE key = rb_ary_entry(keys, i);
+            syck_map_add( node, key, rb_hash_aref(val, key) );
+        }
+    }
+
+    rb_ivar_set( self, s_value, val );
+    return val;
+}
+
+/*
+ * YAML::Syck::Map.add
+ */
+VALUE
+syck_map_add_m( self, key, val )
+    VALUE self, key, val;
+{
+    SyckNode *node;
+	Data_Get_Struct( self, SyckNode, node );
+
+    syck_map_add( node, key, val );
+    rb_hash_aset( rb_ivar_get( self, s_value ), key, val );
+
+    return self;
+}
+
+/*
+ * Cloning method for all node types
+ */
+VALUE
+syck_node_init_copy( copy, orig )
+    VALUE copy, orig;
+{
+    SyckNode *copy_n;
+    SyckNode *orig_n;
+
+    if ( copy == orig )
+        return copy;
+
+    if ( TYPE( orig ) != T_DATA ||
+         RDATA( orig )->dfree != ( RUBY_DATA_FUNC )syck_free_node )
+    {
+        rb_raise( rb_eTypeError, "wrong argument type" );
+    }
+
+    Data_Get_Struct( orig, SyckNode, orig_n );
+    Data_Get_Struct( copy, SyckNode, copy_n );
+    MEMCPY( copy_n, orig_n, SyckNode, 1 );
+    return copy;
+}
+
+/*
+ * YAML::Syck::Node#type_id=
+ */
+VALUE
+syck_node_type_id_set( self, type_id )
+    VALUE self, type_id;
+{
+    SyckNode *node;
+	Data_Get_Struct( self, SyckNode, node );
+
+    if ( node->type_id != NULL ) S_FREE( node->type_id );
+
+    if ( NIL_P( type_id ) ) {
+        node->type_id = NULL;
+    } else {
+        node->type_id = StringValuePtr( type_id );
+    }
+
+    rb_ivar_set( self, s_type_id, type_id );
+    return type_id;
 }
 
 VALUE
@@ -1366,42 +1638,41 @@ rb_syck_emitter_handler(e, data)
     SyckEmitter *e;
     st_data_t data;
 {
-    VALUE n = (VALUE)data;
-    VALUE tag = rb_ivar_get( n, s_type_id ); 
-    char *type_id = NULL;
-    if ( !NIL_P( tag ) ) {
-        StringValue(tag);
-        type_id = RSTRING(tag)->ptr;
-    }
+    SyckNode *n;
+	Data_Get_Struct((VALUE)data, SyckNode, n);
 
-	if ( rb_obj_is_kind_of( n, cOutMap ) )
+    switch (n->kind)
     {
-        int i;
-        syck_emit_map( e, type_id );
-        for ( i = 0; i < RARRAY(n)->len; i++ )
-        {
-            syck_emit_item( e, (st_data_t)rb_ary_entry(n, i) );
-        }
-        syck_emit_end( e );
-    }
-    else if ( rb_obj_is_kind_of( n, cOutSeq ) )
-    {
-        int i;
-        syck_emit_seq( e, type_id );
-        for ( i = 0; i < RARRAY(n)->len; i++ )
-        {
-            syck_emit_item( e, (st_data_t)rb_ary_entry(n, i) );
-        }
-        syck_emit_end( e );
-    }
-    else if ( rb_obj_is_kind_of( n, cOutScalar ) )
-    {
-        syck_emit_scalar( e, type_id, block_arbitrary, 0, 0, 0, RSTRING(n)->ptr, RSTRING(n)->len );
-    }
-    else
-    {
-        // TODO: Handle strange nodes
-        syck_emit_scalar( e, NULL, block_arbitrary, 0, 0, 0, "<Unknown>", 9 );
+        case syck_map_kind:
+            {
+                int i;
+                syck_emit_map( e, n->type_id );
+                for ( i = 0; i < n->data.pairs->idx; i++ )
+                {
+                    syck_emit_item( e, syck_map_read( n, map_key, i ) );
+                    syck_emit_item( e, syck_map_read( n, map_value, i ) );
+                }
+                syck_emit_end( e );
+            }
+        break;
+
+        case syck_seq_kind:
+            {
+                int i;
+                syck_emit_seq( e, n->type_id );
+                for ( i = 0; i < n->data.list->idx; i++ )
+                {
+                    syck_emit_item( e, syck_seq_read( n, i ) );
+                }
+                syck_emit_end( e );
+            }
+        break;
+
+        case syck_str_kind:
+            {
+                syck_emit_scalar( e, n->type_id, n->data.str->style, 0, 0, 0, n->data.str->ptr, n->data.str->len );
+            }
+        break;
     }
 }
 
@@ -1604,7 +1875,7 @@ VALUE
 syck_out_map( self, type_id )
     VALUE self, type_id;
 {
-    VALUE map = rb_funcall( cOutMap, s_new, 2, rb_ivar_get( self, s_emitter ), type_id );
+    VALUE map = rb_funcall( cMap, s_new, 2, type_id, rb_hash_new() );
     syck_out_mark( rb_ivar_get( self, s_emitter ), map );
     rb_yield( map );
     return map;
@@ -1617,7 +1888,7 @@ VALUE
 syck_out_seq( self, type_id )
     VALUE self, type_id;
 {
-    VALUE seq = rb_funcall( cOutSeq, s_new, 2, rb_ivar_get( self, s_emitter ), type_id );
+    VALUE seq = rb_funcall( cSeq, s_new, 2, type_id, rb_ary_new() );
     syck_out_mark( rb_ivar_get( self, s_emitter ), seq );
     rb_yield( seq );
     return seq;
@@ -1630,78 +1901,9 @@ VALUE
 syck_out_scalar( self, type_id, str, block )
     VALUE self, type_id, str, block;
 {
-    VALUE scalar = rb_funcall( cOutScalar, s_new, 3, type_id, str, block );
+    VALUE scalar = rb_funcall( cScalar, s_new, 3, type_id, str, block );
     syck_out_mark( rb_ivar_get( self, s_emitter ), scalar );
     return scalar;
-}
-
-/*
- * YAML::Syck::OutMap#initialize
- */
-VALUE
-syck_out_map_initialize( self, emitter, type_id )
-    VALUE self, emitter, type_id;
-{
-    VALUE super_argv[1];
-    rb_call_super( 0, super_argv );
-    rb_ivar_set( self, s_type_id, type_id );
-    rb_ivar_set( self, s_emitter, emitter );
-    return self;
-}
-
-/*
- * YAML::Syck::OutMap#add
- */
-VALUE
-syck_out_map_add( self, k, v )
-    VALUE self, k, v;
-{
-    VALUE emitter = rb_ivar_get( self, s_emitter );
-    rb_funcall( self, s_push, 1, rb_funcall( k, s_to_yaml, 1, emitter ) );
-    rb_funcall( self, s_push, 1, rb_funcall( v, s_to_yaml, 1, emitter ) );
-    return self;
-}
-
-/*
- * YAML::Syck::OutSeq#initialize
- */
-VALUE
-syck_out_seq_initialize( self, emitter, type_id )
-    VALUE self, emitter, type_id;
-{
-    VALUE super_argv[1];
-    rb_call_super( 0, super_argv );
-    rb_ivar_set( self, s_type_id, type_id );
-    rb_ivar_set( self, s_emitter, emitter );
-    return self;
-}
-
-/*
- * YAML::Syck::OutSeq#add
- */
-VALUE
-syck_out_seq_add( self, v )
-    VALUE self, v;
-{
-    VALUE emitter = rb_ivar_get( self, s_emitter );
-    v = rb_funcall( v, s_to_yaml, 1, emitter );
-    rb_funcall( self, s_push, 1, v );
-    return self;
-}
-
-/*
- * YAML::Syck::OutScalar#initialize
- */
-VALUE
-syck_out_scalar_initialize( self, type_id, str, block )
-    VALUE self, type_id, str, block;
-{
-    VALUE super_argv[1];
-    super_argv[0] = str;
-    rb_call_super( 1, super_argv );
-    rb_ivar_set( self, s_type_id, type_id );
-    rb_ivar_set( self, s_block, block );
-    return self;
 }
 
 /*
@@ -1752,12 +1954,16 @@ Init_syck()
 
     s_block = rb_intern("@block");
     s_tags = rb_intern("@tags");
-    s_kind = rb_intern("@kind");
     s_name = rb_intern("@name");
     s_options = rb_intern("@options");
+    s_kind = rb_intern("@kind");
     s_type_id = rb_intern("@type_id");
+    s_type_id_set = rb_intern("type_id=");
     s_resolver = rb_intern("@resolver");
+    s_style = rb_intern("@style");
+    s_style_set = rb_intern("style=");
     s_value = rb_intern("@value");
+    s_value_set = rb_intern("value=");
     s_out = rb_intern("@out");
 	s_input = rb_intern("@input");
 
@@ -1767,6 +1973,11 @@ Init_syck()
     sym_map = ID2SYM(rb_intern("map"));
     sym_scalar = ID2SYM(rb_intern("scalar"));
     sym_seq = ID2SYM(rb_intern("seq"));
+    sym_1quote = ID2SYM(rb_intern("1quote"));
+    sym_2quote = ID2SYM(rb_intern("2quote"));
+    sym_fold = ID2SYM(rb_intern("fold"));
+    sym_literal = ID2SYM(rb_intern("literal"));
+    sym_plain = ID2SYM(rb_intern("plain"));
 
     /*
      * Define YAML::Syck::Resolver class
@@ -1804,21 +2015,38 @@ Init_syck()
     rb_define_method(cParser, "set_resolver", syck_parser_set_resolver, 1);
 
     /*
-     * Define YAML::Syck::CNode class
-     */
-    cCNode = rb_define_class_under( rb_syck, "CNode", rb_cObject );
-
-    /*
      * Define YAML::Syck::Node class
      */
     cNode = rb_define_class_under( rb_syck, "Node", rb_cObject );
-    rb_define_attr( cNode, "kind", 1, 1 );
-    rb_define_attr( cNode, "type_id", 1, 1 );
-    rb_define_attr( cNode, "value", 1, 1 );
-    rb_define_attr( cNode, "anchor", 1, 1 );
+    rb_define_method( cNode, "initialize_copy", syck_node_init_copy, 1 );
+    rb_define_attr( cNode, "emitter", 1, 1 );
     rb_define_attr( cNode, "resolver", 1, 1 );
-    rb_define_method( cNode, "initialize", syck_node_initialize, 2 );
+    rb_define_attr( cNode, "kind", 1, 0 );
+    rb_define_attr( cNode, "type_id", 1, 0 );
+    rb_define_attr( cNode, "value", 1, 0 );
+    rb_define_method( cNode, "type_id=", syck_node_type_id_set, 1 );
     rb_define_method( cNode, "transform", syck_node_transform, 0);
+
+    /*
+     * Define YAML::Syck::Scalar, YAML::Syck::Seq, YAML::Syck::Map --
+     *     all are the publicly usable variants of YAML::Syck::Node
+     */
+    cScalar = rb_define_class_under( rb_syck, "Scalar", cNode );
+    rb_define_alloc_func( cScalar, syck_scalar_alloc );
+    rb_define_attr( cNode, "value", 1, 0 );
+    rb_define_method( cScalar, "initialize", syck_scalar_initialize, 2 );
+    rb_define_method( cScalar, "value=", syck_scalar_value_set, 1 );
+    rb_define_method( cScalar, "style=", syck_scalar_style_set, 1 );
+    cSeq = rb_define_class_under( rb_syck, "Seq", cNode );
+    rb_define_alloc_func( cSeq, syck_seq_alloc );
+    rb_define_method( cSeq, "initialize", syck_seq_initialize, 2 );
+    rb_define_method( cSeq, "value=", syck_seq_value_set, 1 );
+    rb_define_method( cSeq, "add", syck_seq_add_m, 1 );
+    cMap = rb_define_class_under( rb_syck, "Map", cNode );
+    rb_define_alloc_func( cMap, syck_map_alloc );
+    rb_define_method( cMap, "initialize", syck_map_initialize, 2 );
+    rb_define_method( cMap, "value=", syck_map_value_set, 1 );
+    rb_define_method( cMap, "add", syck_map_add_m, 2 );
 
     /*
      * Define YAML::Syck::PrivateType class
@@ -1865,18 +2093,6 @@ Init_syck()
     rb_define_method( cOut, "map", syck_out_map, 1 );
     rb_define_method( cOut, "seq", syck_out_seq, 1 );
     rb_define_method( cOut, "scalar", syck_out_scalar, 3 );
-    cOutMap = rb_define_class_under( rb_syck, "OutMap", rb_cArray );
-    rb_define_attr( cOutMap, "emitter", 1, 1 );
-    rb_define_method( cOutMap, "initialize", syck_out_map_initialize, 2 );
-    rb_define_method( cOutMap, "add", syck_out_map_add, 2 );
-    cOutSeq = rb_define_class_under( rb_syck, "OutSeq", rb_cArray );
-    rb_define_attr( cOutSeq, "emitter", 1, 1 );
-    rb_define_method( cOutSeq, "initialize", syck_out_seq_initialize, 2 );
-    rb_define_method( cOutSeq, "add", syck_out_seq_add, 1 );
-    cOutScalar = rb_define_class_under( rb_syck, "OutScalar", rb_cString );
-    rb_define_method( cOutScalar, "initialize", syck_out_scalar_initialize, 3 );
-    rb_define_attr( cOutScalar, "type_id", 1, 1 );
-    rb_define_attr( cOutScalar, "block", 1, 1 );
 
     /*
      * Define YAML::Syck::Emitter class

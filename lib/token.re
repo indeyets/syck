@@ -145,7 +145,11 @@
         } \
         n->data.str->ptr = qstr; \
         n->data.str->len = qidx; \
-        n->data.str->style = scalar_block; \
+        if ( blockType == BLOCK_LIT ) { \
+            n->data.str->style = scalar_literal; \
+        } else { \
+            n->data.str->style = scalar_fold; \
+        } \
         if ( qidx > 0 ) \
         { \
             if ( nlDoWhat != NL_KEEP ) \
