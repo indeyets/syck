@@ -48,7 +48,7 @@ class Hash
                 if self.class == Hash or self.class == YAML::SpecialHash
                     "tag:yaml.org,2002:map"
                 else
-                    tag_as
+                    taguri
                 end
             out.map( hash_type ) do |map|
                 each do |k, v|
@@ -129,7 +129,7 @@ class Array
                 if self.class == Array
                     "tag:yaml.org,2002:seq"
                 else
-                    tag_as
+                    taguri
                 end
             out.seq( array_type ) do |seq|
                 each do |x|

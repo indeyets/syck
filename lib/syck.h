@@ -67,8 +67,8 @@ extern "C" {
 #define BLOCK_FOLD  10
 #define BLOCK_LIT   20
 #define BLOCK_PLAIN 30
-#define NL_CHOMP    130
-#define NL_KEEP     140
+#define NL_CHOMP    40
+#define NL_KEEP     50
 
 /*
  * Node definitions
@@ -377,8 +377,8 @@ void syck_emit( SyckEmitter *, st_data_t );
 void syck_emit_scalar( SyckEmitter *, char *, enum block_styles, int, int, char, char *, long );
 void syck_emit_1quoted( SyckEmitter *, int, char *, long );
 void syck_emit_2quoted( SyckEmitter *, int, char *, long );
-void syck_emit_folded( SyckEmitter *, int, char *, long );
-void syck_emit_literal( SyckEmitter *, char *, long );
+void syck_emit_folded( SyckEmitter *, int, char, char *, long );
+void syck_emit_literal( SyckEmitter *, char, char *, long );
 void syck_emit_seq( SyckEmitter *, char * );
 void syck_emit_item( SyckEmitter *, st_data_t );
 void syck_emit_map( SyckEmitter *, char * );

@@ -1382,12 +1382,12 @@ rb_syck_emitter_handler(e, data)
     }
     else if ( rb_obj_is_kind_of( n, cOutScalar ) )
     {
-        syck_emit_scalar( e, type_id, block_arbitrary, 0, 0, 40, RSTRING(n)->ptr, RSTRING(n)->len );
+        syck_emit_scalar( e, type_id, block_arbitrary, 0, 0, 0, RSTRING(n)->ptr, RSTRING(n)->len );
     }
     else
     {
         // TODO: Handle strange nodes
-        syck_emit_scalar( e, NULL, block_arbitrary, 0, 0, 40, "<Unknown>", 9 );
+        syck_emit_scalar( e, NULL, block_arbitrary, 0, 0, 0, "<Unknown>", 9 );
     }
 }
 

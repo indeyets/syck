@@ -514,6 +514,10 @@ void syck_emit_indent( SyckEmitter *e )
 #define SCAN_INDIC_S    128
 /* Contains a flow indicator */
 #define SCAN_INDIC_C    256
+/* Ends without newlines */
+#define SCAN_NONL_E     512
+/* Ends with many newlines */
+#define SCAN_MANYNL_E   1024
 
 /*
  * Basic printable test for LATIN-1 characters.
@@ -541,6 +545,13 @@ syck_scan_scalar( int req_width, char *cursor, long len )
            cursor[0] == '?' || cursor[0] == ',' ) &&
            cursor[1] == ' ' ) {
             flags |= SCAN_INDIC_S;
+    }
+
+    /* ending newlines */
+    if ( cursor[len-1] != '\n' ) {
+        flags |= SCAN_NONL_E;
+    } else if ( len > 1 && cursor[len-2] == '\n' ) {
+        flags |= SCAN_MANYNL_E;
     }
 
     /* scan string */
@@ -583,6 +594,7 @@ syck_scan_scalar( int req_width, char *cursor, long len )
         }
     }
 
+    /* printf( "---STR---\n%s\nFLAGS: %d\n", cursor, flags ); */
     return flags;
 }
 /*
@@ -602,8 +614,13 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
     scan = syck_scan_scalar( force_indent, str, len );
     implicit = syck_match_implicit( str, len );
 
+    /* quote strings which default to implicits */
     implicit = syck_taguri( YAML_DOMAIN, implicit, strlen( implicit ) );
-    syck_emit_tag( e, tag, implicit );
+    if ( syck_tagcmp( tag, implicit ) != 0 && syck_tagcmp( tag, "tag:yaml.org,2002:str" ) == 0 ) {
+        force_style = block_2quote;
+    } else {
+        syck_emit_tag( e, tag, implicit );
+    }
     S_FREE( implicit );
 
     /* if still arbitrary, sniff a good block style. */
@@ -642,6 +659,13 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
         force_indent = e->indent;
     }
 
+    /* Fix the ending newlines */
+    if ( scan & SCAN_NONL_E ) {
+        keep_nl = NL_CHOMP;
+    } else if ( scan & SCAN_MANYNL_E ) {
+        keep_nl = NL_KEEP;
+    }
+
     /* Write the text node */
     switch ( force_style )
     {
@@ -654,11 +678,11 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
         break;
 
         case block_fold:
-            syck_emit_folded( e, force_width, str, len );
+            syck_emit_folded( e, force_width, keep_nl, str, len );
         break;
 
         case block_literal:
-            syck_emit_literal( e, str, len );
+            syck_emit_literal( e, keep_nl, str, len );
         break;
 
         case block_plain:
@@ -800,19 +824,28 @@ void syck_emit_2quoted( SyckEmitter *e, int width, char *str, long len )
 /*
  * Outputs a literal block.
  */
-void syck_emit_literal( SyckEmitter *e, char *str, long len )
+void syck_emit_literal( SyckEmitter *e, char keep_nl, char *str, long len )
 {
     char *mark = str;
     char *start = str;
     char *end = str;
     syck_emitter_write( e, "|", 1 );
+    if ( keep_nl == NL_CHOMP ) {
+        syck_emitter_write( e, "-", 1 );
+    } else if ( keep_nl == NL_KEEP ) {
+        syck_emitter_write( e, "+", 1 );
+    }
     syck_emit_indent( e );
     while ( mark < str + len ) {
         if ( *mark == '\n' ) {
             end = mark;
             if ( *start != ' ' && *start != '\n' && *end != '\n' && *end != ' ' ) end += 1;
             syck_emitter_write( e, start, end - start );
-            syck_emit_indent( e );
+            if ( mark + 1 == str + len ) {
+                if ( keep_nl != NL_KEEP ) syck_emitter_write( e, "\n", 1 );
+            } else {
+                syck_emit_indent( e );
+            }
             start = mark + 1;
         }
         mark++;
@@ -826,12 +859,17 @@ void syck_emit_literal( SyckEmitter *e, char *str, long len )
 /*
  * Outputs a folded block.
  */
-void syck_emit_folded( SyckEmitter *e, int width, char *str, long len )
+void syck_emit_folded( SyckEmitter *e, int width, char keep_nl, char *str, long len )
 {
     char *mark = str;
     char *start = str;
     char *end = str;
     syck_emitter_write( e, ">", 1 );
+    if ( keep_nl == NL_CHOMP ) {
+        syck_emitter_write( e, "-", 1 );
+    } else if ( keep_nl == NL_KEEP ) {
+        syck_emitter_write( e, "+", 1 );
+    }
     syck_emit_indent( e );
     if ( width <= 0 ) width = e->best_width;
     while ( mark < str + len ) {
@@ -842,7 +880,11 @@ void syck_emit_folded( SyckEmitter *e, int width, char *str, long len )
                 if ( *start != ' ' && *start != '\n' && *end != '\n' && *end != ' ' ) {
                     syck_emitter_write( e, "\n", 1 );
                 }
-                syck_emit_indent( e );
+                if ( mark + 1 == str + len ) {
+                    if ( keep_nl != NL_KEEP ) syck_emitter_write( e, "\n", 1 );
+                } else {
+                    syck_emit_indent( e );
+                }
                 start = mark + 1;
             break;
 
