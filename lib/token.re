@@ -947,6 +947,28 @@ ANY                 {   goto Comment;
 
 }
 
+/*
+ * Temporary home of the bytecode parser.
+ */
+int
+sycklex_bytecode( YYSTYPE *sycklval, SyckParser *parser )
+{
+    int doc_level = 0;
+    syck_parser_ptr = parser;
+    if ( YYCURSOR == NULL ) 
+    {
+        syck_parser_read( parser );
+    }
+
+    if ( parser->force_token != 0 )
+    {
+        int t = parser->force_token;
+        parser->force_token = 0;
+        return t;
+    }
+
+}
+
 int
 is_newline( char *ptr )
 {

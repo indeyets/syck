@@ -129,7 +129,7 @@ syck_type_id_to_uri( char *type_id )
 
 /*!re2c
 
-TAG = "taguri" ;
+TAG = "tag" ;
 XPRIVATE = "x-private" ;
 WD = [A-Za-z0-9_] ;
 WDD = [A-Za-z0-9_-] ;

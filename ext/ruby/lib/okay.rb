@@ -23,7 +23,7 @@ module Okay
     # Transfer methods for okay types
     TRANSFER_TYPES = {}
     OKAY_TYPE_DOMAIN = 'okay.yaml.org,2002'
-    OKAY_TYPE_REGEXP = /^taguri:#{ Regexp::quote( OKAY_TYPE_DOMAIN ) }:([^;]+)((?:;\w+)*)$/
+    OKAY_TYPE_REGEXP = /^tag:#{ Regexp::quote( OKAY_TYPE_DOMAIN ) }:([^;]+)((?:;\w+)*)$/
 
     #
     # Base class for Okay types
@@ -138,7 +138,7 @@ module Okay
     end
 
     def Okay.make_schema_flexhash( type_root )
-        type_root = YAML::transfer( 'taguri:ruby.yaml.org,2002:flexhash', type_root )
+        type_root = YAML::transfer( 'tag:ruby.yaml.org,2002:flexhash', type_root )
         type_root.collect! { |e|
             if Hash === e[1]
                 e[1].each { |k,v|

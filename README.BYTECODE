@@ -119,7 +119,7 @@ codes:
           is a fully qualified URL, with a semicolon.  The transfer
           method applies only to the node immediately following, 
           and thus it can be seen as a modifier like the anchor.
-          For example, "Ttaguri:yaml.org,2002:str\nSstring\n" is 
+          For example, "Ttag:yaml.org,2002:str\nSstring\n" is 
           normalized, "T!str\nSstring\n" is not. 
   #
   # Formatting bytecodes (lower case)

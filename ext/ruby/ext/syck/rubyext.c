@@ -613,7 +613,7 @@ rb_syck_bad_anchor_handler(p, a)
     char *a;
 {
     SyckNode *badanc = syck_new_map( rb_str_new2( "name" ), rb_str_new2( a ) );
-    badanc->type_id = syck_strndup( "taguri:ruby.yaml.org,2002:object:YAML::Syck::BadAlias", 53 );
+    badanc->type_id = syck_strndup( "tag:ruby.yaml.org,2002:object:YAML::Syck::BadAlias", 53 );
     return badanc;
 }
 
@@ -933,7 +933,7 @@ syck_loader_transfer( self, type, val )
         int transferred = 0;
         VALUE scheme, name, type_hash, domain = Qnil, type_proc = Qnil;
         VALUE type_uri = rb_str_new2( taguri );
-        VALUE str_taguri = rb_str_new2("taguri");
+        VALUE str_taguri = rb_str_new2("tag");
         VALUE str_xprivate = rb_str_new2("x-private");
         VALUE str_yaml_domain = rb_str_new2(YAML_DOMAIN);
         VALUE parts = rb_str_split( type_uri, ":" );
