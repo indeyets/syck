@@ -1,4 +1,4 @@
-released: { name: Syck, version: 0.28 }
+released: { name: Syck, version: 0.29 }
 for: [ Ruby, PHP, Python ]
 by: why the lucky stiff
 about: >

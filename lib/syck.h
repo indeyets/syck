@@ -10,7 +10,7 @@
 #ifndef SYCK_H
 #define SYCK_H
 
-#define SYCK_VERSION    "0.28"
+#define SYCK_VERSION    "0.29"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
@@ -149,7 +149,7 @@ enum syck_level_status {
 
 struct _syck_parser {
     // Root node
-    SYMID root;
+    SYMID root, root_on_error;
     // Implicit typing flag
     int implicit_typing, taguri_expansion;
     // Scripting language function to handle nodes
@@ -220,6 +220,7 @@ long syck_io_file_read( char *, SyckIoFile *, long, long );
 long syck_io_str_read( char *, SyckIoStr *, long, long );
 SyckParser *syck_new_parser();
 void syck_free_parser( SyckParser * );
+void syck_parser_set_root_on_error( SyckParser *, SYMID );
 void syck_parser_implicit_typing( SyckParser *, int );
 void syck_parser_taguri_expansion( SyckParser *, int );
 void syck_parser_handler( SyckParser *, SyckNodeHandler );

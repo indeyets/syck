@@ -132,7 +132,7 @@
     if ( *YYCURSOR == '\0' ) \
     { \
         ict = -1; \
-        start = YYCURSOR; \
+        start = YYCURSOR - 1; \
     } \
     else if ( *YYLINEPTR == ' ' ) \
     { \
@@ -763,7 +763,7 @@ yyerror( char *msg )
     if ( syck_parser_ptr->error_handler == NULL )
         syck_parser_ptr->error_handler = syck_default_error_handler;
 
-    syck_parser_ptr->root = 0;
+    syck_parser_ptr->root = syck_parser_ptr->root_on_error;
     (syck_parser_ptr->error_handler)(syck_parser_ptr, msg);
 }
 

@@ -74,7 +74,7 @@ atom	: word_rep
             */
            $$ = syck_hdlr_add_alias( (SyckParser *)parser, $1 );
         }
-        | indent_open atom indent_end
+        | indent_open atom indent_flex_end
         {
            $$ = $2;
         }
@@ -107,6 +107,10 @@ indent_end      : IEND
                 ;
 
 indent_sep      : INDENT
+                ;
+
+indent_flex_end : IEND
+                | indent_sep indent_flex_end
                 ;
 
 /*
