@@ -365,6 +365,12 @@ YINDENT             {   /* Isolate spaces */
                             goto Document;
                         }
 
+                        /* Ignore indentation inside inlines */
+                        if ( lvl->status == syck_lvl_inline )
+                        {
+                            goto Document;
+                        }
+
                         /* Check for open indent */
                         ENSURE_YAML_IEND(lvl, indt_len);
                         ENSURE_YAML_IOPEN(lvl, indt_len, 0);
@@ -391,12 +397,12 @@ CDELIMS             {   POP_LEVEL();
 
 [-?] ENDSPC         {   ENSURE_YAML_IOPEN(lvl, YYTOKEN - YYLINEPTR, 1);
                         FORCE_NEXT_TOKEN(YAML_IOPEN);
-                        if ( is_newline( YYCURSOR ) || is_newline( YYCURSOR - 1 ) )
+                        if ( *YYCURSOR == '#' || is_newline( YYCURSOR ) || is_newline( YYCURSOR - 1 ) )
                         {
                             YYCURSOR--; 
                             ADD_LEVEL((YYTOKEN + 1) - YYLINEPTR, syck_lvl_doc);
                         }
-                        else
+                        else /* spaces followed by content uses the space as indentation */
                         {
                             ADD_LEVEL(YYCURSOR - YYLINEPTR, syck_lvl_doc);
                         }
@@ -534,6 +540,17 @@ INLINEX             {   if ( plvl->status != syck_lvl_inline )
                             }
                             QUOTECATS(qstr, qcapa, qidx, YYTOKEN, YYCURSOR - YYTOKEN);
                             goto Plain2;
+                        }
+                        else
+                        {
+                            /* trim spaces off the end in case of indent */
+                            char *walker = qstr + qidx - 1;
+                            while ( walker > qstr && ( *walker == '\n' || *walker == ' ' ) )
+                            {
+                                qidx--;
+                                walker[0] = '\0';
+                                walker--;
+                            }
                         }
                         RETURN_IMPLICIT();
                     }

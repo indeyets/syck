@@ -1,6 +1,6 @@
 --- %YAML:1.0 
 test: Sequence of scalars 
-spec: A1 
+spec: 2.1
 yaml: | 
   - Mark McGwire 
   - Sammy Sosa 
@@ -14,7 +14,7 @@ ruby: |
  
 --- 
 test: Mapping of scalars to scalars 
-spec: A2 
+spec: 2.2
 yaml: | 
   hr:  65 
   avg: 0.278 
@@ -28,84 +28,78 @@ ruby: |
  
 --- 
 test: Mapping of scalars to sequences 
-spec: A3 
+spec: 2.3
 yaml: | 
     american: 
        - Boston Red Sox 
        - Detroit Tigers 
        - New York Yankees 
-       - Texas Rangers 
     national: 
        - New York Mets 
        - Chicago Cubs 
        - Atlanta Braves 
-       - Montreal Expos 
 perl: | 
     { american =>  
         [ 'Boston Red Sox', 'Detroit Tigers',  
-          'New York Yankees', 'Texas Rangers' ], 
+          'New York Yankees' ], 
       national => 
         [ 'New York Mets', 'Chicago Cubs',  
-          'Atlanta Braves', 'Montreal Expos' ]  
+          'Atlanta Braves' ]  
     } 
 python: | 
     [ 
     { 
     'american':  
         ['Boston Red Sox', 'Detroit Tigers',  
-        'New York Yankees', 'Texas Rangers'], 
+        'New York Yankees'], 
     'national': 
         ['New York Mets', 'Chicago Cubs', 
-        'Atlanta Braves', 'Montreal Expos'] 
+        'Atlanta Braves'] 
     } 
     ] 
 ruby: | 
     { 'american' =>  
         [ 'Boston Red Sox', 'Detroit Tigers',  
-          'New York Yankees', 'Texas Rangers' ], 
+          'New York Yankees' ], 
       'national' => 
         [ 'New York Mets', 'Chicago Cubs',  
-          'Atlanta Braves', 'Montreal Expos' ]  
+          'Atlanta Braves' ]  
     } 
  
 --- 
 test: Sequence of mappings 
-spec: A4 
+spec: 2.4
 yaml: | 
     -  
       name: Mark McGwire 
       hr:   65 
       avg:  0.278 
-      rbi:  147 
     -  
       name: Sammy Sosa 
       hr:   63 
       avg:  0.288 
-      rbi:  141 
 perl: | 
     [ 
-      {name => 'Mark McGwire', hr => 65, avg => 0.278, rbi => 147}, 
-      {name => 'Sammy Sosa',   hr => 63, avg => 0.288, rbi => 141} 
+      {name => 'Mark McGwire', hr => 65, avg => 0.278}, 
+      {name => 'Sammy Sosa',   hr => 63, avg => 0.288} 
     ] 
 python: | 
     [[  
         { 
         'name': 'Mark McGwire', 
         'hr': 65, 
-        'avg': 0.278, 
-        'rbi': 147 
+        'avg': 0.278
         }, 
         { 
         'name': 'Sammy Sosa', 
         'hr': 63, 
-        'avg': 0.288, 
-        'rbi': 141 
+        'avg': 0.288
         } 
     ]] 
 ruby: | 
     [ 
-      {'name' => 'Mark McGwire', 'hr' => 65, 'avg' => 0.278, 'rbi' => 147}, 
-      {'name' => 'Sammy Sosa', 'hr' => 63, 'avg' => 0.288, 'rbi' => 141} 
+      {'name' => 'Mark McGwire', 'hr' => 65, 'avg' => 0.278}, 
+      {'name' => 'Sammy Sosa', 'hr' => 63, 'avg' => 0.288} 
     ] 
  
 --- 
@@ -152,7 +146,7 @@ ruby: |
  
 --- 
 test: Sequence of sequences 
-spec: A5 
+spec: 2.5
 yaml: | 
   - [ name         , hr , avg   ] 
   - [ Mark McGwire , 65 , 0.278 ] 
@@ -178,11 +172,13 @@ ruby: |
  
 --- 
 test: Mapping of mappings 
-spec: A6 
+spec: 2.6
 yaml: | 
-  Mark McGwire: {hr: 65, avg: 0.278}  
-  Sammy Sosa:   {hr: 63, 
-                 avg: 0.288} 
+  Mark McGwire: {hr: 65, avg: 0.278}
+  Sammy Sosa: {
+      hr: 63,
+      avg: 0.288
+    }
 perl-xxx: | 
   {  
     'Mark McGwire' => { 'hr' => 65, 'avg' => 0.278 }, 
@@ -204,17 +200,20 @@ ruby: |
   } 
  
 --- 
-test: Two documents, one stream 
-spec: B1 
+test: Two documents in a stream each with a
+      leading comment
+spec: 2.7 
 yaml: | 
-  --- 
-  name: Mark McGwire 
-  hr:   65 
-  avg:  0.278 
-  --- 
-  name: Sammy Sosa 
-  hr:   63 
-  avg:  0.288 
+  # Ranking of 1998 home runs
+  ---
+  - Mark McGwire
+  - Sammy Sosa
+  - Ken Griffey
+  
+  # Team ranking
+  ---
+  - Chicago Cubs
+  - St Louis Cardinals
 perl: | 
   { name => 'Mark McGwire', 'hr' => 65, 'avg' => 0.278 }, 
   { name => 'Sammy Sosa', 'hr' => 63, 'avg' => 0.288 } 
@@ -225,30 +224,37 @@ python: |
   ] 
 ruby: | 
   y = Stream.new 
-  y.add( { 'name' => 'Mark McGwire', 'hr' => 65, 'avg' => 0.278 } ) 
-  y.add( { 'name' => 'Sammy Sosa', 'hr' => 63, 'avg' => 0.288 } ) 
+  y.add( [ 'Mark McGwire', 'Sammy Sosa', 'Ken Griffey' ] ) 
+  y.add( [ 'Chicago Cubs', 'St Louis Cardinals' ] ) 
 documents: 2 
  
 --- 
-test: Document with leading comment 
-spec: B2 
+test: Play by play feed from a game
+spec: 2.8
 yaml: | 
-   # Ranking of players by 
-   # 1998 season home runs. 
-   --- 
-      - Mark McGwire 
-      - Sammy Sosa 
-      - Ken Griffey 
+  ---
+  time: 20:03:20
+  player: Sammy Sosa
+  action: strike (miss)
+  ...
+  ---
+  time: 20:03:47
+  player: Sammy Sosa
+  action: grand slam
+  ...
 perl: | 
-   [ 'Mark McGwire', 'Sammy Sosa', 'Ken Griffey' ] 
+  [ 'Mark McGwire', 'Sammy Sosa', 'Ken Griffey' ] 
 python: | 
-   [[ 'Mark McGwire', 'Sammy Sosa', 'Ken Griffey' ]] 
+  [[ 'Mark McGwire', 'Sammy Sosa', 'Ken Griffey' ]] 
 ruby: | 
-   [ 'Mark McGwire', 'Sammy Sosa', 'Ken Griffey' ] 
+  y = Stream.new 
+  y.add( {"player"=>"Sammy Sosa", "time"=>72200, "action"=>"strike (miss)"} )
+  y.add( {"player"=>"Sammy Sosa", "time"=>72227, "action"=>"grand slam"} )
+documents: 2 
  
 --- 
 test: Single document with two comments 
-spec: B3 
+spec: 2.9
 yaml: | 
   hr: # 1998 hr ranking 
     - Mark McGwire 
@@ -275,8 +281,9 @@ ruby: |
  
 --- 
 test: Node for Sammy Sosa appears twice in this document 
-spec: B4 
+spec: 2.10 
 yaml: | 
+   ---
    hr: 
       - Mark McGwire 
       # Following node labeled SS 
@@ -304,7 +311,7 @@ ruby: |
  
 --- 
 test: Mapping between sequences 
-spec: B5 
+spec: 2.11
 yaml: | 
    ? # PLAY SCHEDULE 
      - Detroit Tigers 
@@ -324,90 +331,77 @@ ruby: |
  
 --- 
 test: Sequence key shortcut 
-spec: B6 
+spec: 2.12
 yaml: | 
-   invoice: 34843 
-   date   : 2001-01-23 
-   bill-to: Chris Dumars 
-   product: 
-      - item    : Super Hoop 
-        quantity: 1 
-      - item    : Basketball 
-        quantity: 4 
-      - item    : Big Shoes 
-        quantity: 1 
+  ---
+  # products purchased
+  - item    : Super Hoop
+    quantity: 1
+  - item    : Basketball
+    quantity: 4
+  - item    : Big Shoes
+    quantity: 1
 perl: | 
-   {  
-      invoice => 34843,  
-      date => '2001-01-23', 
-      'bill-to' => 'Chris Dumars', 
-      product => [  
-         { item => 'Super Hoop', quantity => 1 }, 
-         { item => 'Basketball', quantity => 4 }, 
-         { item => 'Big Shoes',  quantity => 1 }  
-      ]  
-   } 
+  [  
+     { item => 'Super Hoop', quantity => 1 }, 
+     { item => 'Basketball', quantity => 4 }, 
+     { item => 'Big Shoes',  quantity => 1 }  
+  ]  
+   
 ruby: | 
-   {  
-      'invoice' => 34843, 'date' => Date.new( 2001, 1, 23 ), 
-      'bill-to' => 'Chris Dumars', 'product' => 
-      [  
-         { 'item' => 'Super Hoop', 'quantity' => 1 }, 
-         { 'item' => 'Basketball', 'quantity' => 4 }, 
-         { 'item' => 'Big Shoes', 'quantity' => 1 }  
-      ]  
-   } 
+  [  
+     { 'item' => 'Super Hoop', 'quantity' => 1 }, 
+     { 'item' => 'Basketball', 'quantity' => 4 }, 
+     { 'item' => 'Big Shoes', 'quantity' => 1 }  
+  ]  
 python: | 
-    [{ 
-        'invoice': 34843, 
-        'date': yaml.timestamp('2001-01-23'), 
-        'bill-to': 'Chris Dumars', 
-        'product': [ 
-             { 'item': 'Super Hoop', 'quantity': 1 }, 
-             { 'item': 'Basketball', 'quantity': 4 }, 
-             { 'item': 'Big Shoes',  'quantity': 1 }  
-        ] 
-    }] 
+  [ 
+       { 'item': 'Super Hoop', 'quantity': 1 }, 
+       { 'item': 'Basketball', 'quantity': 4 }, 
+       { 'item': 'Big Shoes',  'quantity': 1 }  
+  ] 
+  
  
 --- 
 test: Literal perserves newlines 
-spec: C1 
+spec: 2.13
 yaml: | 
+  # ASCII Art
   --- | 
-      \/|\/|
-      / |  |_
+    \//||\/||
+    // ||  ||_
 perl: | 
-  "\\/|\\/|\n/ |  |_\n" 
+  "\\//||\\/||\n// ||  ||_\n" 
 ruby: | 
-  "\\/|\\/|\n/ |  |_\n" 
+  "\\//||\\/||\n// ||  ||_\n" 
 python: | 
     [ 
         flushLeft( 
         """ 
-        \/|\/| 
-        / |  |_ 
+        \//||\/||
+        // ||  ||_
         """ 
         ) 
     ] 
  
 --- 
 test: Folded treats newlines as a space 
-spec: C2 
+spec: 2.14
 yaml: | 
-  --- > 
-      Mark McGwire's
-      year was crippled
-      by a knee injury.
+  ---
+    Mark McGwire's
+    year was crippled
+    by a knee injury.
 perl: | 
-  "Mark McGwire's year was crippled by a knee injury.\n" 
+  "Mark McGwire's year was crippled by a knee injury." 
 ruby: | 
-  "Mark McGwire's year was crippled by a knee injury.\n" 
+  "Mark McGwire's year was crippled by a knee injury."
 python: | 
-    [ "Mark McGwire's year was crippled by a knee injury.\n" ] 
+    [ "Mark McGwire's year was crippled by a knee injury." ] 
  
 --- 
 test: Newlines preserved for indented and blank lines 
-spec: C3 
+spec: 2.15
 yaml: | 
   --- > 
    Sammy Sosa completed another
@@ -438,7 +432,7 @@ python: |
  
 --- 
 test: Indentation determines scope 
-spec: C4 
+spec: 2.16
 yaml: | 
   name: Mark McGwire 
   accomplishment: > 
@@ -470,7 +464,7 @@ python: |
  
 --- 
 test: Quoted scalars 
-spec: C5 
+spec: 2.17
 yaml: | 
   unicode: "Sosa did fine.\u263A" 
   control: "\b1998\t1999\t2000\n" 
@@ -483,7 +477,7 @@ perl-not-working: |
     { 
         unicode => "Sosa did fine.\x{263A}", 
         control => "\x081998\t1999\t2000\n",  
-       hexesc  => "\r\n is \r\n", 
+        hexesc  => "\r\n is \r\n", 
         single  => '"Howdy!" he cried.', 
         quoted   => " # not a 'comment'.", 
         "tie-fighter" => '|\\-*-/|', 
@@ -510,14 +504,14 @@ python: |
 
 --- 
 test: Multiline flow scalars 
-spec: C6 
+spec: 2.18 
 yaml: |
-  plain: This unquoted
-         scalar spans
-         many lines.
-  quoted: "\
-    So does this quoted
-    scalar.\n"
+  plain:
+    This unquoted scalar
+    spans many lines.
+  
+  quoted: "So does this
+    quoted scalar.\n"
 perl-not-working: | 
   {  
     plain  => 'This unquoted scalar spans many lines.', 
@@ -537,10 +531,11 @@ python: |
  
 --- 
 test: Integers 
-spec: D1 
+spec: 2.19
 yaml: | 
   canonical: 12345 
   decimal: +12,345 
+  sexagecimal: 3:25:45
   octal: 014 
   hexadecimal: 0xC 
 perl: | 
@@ -554,6 +549,7 @@ ruby: |
   {  
     'canonical' => 12345,  
     'decimal' => 12345,  
+    'sexagecimal' => 12345,
     'octal' => '014'.oct,  
     'hexadecimal' => '0xC'.hex  
   } 
@@ -566,11 +562,13 @@ python: |
     } ] 
  
 --- 
+# FIX: spec shows parens around -inf and NaN
 test: Floating point 
-spec: D2 
+spec: 2.20
 yaml: | 
   canonical: 1.23015e+3 
   exponential: 12.3015e+02 
+  sexagecimal: 20:30.15
   fixed: 1,230.15 
   negative infinity: -.inf
   not a number: .NaN 
@@ -586,6 +584,7 @@ ruby: |
   {  
     'canonical' => 1230.15,  
     'exponential' => 1230.15,  
+    'sexagecimal' => 1230.15,  
     'fixed' => 1230.15, 
     'negative infinity' => -1.0/0.0, 
     'not a number' => 0.0/0.0 
@@ -604,12 +603,12 @@ python: |
  
 --- 
 test: Miscellaneous 
-spec: D3 
+spec: 2.21
 yaml: | 
-  'null': ~ 
-  'true': yes 
-  'false': no 
-  'string': '12345' 
+  null: ~ 
+  true: y
+  false: n 
+  string: '12345' 
 perl: | 
   { 
     null   => undef, 
@@ -619,9 +618,9 @@ perl: |
   } 
 ruby: |  
   {  
-    'null' => nil,  
-    'true' => true,  
-    'false' => false,  
+    nil => nil,  
+    true => true,  
+    false => false,  
     'string' => '12345'  
   } 
 python: | 
@@ -634,7 +633,7 @@ python: |
  
 ---
 test: Timestamps
-spec: D4
+spec: 2.22
 yaml: |
   canonical: 2001-12-15T02:59:43.1Z
   iso8601:  2001-12-14t21:59:43.10-05:00
@@ -679,7 +678,7 @@ ruby: |
 
 ---
 test: Various explicit families
-spec: D5
+spec: 2.23
 yaml: |
   not-date: !str 2002-04-28
   picture: !binary |
@@ -688,33 +687,37 @@ yaml: |
    Pz7Y6OjuDg4J+fn5OTk6enp
    56enmleECcgggoBADs=
 
-  hmm: !somewhere.com,2002/type |
-   family above is short for
-   tag:somewhere.com,2002:type
+  application specific tag: !!something |
+   The semantics of the tag
+   above may be different for
+   different documents.
 
 ruby-setup: |
-  YAML.add_domain_type( "somewhere.com,2002", /^type$/ ) { |type, val|
-    "SOMEWHERE: #{val}"
-  }
+  YAML.add_private_type( "something" ) do |type, val|
+    "SOMETHING: #{val}"
+  end
 ruby: |
   {
     'not-date' => '2002-04-28',
     'picture' => "GIF89a\f\000\f\000\204\000\000\377\377\367\365\365\356\351\351\345fff\000\000\000\347\347\347^^^\363\363\355\216\216\216\340\340\340\237\237\237\223\223\223\247\247\247\236\236\236i^\020' \202\n\001\000;",
-    'hmm' => "SOMEWHERE: family above is short for\ntag:somewhere.com,2002:type\n"
+    'application specific tag' => "SOMETHING: The semantics of the tag\nabove may be different for\ndifferent documents.\n"
   }
 
 ---
 test: Application specific family
-spec: D6
+spec: 2.24
 yaml: |
+  # Establish a tag prefix
   --- !clarkevans.com,2002/graph/^shape
+    # Use the prefix: shorthand for
+    # !clarkevans.com,2002/graph/circle
   - !^circle
-    center: &ORIGIN {x: 73, y: 129}
+    center: &ORIGIN {x: 73, 'y': 129}
     radius: 7
   - !^line # !clarkevans.com,2002/graph/line
     start: *ORIGIN
-    finish: { x: 89, y: 102 }
-  - !^text
+    finish: { x: 89, 'y': 102 }
+  - !^label
     start: *ORIGIN
     color: 0xFFEEBB
     value: Pretty vector drawing.
@@ -729,7 +732,7 @@ ruby-setup: |
   }
   one_shape_proc = Proc.new { |type, val|
     scheme, domain, type = type.split( /:/, 3 )
-    if val.is_a? Kernel::Hash
+    if val.is_a? ::Hash
       val['TYPE'] = "Shape: #{type}"
       val
     else
@@ -738,7 +741,7 @@ ruby-setup: |
   }
   YAML.add_domain_type( "clarkevans.com,2002", /^graph\/circle/, &one_shape_proc )
   YAML.add_domain_type( "clarkevans.com,2002", /^graph\/line/, &one_shape_proc )
-  YAML.add_domain_type( "clarkevans.com,2002", /^graph\/text/, &one_shape_proc )
+  YAML.add_domain_type( "clarkevans.com,2002", /^graph\/label/, &one_shape_proc )
 ruby: |
   [
     {
@@ -762,7 +765,7 @@ ruby: |
         "y" => 129
       }
     }, {
-      "TYPE" => "Shape: graph/text",
+      "TYPE" => "Shape: graph/label",
       "value" => "Pretty vector drawing.",
       "start" =>
       {
@@ -774,33 +777,61 @@ ruby: |
     "Shape Container"
   ]
 
+# ---
+# test: Unordered set
+# spec: 2.25
+# yaml: |
+#   # sets are represented as a
+#   # mapping where each key is
+#   # associated with the empty string
+#   --- !set
+#   ? Mark McGwire
+#   ? Sammy Sosa
+#   ? Ken Griff
+---
+test: Ordered mappings
+spec: 2.26
+yaml: |
+  # ordered maps are represented as
+  # a sequence of mappings, with
+  # each mapping having one key
+  --- !omap
+  - Mark McGwire: 65
+  - Sammy Sosa: 63
+  - Ken Griffy: 58
+ruby: |
+  Omap[
+    'Mark McGwire', 65,
+    'Sammy Sosa', 63,
+    'Ken Griffy', 58
+  ]
 ---
 test: Invoice
-spec: E1
+spec: 2.27
 yaml: |
   --- !clarkevans.com,2002/^invoice
   invoice: 34843
   date   : 2001-01-23
   bill-to: &id001
-    given  : Chris
-    family : Dumars
-    address:
-      lines: |
-        458 Walkman Dr.
-        Suite #292
-      city    : Royal Oak
-      state   : MI
-      postal  : 48046
+      given  : Chris
+      family : Dumars
+      address:
+          lines: |
+              458 Walkman Dr.
+              Suite #292
+          city    : Royal Oak
+          state   : MI
+          postal  : 48046
   ship-to: *id001
   product:
-    - sku         : BL394D
-      quantity    : 4
-      description : Basketball
-      price       : 450.00
-    - sku         : BL4438H
-      quantity    : 1
-      description : Super Hoop
-      price       : 2392.00
+      - sku         : BL394D
+        quantity    : 4
+        description : Basketball
+        price       : 450.00
+      - sku         : BL4438H
+        quantity    : 1
+        description : Super Hoop
+        price       : 2392.00
   tax  : 251.42
   total: 4443.52
   comments: >
@@ -825,7 +856,7 @@ ruby: |
 
 ---
 test: Log file
-spec: E2
+spec: 2.28
 yaml: |
   ---
   Time: 2001-11-23 15:01:42 -05:00
@@ -1073,7 +1104,7 @@ yaml: |
         family : Dumars 
 ruby-setup: | 
   YAML.add_domain_type( "domain.tld,2002", /(invoice|customer)/ ) { |type, val| 
-    if val.is_a? Kernel::Hash 
+    if val.is_a? ::Hash 
       scheme, domain, type = type.split( /:/, 3 )
       val['type'] = "domain #{type}" 
       val 

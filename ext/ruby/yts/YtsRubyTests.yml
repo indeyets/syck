@@ -52,18 +52,6 @@ ruby: |
       'case-insensitive' => /George McFly/i } 
  
 --- 
-test: Perl Regexps 
-brief: > 
-    Regexps may also be imported from serialized 
-    Perl. 
-yaml: | 
-    --- !perl/regexp: 
-      REGEXP: "R[Uu][Bb][Yy]$" 
-      MODIFIERS: i 
-ruby: | 
-    /R[Uu][Bb][Yy]$/i 
- 
---- 
 test: Struct class 
 brief: > 
     The Ruby Struct class is registered as a YAML 
@@ -157,7 +145,7 @@ yaml: |
     - sweater 
     - windbreaker 
 ruby-setup: | 
-    class MyArray < Kernel::Array; end 
+    class MyArray < ::Array; end 
 ruby: | 
     outerwear = MyArray.new 
     outerwear << 'jacket' 
@@ -180,7 +168,7 @@ ruby-setup: |
     # Note that the @me attribute isn't dumped 
     # because the default to_yaml is trained 
     # to dump as a regular Hash. 
-    class MyHash < Kernel::Hash 
+    class MyHash < ::Hash 
       attr_accessor :me 
       def initialize 
         @me = "Why" 

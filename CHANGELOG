@@ -1,6 +1,6 @@
 --- %YAML:1.0
 - version: 0.45
-  date: 2004-08-02
+  date: 2004-08-06
   changes:
     CHANGELOG: Added.
 
@@ -8,12 +8,22 @@
 
     lib/syck.c: clear parser on init. thanks, ts. [ruby-core:02931]
 
+    lib/implicit.re: 
+    - added sexagecimal float#base60.
+
     lib/token.re: 
     - using newline_len to handline CR-LFs.  
       "\000" was showing up on folded blocks which
       stopped at EOF. 
 
     - buffer underflow. thanks, ts. [ruby-core:02929]
+
+    - indentation absolutely ignored when processing flow collections.
+
+    - plain scalars are trimmed if indentation follows in an ambiguous
+      flow collection.
+
+    - fixed problem with comments sharing line with opening of block sequence.
 
     ext/ruby/lib/yaml/compat.rb: moved all ruby 1.6 -> ruby 1.8
       handling into compat.rb.
@@ -31,5 +41,9 @@
     - added YAML::load_file, YAML::parse_file.
     - added rdoc to beginning of lib.
 
-    ext/ruby/ext/syck/rubyext.c: set buffer after Data_Wrap_Struct to avoid possible GC.
-      [ruby-talk:104835]
+    ext/ruby/ext/syck/rubyext.c: 
+    - set buffer after Data_Wrap_Struct to avoid possible GC. [ruby-talk:104835]
+    - added float#base60 handling.
+
+    ext/ruby/yts/YtsSpecificationExamples.yml: new examples from the 1.0
+      working draft. [http://yaml.org/spec/]

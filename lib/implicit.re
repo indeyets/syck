@@ -65,13 +65,14 @@ INTSIXTY = SIGN? DIGIT DIGITSC* ( ":" [0-5]? DIGIT )+ ;
 INTCANON = SIGN? ( "0" | [1-9] DIGITSC* ) ;
 FLOATFIX = SIGN? DIGIT DIGITSC* "." DIGITSC* ;
 FLOATEXP = SIGN? DIGIT DIGITSC* "." DIGITSP* [eE] SIGN DIGIT+ ;
+FLOATSIXTY = SIGN? DIGIT DIGITSC* ( ":" [0-5]? DIGIT )+ "." DIGITSC* ;
 INF = ( "inf" | "Inf" | "INF" ) ;
 FLOATINF = [+]? "." INF ;
 FLOATNEGINF = [-] "." INF ;
 FLOATNAN = "." ( "nan" | "NaN" | "NAN" ) ;
 NULLTYPE = ( "~" | "null" | "Null" | "NULL" )? ;
-BOOLYES = ( "true" | "True" | "TRUE" | "yes" | "Yes" | "YES" | "on" | "On" | "ON" ) ;
-BOOLNO = ( "false" | "False" | "FALSE" | "no" | "No" | "NO" | "off" | "Off" | "OFF" ) ;
+BOOLYES = ( "yes" | "Yes" | "YES" | "true" | "True" | "TRUE" | "on" | "On" | "ON" ) ;
+BOOLNO = ( "no" | "No" | "NO" | "false" | "False" | "FALSE" | "off" | "Off" | "OFF" ) ;
 TIMEZ = ( "Z" | [-+] DIGIT DIGIT ( ":" DIGIT DIGIT )? ) ;
 TIMEYMD = YEAR "-" MON "-" MON ;
 TIMEISO = YEAR "-" MON "-" MON [Tt] MON ":" MON ":" MON ( "." DIGIT* )? TIMEZ ;
@@ -97,6 +98,8 @@ INTCANON NULL       {   return "int"; }
 FLOATFIX NULL       {   return "float#fix"; }
 
 FLOATEXP NULL       {   return "float#exp"; }
+
+FLOATSIXTY NULL     {   return "float#base60"; }
 
 FLOATINF NULL       {   return "float#inf"; }
 

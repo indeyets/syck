@@ -831,11 +831,12 @@ EOY
 
 	def test_spec_type_float
         map = { 'canonical' => 1230.15, 'exponential' => 1230.15, 'fixed' => 1230.15,
-			  'negative infinity' => -1.0/0.0 }
+			  'sexagecimal' => 1230.15, 'negative infinity' => -1.0/0.0 }
 		assert_parse_only( map, <<EOY )
 canonical: 1.23015e+3
 exponential: 12.3015e+02
 fixed: 1,230.15
+sexagecimal: 20:30.15
 negative infinity: -.inf
 EOY
 		nan = YAML::load( <<EOY
@@ -844,7 +845,7 @@ EOY
 		)
 		assert( nan['not a number'].nan? )
 
-        assert_bytecode( map, "D\nM\nScanonical\nS1.23015e+3\nSexponential\nS12.3015e+02\nSfixed\nS1,230.15\nSnegative infinity\nS-.inf\nE\n" )
+        assert_bytecode( map, "D\nM\nScanonical\nS1.23015e+3\nSexponential\nS12.3015e+02\nSfixed\nS1,230.15\nSsexagecimal\nS20:30.15\nSnegative infinity\nS-.inf\nE\n" )
 	end
 
 	def test_spec_type_misc
@@ -1223,19 +1224,19 @@ EOY
 		assert_parse_only( seq, <<EOY )
 - !clarkevans.com,2002/graph/^shape
   - !^circle
-    center: &ORIGIN {x: 73, y: 129}
+    center: &ORIGIN {'x': 73, 'y': 129}
     radius: 7
   - !^line # !clarkevans.com,2002/graph/line
     start: *ORIGIN
-    finish: { x: 89, y: 102 }
+    finish: { 'x': 89, 'y': 102 }
   - !^text
     start: *ORIGIN
     color: 0xFFEEBB
     value: Pretty vector drawing.
 EOY
         assert_bytecode( seq, "D\nQ\nT!clarkevans.com,2002/graph/^shape\nQ\n" +
-            "T!^circle\nM\nScenter\nAORIGIN\nM\nSx\nS73\nSy\nS129\nE\nSradius\nS7\nE\n" +
-            "T!^line\nc !clarkevans.com,2002/graph/line\nM\nSstart\nRORIGIN\nSfinish\nM\nSx\nS89\nSy\nS102\nE\nE\n" +
+            "T!^circle\nM\nScenter\nAORIGIN\nM\nSx\nS73\nTstr\nSy\nS129\nE\nSradius\nS7\nE\n" +
+            "T!^line\nc !clarkevans.com,2002/graph/line\nM\nSstart\nRORIGIN\nSfinish\nM\nSx\nS89\nTstr\nSy\nS102\nE\nE\n" +
             "T!^text\nM\nSstart\nRORIGIN\nScolor\nS0xFFEEBB\nSvalue\nSPretty vector drawing.\nE\nE\nE\n" )
 	end
 
