@@ -429,13 +429,35 @@ void syck_emit_tag( SyckEmitter *e, char *tag, char *ignore )
 {
     if ( tag == NULL ) return;
     if ( ignore != NULL && strcmp( tag, ignore ) == 0 && e->explicit_typing == 0 ) return;
+
+    /* global types */
     if ( strncmp( tag, "tag:", 4 ) == 0 ) {
+        int taglen = strlen( tag );
         syck_emitter_write( e, "!", 1 );
         if ( strncmp( tag + 4, YAML_DOMAIN, strlen( YAML_DOMAIN ) ) == 0 ) {
             int skip = 4 + strlen( YAML_DOMAIN ) + 1;
-            syck_emitter_write( e, tag + skip, strlen( tag ) - skip );
+            syck_emitter_write( e, tag + skip, taglen - skip );
+        } else {
+            char *subd = tag + 4;
+            while ( *subd != ':' && *subd != '\0' ) subd++;
+            if ( *subd == ':' ) {
+                if ( subd - tag > ( strlen( YAML_DOMAIN ) + 5 ) &&
+                     strncmp( subd - strlen( YAML_DOMAIN ), YAML_DOMAIN, strlen( YAML_DOMAIN ) ) == 0 ) {
+                    syck_emitter_write( e, tag + 4, ( subd - strlen( YAML_DOMAIN ) - ( tag + 4 ) ) );
+                    syck_emitter_write( e, "/", 1 );
+                    syck_emitter_write( e, subd + 1, ( tag + taglen ) - ( subd + 1 ) );
+                } else {
+                    syck_emitter_write( e, tag + 4, subd - ( tag + 4 ) );
+                    syck_emitter_write( e, "/", 1 );
+                    syck_emitter_write( e, subd + 1, ( tag + taglen ) - ( subd + 1 ) );
+                }
+            } else {
+                /* TODO: Invalid tag (no colon after domain) */
+            }
         }
         syck_emitter_write( e, " ", 1 );
+
+    /* private types */
     } else if ( strncmp( tag, "x-private:", 10 ) == 0 ) {
         syck_emitter_write( e, "!!", 2 );
         syck_emitter_write( e, tag + 10, strlen( tag ) - 10 );
@@ -460,7 +482,10 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
 {
     int mark = 0, end = 0;
     SyckLevel *lvl = syck_emitter_current_level( e );
-    syck_emit_tag( e, tag, "tag:yaml.org,2002:str" );
+    char *implicit = syck_match_implicit( str, len );
+    implicit = syck_taguri( YAML_DOMAIN, implicit, strlen( implicit ) );
+    syck_emit_tag( e, tag, implicit );
+    S_FREE( implicit );
 
     /* Determine block style */
     if ( force_style == block_arbitrary ) {

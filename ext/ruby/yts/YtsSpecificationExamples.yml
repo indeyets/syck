@@ -1144,11 +1144,11 @@ ruby: |
 syck: |
   struct test_node map[] = {
       { T_STR, 0, "not-date" },
-          { T_STR, 0, "2002-04-28" },
+          { T_STR, "tag:yaml.org,2002:str", "2002-04-28" },
       { T_STR, 0, "picture" },
-          { T_STR, 0, "R0lGODlhDAAMAIQAAP//9/X\n17unp5WZmZgAAAOfn515eXv\nPz7Y6OjuDg4J+fn5OTk6enp\n56enmleECcgggoBADs=\n" },
+          { T_STR, "tag:yaml.org,2002:binary", "R0lGODlhDAAMAIQAAP//9/X\n17unp5WZmZgAAAOfn515eXv\nPz7Y6OjuDg4J+fn5OTk6enp\n56enmleECcgggoBADs=\n" },
       { T_STR, 0, "application specific tag" },
-          { T_STR, 0, "The semantics of the tag\nabove may be different for\ndifferent documents.\n" },
+          { T_STR, "x-private:something", "The semantics of the tag\nabove may be different for\ndifferent documents.\n" },
       end_node
   };
   struct test_node stream[] = {
@@ -1268,13 +1268,13 @@ syck: |
       end_node
   };
   struct test_node seq[] = {
-      { T_MAP, 0, 0, map1 },
-      { T_MAP, 0, 0, map2 },
-      { T_MAP, 0, 0, map3 },
+      { T_MAP, "tag:clarkevans.com,2002:graph/circle", 0, map1 },
+      { T_MAP, "tag:clarkevans.com,2002:graph/line", 0, map2 },
+      { T_MAP, "tag:clarkevans.com,2002:graph/label", 0, map3 },
       end_node
   };
   struct test_node stream[] = {
-      { T_SEQ, 0, 0, seq },
+      { T_SEQ, "tag:clarkevans.com,2002:graph/shape", 0, seq },
       end_node
   };
 
