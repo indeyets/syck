@@ -127,7 +127,7 @@ syck_try_implicit( SyckNode *n )
 }
 
 void 
-syck_fold_format( char *fold, SyckNode *n )
+syck_fold_format( SyckNode *n, int blockType, int indt_len, int nlType )
 {
 }
 

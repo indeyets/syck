@@ -244,15 +244,11 @@ CDELIMS             {   lvl->status = syck_lvl_implicit;
 
 "!"                 {   goto TransferMethod; }
 
-"'"                 {   goto SingleQuote; 
-                    }
+"'"                 {   goto SingleQuote; }
 
-"\""                {   goto DoubleQuote; 
-                    }
+"\""                {   goto DoubleQuote; }
 
-BLOCK               {   YYCURSOR--;
-                        goto ScalarBlock; 
-                    }
+BLOCK               {   YYCURSOR--; goto ScalarBlock; }
 
 [ ]+                {   goto Document; }
 
@@ -293,6 +289,8 @@ Plain:
 Plain2: 
         YYTOKTMP = YYCURSOR;
 
+Plain3:
+
 /*!re2c
 
 ALLX                {   YYCURSOR = YYTOKTMP;
@@ -307,6 +305,8 @@ INLINEX             {   if ( plvl->status != syck_lvl_inline ) goto Plain2;
 ( LF | NULL )       {   YYCURSOR = YYTOKTMP;
                         RETURN_IMPLICIT();
                     }
+
+[ ]+                {   goto Plain3; }
 
 ANY                 {   goto Plain2; }
 
@@ -424,6 +424,38 @@ ANY                 {   goto TransferMethod; }
 
 ScalarBlock:
     {
+        int blockType = 0;
+        int nlDoWhat = 0;
+        char *yyt = YYTOKEN;
+        switch ( *yyt )
+        {
+            case '|': blockType = BLOCK_LIT; break;
+            case '>': blockType = BLOCK_FOLD; break;
+        }
+
+        while ( ++yyt <= YYCURSOR )
+        {
+            if ( *yyt == '-' )
+            {
+                nlDoWhat = NL_CHOMP;
+            }
+            else if ( *yyt == '+' )
+            {
+                nlDoWhat = NL_KEEP;
+            }
+            else if ( isdigit( *yyt ) )
+            {
+                SyckLevel *lvl = CURRENT_LEVEL();
+                if ( lvl->status != syck_lvl_block )
+                {
+                    int indt_len = lvl->spaces + strtol( yyt, NULL, 10 );
+                    ADD_LEVEL( indt_len );
+                    lvl->status = syck_lvl_block;
+                }
+            }
+        }
+
+        YYTOKEN = YYCURSOR;
         YYTOKTMP = YYCURSOR;
 
 /*!re2c
@@ -441,18 +473,21 @@ INDENT              {   int indt_len;
                         }
                         else if ( indt_len < lvl->spaces )
                         {
-                            POP_LEVEL();
                             YYCURSOR = YYTOKTMP;
                             yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );  
+                            syck_fold_format( yylval->nodeData, blockType, lvl->spaces, nlDoWhat );
+                            POP_LEVEL();
                             return BLOCK;
                         }
                         goto ScalarBlock;
                     }
 
 
-NULL                {   POP_LEVEL();
+NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
                         YYCURSOR = YYTOKTMP;
                         yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );  
+                        syck_fold_format( yylval->nodeData, blockType, lvl->spaces, nlDoWhat );
+                        POP_LEVEL();
                         return BLOCK; 
                     }
 

@@ -56,6 +56,11 @@ extern "C" {
 #define S_MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
 #define S_MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(n))
 
+#define BLOCK_FOLD  10
+#define BLOCK_LIT   20
+#define NL_CHOMP    30
+#define NL_KEEP     40
+
 //
 // Node definitions
 //
@@ -182,7 +187,7 @@ void syck_taguri( SyckNode *, char *, char *, int );
 int syck_add_sym( SyckParser *, char * );
 int syck_lookup_sym( SyckParser *, SYMID, char ** );
 int syck_try_implicit( SyckNode * );
-void syck_fold_format( char *, SyckNode * );
+void syck_fold_format( SyckNode *, int, int, int );
 void try_tag_implicit( SyckNode *, int );
 
 //
@@ -219,6 +224,7 @@ void syck_free_node( SyckNode * );
 void syck_free_members( SyckNode * );
 SyckNode *syck_new_str( char * );
 SyckNode *syck_new_str2( char *, long );
+void syck_str_blow_away_commas( SyckNode * );
 char *syck_str_read( SyckNode * );
 SyckNode *syck_new_map( SYMID, SYMID );
 void syck_map_add( SyckNode *, SYMID, SYMID );

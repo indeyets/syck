@@ -105,6 +105,24 @@ syck_new_str2( char *str, long len )
     return n;
 }
 
+void
+syck_str_blow_away_commas( SyckNode *n )
+{
+    char *go, *end;
+
+    go = n->data.str->ptr;
+    end = go + n->data.str->len;
+    while ( *(++go) != '\0' )
+    {
+        if ( *go == ',' )
+        {
+            n->data.str->len -= 1;
+            memmove( go, go + 1, end - go );
+            end -= 1;
+        }
+    }
+}
+
 char *
 syck_str_read( SyckNode *n )
 {

@@ -15,6 +15,11 @@
 static ID time_s_mkutc, s_read, s_binmode;
 VALUE cNode;
 
+static double zero()    { return 0.0; }
+static double one() { return 1.0; }
+static double inf() { return one() / zero(); }
+static double nan() { return zero() / zero(); }
+
 //
 // Read from String or IO classes
 // If str->end == 0; then IO; else String; end
@@ -168,11 +173,31 @@ rb_syck_load_handler(p, n)
             }
             else if ( strcmp( n->type_id, "int#oct" ) == 0 )
             {
-                obj = rb_cstr2inum( n->data.str->ptr, -8 );
+                obj = rb_cstr2inum( n->data.str->ptr, 8 );
             }
             else if ( strcmp( n->type_id, "int" ) == 0 )
             {
+                syck_str_blow_away_commas( n );
                 obj = rb_cstr2inum( n->data.str->ptr, 10 );
+            }
+            else if ( strcmp( n->type_id, "float#exp" ) == 0 || strcmp( n->type_id, "float#fix" ) == 0 )
+            {
+                double f;
+                syck_str_blow_away_commas( n );
+                f = strtod( n->data.str->ptr, NULL );
+                obj = rb_float_new( f );
+            }
+            else if ( strcmp( n->type_id, "float#nan" ) == 0 )
+            {
+                obj = rb_float_new( nan() );
+            }
+            else if ( strcmp( n->type_id, "float#inf" ) == 0 )
+            {
+                obj = rb_float_new( inf() );
+            }
+            else if ( strcmp( n->type_id, "float#neginf" ) == 0 )
+            {
+                obj = rb_float_new( -inf() );
             }
             else if ( strcmp( n->type_id, "timestamp" ) == 0 )
             {
@@ -276,6 +301,8 @@ rb_syck_load(argc, argv)
     syck_parser_implicit_typing( parser, 1 );
     syck_parser_taguri_expansion( parser, 0 );
     v = syck_parse( parser );
+    if ( v == NULL )
+        return Qnil;
     //v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
 
     return v;

@@ -42,6 +42,7 @@ NULL = [\000] ;
 ANY = [\001-\377] ;
 DIGIT = [0-9] ;
 DIGITSC = [0-9,] ;
+DIGITSP = [0-9.] ;
 YEAR = DIGIT DIGIT DIGIT DIGIT ;
 MON = DIGIT DIGIT ;
 SIGN = [-+] ;
@@ -50,6 +51,12 @@ OCT = [0-7,] ;
 INTHEX = SIGN? "0x" HEX+ ; 
 INTOCT = SIGN? "0" OCT+ ;
 INTCANON = SIGN? ( "0" | [1-9] DIGITSC* ) ;
+FLOATFIX = SIGN? DIGIT DIGITSC* "." DIGITSC* ;
+FLOATEXP = SIGN? DIGIT DIGITSC* "." DIGITSP* [eE] SIGN DIGIT+ ;
+INF = ( "inf" | "Inf" | "INF" ) ;
+FLOATINF = [+]? "." INF ;
+FLOATNEGINF = [-] "." INF ;
+FLOATNAN = "." ( "nan" | "NaN" | "NAN" ) ;
 NULLTYPE = ( "~" | "null" | "Null" | "NULL" ) ;
 BOOLYES = ( "true" | "True" | "TRUE" | "yes" | "Yes" | "YES" | "on" | "On" | "ON" ) ;
 BOOLNO = ( "false" | "False" | "FALSE" | "no" | "No" | "NO" | "off" | "Off" | "OFF" ) ;
@@ -70,6 +77,16 @@ INTHEX NULL         {   TAG_IMPLICIT( "int#hex" ); }
 INTOCT NULL         {   TAG_IMPLICIT( "int#oct" ); }
 
 INTCANON NULL       {   TAG_IMPLICIT( "int" ); }
+
+FLOATFIX NULL       {   TAG_IMPLICIT( "float#fix" ); }
+
+FLOATEXP NULL       {   TAG_IMPLICIT( "float#exp" ); }
+
+FLOATINF NULL       {   TAG_IMPLICIT( "float#inf" ); }
+
+FLOATNEGINF NULL    {   TAG_IMPLICIT( "float#neginf" ); }
+
+FLOATNAN NULL       {   TAG_IMPLICIT( "float#nan" ); }
 
 TIMEYMD NULL        {   TAG_IMPLICIT( "timestamp#ymd" ); }
 
