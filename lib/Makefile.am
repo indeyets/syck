@@ -14,6 +14,7 @@ libsyck_a_SOURCES = \
             syck.c \
             syck_st.c \
             gram.y \
+            bytecode.re \
             token.re \
             implicit.re
 

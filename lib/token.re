@@ -203,7 +203,9 @@ SyckParser *syck_parser_ptr = NULL;
  */
 void eat_comments( SyckParser * );
 int is_newline( char *ptr );
-int yywrap();
+int sycklex_yaml_utf8( YYSTYPE *, SyckParser * );
+int sycklex_bytecode_utf8( YYSTYPE *, SyckParser * );
+int syckwrap();
 
 /*
  * My own re-entrant sycklex() using re2c.
@@ -212,6 +214,30 @@ int yywrap();
  */
 int
 sycklex( YYSTYPE *sycklval, SyckParser *parser )
+{
+    switch ( parser->input_type )
+    {
+        case syck_yaml_utf8:
+        return sycklex_yaml_utf8( sycklval, parser );
+
+        case syck_yaml_utf16:
+            syckerror( "UTF-16 is not currently supported in Syck.\nPlease contribute code to help this happen!" );
+        break;
+
+        case syck_yaml_utf32:
+            syckerror( "UTF-32 is not currently supported in Syck.\nPlease contribute code to help this happen!" );
+        break;
+
+        case syck_bytecode_utf8:
+        return sycklex_bytecode_utf8( sycklval, parser );
+    }
+}
+
+/*
+ * Parser for standard YAML [UTF-8]
+ */
+int
+sycklex_yaml_utf8( YYSTYPE *sycklval, SyckParser *parser )
 {
     int doc_level = 0;
     syck_parser_ptr = parser;
@@ -943,28 +969,6 @@ ANY                 {   goto Comment;
 
 */
 
-    }
-
-}
-
-/*
- * Temporary home of the bytecode parser.
- */
-int
-sycklex_bytecode( YYSTYPE *sycklval, SyckParser *parser )
-{
-    int doc_level = 0;
-    syck_parser_ptr = parser;
-    if ( YYCURSOR == NULL ) 
-    {
-        syck_parser_read( parser );
-    }
-
-    if ( parser->force_token != 0 )
-    {
-        int t = parser->force_token;
-        parser->force_token = 0;
-        return t;
     }
 
 }

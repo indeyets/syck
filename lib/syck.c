@@ -158,6 +158,7 @@ syck_new_parser()
     p = S_ALLOC( SyckParser );
     p->lvl_capa = ALLOC_CT;
     p->levels = S_ALLOC_N( SyckLevel, p->lvl_capa ); 
+    p->input_type = syck_yaml_utf8;
     p->io_type = syck_io_str;
     p->io.str = NULL;
     p->syms = NULL;
@@ -279,6 +280,13 @@ syck_parser_bad_anchor_handler( SyckParser *p, SyckBadAnchorHandler hdlr )
 {
     ASSERT( p != NULL );
     p->bad_anchor_handler = hdlr;
+}
+
+void
+syck_parser_set_input_type( SyckParser *p, enum syck_parser_input input_type )
+{
+    ASSERT( p != NULL );
+    p->input_type = input_type;
 }
 
 void

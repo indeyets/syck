@@ -1,6 +1,6 @@
 require 'mkmf'
 
-[ 'emitter.c', 'gram.c', 'gram.h', 'handler.c', 'node.c', 'syck.c', 'syck.h', 'token.c', 'implicit.c' ].each do |codefile|
+[ 'emitter.c', 'gram.c', 'gram.h', 'handler.c', 'node.c', 'syck.c', 'syck.h', 'token.c', 'bytecode.c', 'implicit.c' ].each do |codefile|
     `cp #{File::dirname $0}/../../../../lib/#{codefile} #{codefile}`
 end
 

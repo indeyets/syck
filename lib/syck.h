@@ -143,6 +143,13 @@ enum syck_io_type {
     syck_io_file
 };
 
+enum syck_parser_input {
+    syck_yaml_utf8,
+    syck_yaml_utf16,
+    syck_yaml_utf32,
+    syck_bytecode_utf8
+};
+
 enum syck_level_status {
     syck_lvl_header,
     syck_lvl_doc,
@@ -189,6 +196,8 @@ struct _syck_parser {
     SyckErrorHandler error_handler;
     /* InvalidAnchor handler */
     SyckBadAnchorHandler bad_anchor_handler;
+    /* Parser input type */
+    enum syck_parser_input input_type;
     /* IO type */
     enum syck_io_type io_type;
     /* Custom buffer size */
@@ -378,7 +387,7 @@ void apply_seq_in_map( SyckParser *, SyckNode * );
 /*
  * Lexer prototypes
  */
-void syckerror( char *msg );
+void syckerror( char * );
 
 #ifndef ST_DATA_T_DEFINED
 typedef long st_data_t;
