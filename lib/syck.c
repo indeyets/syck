@@ -111,6 +111,7 @@ syck_new_parser()
     p->cursor = NULL;
     p->lineptr = NULL;
     p->token = NULL;
+    p->toktmp = NULL;
     p->marker = NULL;
     p->limit = NULL;
     p->linect = 0;
@@ -389,6 +390,7 @@ syck_move_tokens( SyckParser *p )
         p->token = p->buffer;
         p->marker -= count;
         p->cursor -= count;
+        p->toktmp -= count;
         p->limit -= count;
         p->lineptr -= count;
     }

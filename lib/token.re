@@ -10,27 +10,45 @@
 #include "syck.h"
 #include "gram.h"
 
-enum {
-    STATE_PLAIN = 0,
-    STATE_SINGLE_QUOTE,
-    STATE_DOUBLE_QUOTE
-};
-
+//
+// Allocate quoted strings in chunks
+//
 #define QUOTELEN    1024
+
+//
+// They do my bidding...
+//
 #define YYCTYPE     char
 #define YYCURSOR    parser->cursor
 #define YYMARKER    parser->marker
 #define YYLIMIT     parser->limit
 #define YYTOKEN     parser->token
+#define YYTOKTMP    parser->toktmp
 #define YYLINEPTR   parser->lineptr
 #define YYLINE      parser->linect
 #define YYFILL(n)   syck_parser_read(parser);
+
+//
+// Repositions the cursor at `n' offset from the token start.
+// Only works in `Header' and `Document' sections.
+//
 #define YYPOS(n)    YYCURSOR = YYTOKEN + n;
 
+//
+// Track line numbers
+//
 #define NEWLINE(ptr)    YYLINE++; YYLINEPTR = ptr + 1;
+
+//
+// I like seeing the level operations as macros...
+//
 #define ADD_LEVEL(len)  syck_parser_add_level( parser, len );
 #define CURRENT_LEVEL() syck_parser_current_level( parser );
 
+//
+// Nice little macro to ensure we're IOPENed to the current level.
+// * Only use this macro in the "Document" *
+//
 #define ENSURE_IOPEN(last_lvl, to_len, reset) \
         if ( last_lvl->spaces < to_len ) \
         { \
@@ -39,6 +57,10 @@ enum {
             return IOPEN; \
         } 
 
+//
+// Nice little macro to ensure closure of levels.
+// * Only use this macro in the "Document" *
+//
 #define ENSURE_IEND(last_lvl, to_len) \
         if ( last_lvl->spaces > to_len ) \
         { \
@@ -47,6 +69,10 @@ enum {
             return IEND; \
         }
 
+//
+// Concatenates quoted string items and manages allocation
+// to the quoted string
+//
 #define QUOTECAT(s, c, i, l) \
         { \
             if ( i + 1 >= c ) \
@@ -58,18 +84,25 @@ enum {
             s[i] = '\0'; \
         }
 
+//
+// Argjh!  I hate globals!  Here for yyerror() only!
+//
 SyckParser *syck_parser_ptr = NULL;
 
+//
+// My own re-entrant yylex() using re2c.
+// You really get used to the limited regexp.
+// It's really nice to not rely on backtracking and such.
+//
 int
 yylex( YYSTYPE *yylval, SyckParser *parser )
 {
-    int state;
     syck_parser_ptr = parser;
-    if ( parser->cursor == NULL ) syck_parser_read( parser );
+    if ( YYCURSOR == NULL ) syck_parser_read( parser );
 
 /*!re2c
 
-WORD = [A-Za-z0-9_]+ ;
+WORDC = [A-Za-z0-9_-\.]+ ;
 LF = [\n]+ ;
 INDENT = LF [ ]* ;
 ENDSPC = [ \n]+ ;
@@ -79,23 +112,38 @@ ODELIMS = [\{\[] ;
 CDELIMS = [\}\]] ;
 INLINEX = ( CDELIMS | "," ENDSPC ) ;
 ALLX = ( ":" ENDSPC ) ;
+DIR = "#" WORDC ":" WORDC ;
+
+DIGITS = [0-9] ;
+SIGN = [-+] ;
+HEX = [0-9a-fA-F] ;
+INTHEX = SIGN? "0x" HEX+ ; 
+INTCANON = SIGN? DIGITS ( DIGITS | "," )* ;
+INTEGER = ( INTCANON | INTHEX ) ;
+*/
+
+    if ( YYLINEPTR != YYCURSOR )
+        goto Document;
+
+Header:
+
+    YYTOKEN = YYCURSOR;
+
+/*!re2c
+
+"---" ENDSPC        {   goto Directive; }
+
+ANY                 {   YYPOS(0);
+                        goto Document; 
+                    }
 
 */
 
 Document:
 
     YYTOKEN = YYCURSOR;
-    state = STATE_PLAIN;
-
-#ifdef REDEBUG
-    printf( "TOKEN: %s\n", YYTOKEN );
-#endif
 
 /*!re2c
-
-"---" ENDSPC        {   YYPOS(3);
-                        return DOCSEP; 
-                    }
 
 INDENT              {   // Isolate spaces
                         int indt_len;
@@ -142,20 +190,20 @@ CDELIMS             {   SyckLevel *lvl = CURRENT_LEVEL();
                     }
 
 [-?] ENDSPC         {   SyckLevel *lvl = CURRENT_LEVEL();
-                        ENSURE_IOPEN(lvl, parser->token - parser->lineptr, 1);
+                        ENSURE_IOPEN(lvl, YYTOKEN - YYLINEPTR, 1);
                         YYPOS(1); 
                         return YYTOKEN[0]; 
                     }
 
-"&" WORD            {   yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
+"&" WORDC           {   yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
                         return ANCHOR;
                     }
 
-"*" WORD            {   yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
+"*" WORDC           {   yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
                         return ALIAS;
                     }
 
-"!" WORD            {   yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
+"!" WORDC           {   yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
                         return TRANSFER;
                     }
 
@@ -174,31 +222,46 @@ NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
 
 ANY                 {   SyckLevel *lvl = CURRENT_LEVEL();
                         ENSURE_IOPEN(lvl, 0, 1);
-                        goto Plain; }
+                        goto Plain; 
+                    }
 
 */
+
+Directive:
+    {
+        YYTOKTMP = YYCURSOR;
+
+/*!re2c
+
+DIR                 {   ; }
+
+ANY                 {   YYCURSOR = YYTOKTMP;
+                        return DOCSEP;
+                    }
+*/
+
+    }
 
 Plain:
     {
         SyckLevel *plvl;
-        char *plaintok;
         YYCURSOR = YYTOKEN;
         plvl = CURRENT_LEVEL();
 
 Plain2: 
-        plaintok = YYCURSOR;
+        YYTOKTMP = YYCURSOR;
 
 /*!re2c
 
-ALLX                {   YYCURSOR = plaintok;
+ALLX                {   YYCURSOR = YYTOKTMP;
                         goto Implicit; }
 
 INLINEX             {   if ( plvl->status != syck_lvl_inline ) goto Plain2;
-                        YYCURSOR = plaintok;
+                        YYCURSOR = YYTOKTMP;
                         goto Implicit; 
                     }
 
-( LF | NULL )       {   YYCURSOR = plaintok;
+( LF | NULL )       {   YYCURSOR = YYTOKTMP;
                         goto Implicit; 
                     }
 
@@ -209,14 +272,14 @@ ANY                 {   goto Plain2; }
 
 Implicit:
     {
-        char *impend = YYCURSOR;
+        YYTOKTMP = YYCURSOR;
         YYCURSOR = YYTOKEN;
 
 Implicit2:
 
 /*!re2c
 
-ANY                 {   YYCURSOR = impend;
+ANY                 {   YYCURSOR = YYTOKTMP;
                         yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );
                         return PLAIN;
                     }
@@ -264,12 +327,14 @@ DoubleQuote2:
 "\\\""              {   QUOTECAT(qstr, qcapa, qidx, '"');
                         goto DoubleQuote2; 
                     }
+
 "\""                {   SyckNode *n = syck_alloc_str();
                         n->data.str->ptr = qstr;
                         n->data.str->len = qidx;
                         yylval->nodeData = n;
                         return PLAIN; 
                     }
+
 ANY                 {   QUOTECAT(qstr, qcapa, qidx, *(YYCURSOR - 1)); 
                         goto DoubleQuote2; 
                     }

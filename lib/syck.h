@@ -140,7 +140,7 @@ struct _syck_parser {
     // IO type
     enum syck_io_type io_type;
     // Buffer pointers
-    char *buffer, *lineptr, *token, *cursor, *marker, *limit;
+    char *buffer, *lineptr, *toktmp, *token, *cursor, *marker, *limit;
     // Line counter
     int linect;
     union {
