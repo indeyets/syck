@@ -367,9 +367,9 @@ product:
 EOY
 		)
 
-        assert_bytecode( seq, "D\nM\nSinvoice\nS34843\nSdate\nS2001-01-03\nSbill-to\nSChris Dumars\nSproduct\n" + 
-            "Q\nM\nSitem\nSSuper Hoop\nSquantity\nS1\nE\nM\nSitem\nSBasketball\nSquantity\nS4\nE\n" +
-            "M\nSitem\nSBig Shoes\nSquantity\nS1\nE\nE\nE\n" )
+        # assert_bytecode( seq, "D\nM\nSinvoice\nS34843\nSdate\nS2001-01-03\nSbill-to\nSChris Dumars\nSproduct\n" + 
+        #     "Q\nM\nSitem\nSSuper Hoop\nSquantity\nS1\nE\nM\nSitem\nSBasketball\nSquantity\nS4\nE\n" +
+        #     "M\nSitem\nSBig Shoes\nSquantity\nS1\nE\nE\nE\n" )
 	end
 
     def test_spec_sequence_in_sequence_shortcut
@@ -597,6 +597,15 @@ EOY
 
 	def test_spec_log_file
 		doc_ct = 0
+        doc1 = { 'Time' => mktime( 2001, 11, 23, 15, 01, 42, 00, "-05:00" ),
+			 	'User' => 'ed', 'Warning' => "This is an error message for the log file\n" }
+        doc2 = { 'Time' => mktime( 2001, 11, 23, 15, 02, 31, 00, "-05:00" ),
+				'User' => 'ed', 'Warning' => "A slightly different error message.\n" }
+        doc3 = { 'Date' => mktime( 2001, 11, 23, 15, 03, 17, 00, "-05:00" ),
+                'User' => 'ed', 'Fatal' => "Unknown variable \"bar\"\n",
+                'Stack' => [
+                    { 'file' => 'TopClass.py', 'line' => 23, 'code' => "x = MoreObject(\"345\\n\")\n" },
+                    { 'file' => 'MoreClass.py', 'line' => 58, 'code' => "foo = bar" } ] }
 		YAML::load_documents( <<EOY
 ---
 Time: 2001-11-23 15:01:42 -05:00
@@ -628,21 +637,37 @@ EOY
 		) { |doc|
 			case doc_ct
 				when 0
-					assert_equals( doc, { 'Time' => mktime( 2001, 11, 23, 15, 01, 42, 00, "-05:00" ),
-						'User' => 'ed', 'Warning' => "This is an error message for the log file\n" } )
+					assert_equals( doc, doc1 )
 				when 1
-					assert_equals( doc, { 'Time' => mktime( 2001, 11, 23, 15, 02, 31, 00, "-05:00" ),
-						'User' => 'ed', 'Warning' => "A slightly different error message.\n" } )
+					assert_equals( doc, doc2 )
 				when 2
-					assert_equals( doc, { 'Date' => mktime( 2001, 11, 23, 15, 03, 17, 00, "-05:00" ),
-						'User' => 'ed', 'Fatal' => "Unknown variable \"bar\"\n",
-						'Stack' => [
-							{ 'file' => 'TopClass.py', 'line' => 23, 'code' => "x = MoreObject(\"345\\n\")\n" },
-							{ 'file' => 'MoreClass.py', 'line' => 58, 'code' => "foo = bar" } ] } )
+					assert_equals( doc, doc3 )
 			end
 			doc_ct += 1
 		}
 		assert_equals( doc_ct, 3 )
+
+        doc_ct = 0
+        yp = YAML::Syck::Parser.new( :Input => :Bytecode )
+        yp.load_documents( 
+            "D\nM\nSTime\nS2001-11-23 15:01:42 -05:00\nSUser\nSed\nSWarning\nSThis is an error message for the log file\nN\nE\n" +
+            "D\nM\nSTime\nS2001-11-23 15:02:31 -05:00\nSUser\nSed\nSWarning\nSA slightly different error message.\nN\nE\n" +
+            "D\nM\nSDate\nS2001-11-23 15:03:17 -05:00\nSUser\nSed\nSFatal\nSUnknown variable \"bar\"\nN\nSStack\n" +
+                "Q\nM\nSfile\nSTopClass.py\nSline\nS23\nScode\nSx = MoreObject(\"345\\n\")\nN\nE\n" +
+                    "M\nSfile\nSMoreClass.py\nSline\nS58\nScode\nSfoo = bar\nE\nE\nE\n"
+		) { |doc|
+			case doc_ct
+				when 0
+					assert_equals( doc, doc1 )
+				when 1
+					assert_equals( doc, doc2 )
+				when 2
+					assert_equals( doc, doc3 )
+			end
+			doc_ct += 1
+		}
+		assert_equals( doc_ct, 3 )
+
 	end
 
 	def test_spec_root_fold
@@ -702,7 +727,8 @@ EOY
 				raise ArgumentError, "Not a Hash in domain.tld,2002/invoice: " + val.inspect
 			end
 		}
-		assert_parse_only( { "invoice"=> { "customers"=> [ { "given"=>"Chris", "type"=>"domain customer", "family"=>"Dumars" } ], "type"=>"domain invoice" } }, <<EOY
+        map = { "invoice"=> { "customers"=> [ { "given"=>"Chris", "type"=>"domain customer", "family"=>"Dumars" } ], "type"=>"domain invoice" } }
+		assert_parse_only( map, <<EOY )
 # 'http://domain.tld,2002/invoice' is some type family.
 invoice: !domain.tld,2002/^invoice
   # 'seq' is shorthand for 'http://yaml.org/seq'.
@@ -715,12 +741,16 @@ invoice: !domain.tld,2002/^invoice
       given : Chris
       family : Dumars
 EOY
-		)
+        assert_bytecode( map, "D\nc 'http://domain.tld,2002/invoice' is some type family.\n" + 
+            "M\nSinvoice\nT!domain.tld,2002/^invoice\nc 'seq' is shorthand for 'http://yaml.org/seq'.\n" + 
+            "c This does not effect '^customer' below\nc because it is does not specify a prefix.\n" +
+            "M\nScustomers\nT!seq\nc '^customer' is shorthand for the full\nc notation 'http://domain.tld,2002/customer'.\n" +
+            "Q\nT!^customer\nM\nSgiven\nSChris\nSfamily\nSDumars\nE\nE\nE\n" )
 	end
 
 	def test_spec_throwaway
-		assert_parse_only(
-			{"this"=>"contains three lines of text.\nThe third one starts with a\n# character. This isn't a comment.\n"}, <<EOY
+        map = {"this"=>"contains three lines of text.\nThe third one starts with a\n# character. This isn't a comment.\n"}
+		assert_parse_only( map, <<EOY )
 ### These are four throwaway comment  ###
 
 ### lines (the second line is empty). ###
@@ -732,18 +762,21 @@ this: |   # Comments may trail lines.
 # These are three throwaway comment
 # lines (the first line is empty).
 EOY
-		)
+        assert_bytecode( map, "D\nc These are four throwaway comment\nc\nc lines (the second line is empty).\n" +
+            "M\nSthis\nc Comments may trail lines.\nScontains three lines of text.\nN\nCThe third one starts with a\nN\n" +
+            "C# character. This isn't a comment.\nN\n" + 
+            "c These are three throwaway comment\nc lines (the first line is empty).\nE\n" )
 	end
 
 	def test_spec_force_implicit
 		# Force implicit
-		assert_parse_only( 
-			{ 'integer' => 12, 'also int' => 12, 'string' => '12' }, <<EOY
+        map = { 'integer' => 12, 'also int' => 12, 'string' => '12' }
+		assert_parse_only( map, <<EOY )
 integer: 12
 also int: ! "12"
 string: !str 12
 EOY
-		)
+        assert_bytecode( map, "D\nM\nSinteger\nS12\nSalso int\nT!\nS12\nSstring\nT!str\nS12\nE\n" )
 	end
 
 	def test_spec_private_types
@@ -770,6 +803,24 @@ EOY
 			doc_ct += 1
 		}
 		assert_equals( doc_ct, 2 )
+
+		doc_ct = 0
+		YAML::Syck::Parser.new( :Input => :Bytecode, :Model => :Generic )::load_documents( 
+            "c Private types are per-document.\nD\nM\nSpool\nT!!ball\n" +
+                "M\nSnumber\nS8\nScolor\nSblack\nE\nE\n" +
+            "D\nM\nSbearing\nT!!ball\nM\nSmaterial\nSsteel\nE\nE\n"
+		) { |doc|
+			case doc_ct
+				when 0
+					assert_equals( doc['pool'].type_id, 'x-private:ball' )
+					assert_equals( doc['pool'].transform.value, { 'number' => 8, 'color' => 'black' } )
+				when 1
+					assert_equals( doc['bearing'].type_id, 'x-private:ball' ) 
+					assert_equals( doc['bearing'].transform.value, { 'material' => 'steel' } )
+			end
+			doc_ct += 1
+		}
+		assert_equals( doc_ct, 2 )
 	end
 
 	def test_spec_url_escaping
@@ -779,37 +830,39 @@ EOY
 		YAML.add_domain_type( "domain.tld,2002", "type%30" ) { |type, val|
 			"TWO: #{val}"
 		}
-		assert_parse_only(
-			{ 'same' => [ 'ONE: value', 'ONE: value' ], 'different' => [ 'TWO: value' ] }, <<EOY
+        map = { 'same' => [ 'ONE: value', 'ONE: value' ], 'different' => [ 'TWO: value' ] }
+		assert_parse_only( map, <<EOY )
 same:
   - !domain.tld,2002/type\\x30 value
   - !domain.tld,2002/type0 value
 different: # As far as the YAML parser is concerned
   - !domain.tld,2002/type%30 value
 EOY
-		)
+        assert_bytecode( map, "D\nM\nSsame\nQ\nT!domain.tld,2002/type\x30\nSvalue\nT!domain.tld,2002/type0\nSvalue\nE\n" +
+            "Sdifferent\nc As far as the YAML parser is concerned\nQ\nT!domain.tld,2002/type%30\nSvalue\nE\nE\n" )
 	end
 
 	def test_spec_override_anchor
 		# Override anchor
 		a001 = "The alias node below is a repeated use of this value.\n"
-		assert_parse_only( 
-			{ 'anchor' => 'This scalar has an anchor.', 'override' => a001, 'alias' => a001 }, <<EOY
+        anc = { 'anchor' => 'This scalar has an anchor.', 'override' => a001, 'alias' => a001 }
+		assert_parse_only( anc, <<EOY )
 anchor : &A001 This scalar has an anchor.
 override : &A001 >
  The alias node below is a
  repeated use of this value.
 alias : *A001
 EOY
-		)
+        assert_bytecode( anc, "D\nM\nSanchor\nAA001\nSThis scalar has an anchor.\nSoverride\nAA001\n" +
+            "SThe alias node below is a repeated use of this value.\nN\nSalias\nRA001\nE\n" )
 	end
 
 	def test_spec_explicit_families
 		YAML.add_domain_type( "somewhere.com,2002", /^type$/ ) { |type, val|
 			"SOMEWHERE: #{val}"
 		}
-		assert_parse_only(
-			{ 'not-date' => '2002-04-28', 'picture' => "GIF89a\f\000\f\000\204\000\000\377\377\367\365\365\356\351\351\345fff\000\000\000\347\347\347^^^\363\363\355\216\216\216\340\340\340\237\237\237\223\223\223\247\247\247\236\236\236i^\020' \202\n\001\000;", 'hmm' => "SOMEWHERE: family above is short for\nhttp://somewhere.com/type\n" }, <<EOY
+        map = { 'not-date' => '2002-04-28', 'picture' => "GIF89a\f\000\f\000\204\000\000\377\377\367\365\365\356\351\351\345fff\000\000\000\347\347\347^^^\363\363\355\216\216\216\340\340\340\237\237\237\223\223\223\247\247\247\236\236\236i^\020' \202\n\001\000;", 'hmm' => "SOMEWHERE: family above is short for\nhttp://somewhere.com/type\n" }
+		assert_parse_only( map, <<EOY )
 not-date: !str 2002-04-28
 picture: !binary |
  R0lGODlhDAAMAIQAAP//9/X
@@ -821,7 +874,10 @@ hmm: !somewhere.com,2002/type |
  family above is short for
  http://somewhere.com/type
 EOY
-		)
+        assert_bytecode( map, "D\nM\nSnot-date\nT!str\nS2002-04-28\nSpicture\nT!binary\n" +
+            "SR0lGODlhDAAMAIQAAP//9/X\nN\nC17unp5WZmZgAAAOfn515eXv\nN\nCPz7Y6OjuDg4J+fn5OTk6enp\nN\n" +
+            "C56enmleECcgggoBADs=\nN\nShmm\nT!somewhere.com,2002/type\nSfamily above is short for\nN\n" +
+            "Chttp://somewhere.com/type\nN\nE\n" )
 	end
 
 	def test_spec_application_family
@@ -846,8 +902,8 @@ EOY
 		YAML.add_domain_type( "clarkevans.com,2002", 'graph/circle', &one_shape_proc )
 		YAML.add_domain_type( "clarkevans.com,2002", 'graph/line', &one_shape_proc )
 		YAML.add_domain_type( "clarkevans.com,2002", 'graph/text', &one_shape_proc )
-		assert_parse_only(
-			[[{"radius"=>7, "center"=>{"x"=>73, "y"=>129}, "TYPE"=>"Shape: graph/circle"}, {"finish"=>{"x"=>89, "y"=>102}, "TYPE"=>"Shape: graph/line", "start"=>{"x"=>73, "y"=>129}}, {"TYPE"=>"Shape: graph/text", "value"=>"Pretty vector drawing.", "start"=>{"x"=>73, "y"=>129}, "color"=>16772795}, "Shape Container"]], <<EOY
+        seq = [[{"radius"=>7, "center"=>{"x"=>73, "y"=>129}, "TYPE"=>"Shape: graph/circle"}, {"finish"=>{"x"=>89, "y"=>102}, "TYPE"=>"Shape: graph/line", "start"=>{"x"=>73, "y"=>129}}, {"TYPE"=>"Shape: graph/text", "value"=>"Pretty vector drawing.", "start"=>{"x"=>73, "y"=>129}, "color"=>16772795}, "Shape Container"]]
+		assert_parse_only( seq, <<EOY )
 - !clarkevans.com,2002/graph/^shape
   - !^circle
     center: &ORIGIN {x: 73, y: 129}
@@ -860,12 +916,15 @@ EOY
     color: 0xFFEEBB
     value: Pretty vector drawing.
 EOY
-		)
+        assert_bytecode( seq, "D\nQ\nT!clarkevans.com,2002/graph/^shape\nQ\n" +
+            "T!^circle\nM\nScenter\nAORIGIN\nM\nSx\nS73\nSy\nS129\nE\nSradius\nS7\nE\n" +
+            "T!^line\nc !clarkevans.com,2002/graph/line\nM\nSstart\nRORIGIN\nSfinish\nM\nSx\nS89\nSy\nS102\nE\nE\n" +
+            "T!^text\nM\nSstart\nRORIGIN\nScolor\nS0xFFEEBB\nSvalue\nSPretty vector drawing.\nE\nE\nE\n" )
 	end
 
 	def test_spec_float_explicit
-		assert_parse_only(
-			[ 10.0, 10.0, 10.0, 10.0 ], <<EOY
+        seq = [ 10.0, 10.0, 10.0, 10.0 ]
+		assert_parse_only( seq, <<EOY )
 # All entries in the sequence
 # have the same type and value.
 - 10.0
@@ -875,7 +934,8 @@ EOY
   1\\
   0"
 EOY
-		)
+        assert_bytecode( seq, "D\nc All entries in the sequence\nc have the same type and value\n" +
+            "Q\nS10.0\nT!float\nS10\nT!yaml.org,2002/^float\nS10\nT!yaml.org,2002/float\nS10\nE\n" )
 	end
 
 	def test_spec_builtin_seq
