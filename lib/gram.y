@@ -141,9 +141,6 @@ word_rep	: TRANSFER word_rep
                $$ = n;
             }
             | PLAIN
-            {
-                $$ = $1;
-            }
             ;
 
 //
@@ -156,13 +153,6 @@ struct_rep	: TRANSFER struct_rep
                 $$ = $2;
             }
 			| BLOCK
-			{ 
-                //SyckNode *n = $3;
-                //syck_fold_format( $1, $3 );
-                //n->type_id = "str";
-                //$$ = n;
-                $$ = $1;
-			}
 			| implicit_seq
 			| inline_seq
 			| implicit_map
@@ -257,9 +247,6 @@ complex_mapping : basic_mapping
                 ;
 
 in_implicit_map : complex_mapping
-				{
-                    $$ = $1;
-				}
 				| in_implicit_map indent_sep complex_mapping
                 { 
                     syck_map_update( $1, $3 );
@@ -293,9 +280,6 @@ inline_map		: '{' in_inline_map '}'
                 ;
          
 in_inline_map	: basic_mapping2 
-				{
-					$$ = $1;
-				}
 				| in_inline_map ',' basic_mapping2
 				{
                     syck_map_update( $1, $3 );
