@@ -213,6 +213,7 @@ int yywrap();
 int
 sycklex( YYSTYPE *sycklval, SyckParser *parser )
 {
+    int doc_level = 0;
     syck_parser_ptr = parser;
     if ( YYCURSOR == NULL ) 
     {
@@ -295,9 +296,12 @@ NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
                         return 0; 
                     }
 
-YINDENT             {   int indt_len;
-                        GOBBLE_UP_YAML_INDENT( indt_len, YYTOKEN );
+YINDENT             {   GOBBLE_UP_YAML_INDENT( doc_level, YYTOKEN );
                         goto Header; 
+                    }
+
+SPC+                {   doc_level = YYCURSOR - YYLINEPTR;
+                        goto Header;
                     }
 
 ANY                 {   YYPOS(0);
@@ -322,6 +326,7 @@ YINDENT             {   /* Isolate spaces */
                         int indt_len;
                         GOBBLE_UP_YAML_INDENT( indt_len, YYTOKEN );
                         lvl = CURRENT_LEVEL();
+                        doc_level = 0;
 
                         /* Check for open indent */
                         ENSURE_YAML_IEND(lvl, indt_len);
@@ -333,7 +338,7 @@ YINDENT             {   /* Isolate spaces */
                         return YAML_INDENT;
                     }
 
-ODELIMS             {   ENSURE_YAML_IOPEN(lvl, 0, 1);
+ODELIMS             {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
                         lvl = CURRENT_LEVEL();
                         ADD_LEVEL(lvl->spaces + 1, syck_lvl_inline);
                         return YYTOKEN[0]; 
@@ -361,7 +366,7 @@ CDELIMS             {   POP_LEVEL();
                         return YYTOKEN[0]; 
                     }
 
-"&" YWORDC+         {   ENSURE_YAML_IOPEN(lvl, 0, 1);
+"&" YWORDC+         {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
                         sycklval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
 
                         /*
@@ -373,18 +378,18 @@ CDELIMS             {   POP_LEVEL();
                         return YAML_ANCHOR;
                     }
 
-"*" YWORDC+         {   ENSURE_YAML_IOPEN(lvl, 0, 1);
+"*" YWORDC+         {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
                         sycklval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
                         return YAML_ALIAS;
                     }
 
-"!"                 {   ENSURE_YAML_IOPEN(lvl, 0, 1);
+"!"                 {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
                         goto TransferMethod; }
 
-"'"                 {   ENSURE_YAML_IOPEN(lvl, 0, 1);
+"'"                 {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
                         goto SingleQuote; }
 
-"\""                {   ENSURE_YAML_IOPEN(lvl, 0, 1);
+"\""                {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
                         goto DoubleQuote; }
 
 YBLOCK              {   if ( is_newline( YYCURSOR - 1 ) ) 
@@ -405,7 +410,7 @@ NULL                {   ENSURE_YAML_IEND(lvl, -1);
                         return 0; 
                     }
 
-ANY                 {   ENSURE_YAML_IOPEN(lvl, 0, 1);
+ANY                 {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
                         goto Plain; 
                     }
 
