@@ -55,11 +55,11 @@ typedef struct {
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect, s_out, s_intern, s_yaml_new, s_yaml_initialize, s_to_yaml, s_write;
+static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect, s_node_import, s_out, s_intern, s_yaml_new, s_yaml_initialize, s_to_yaml, s_write;
 static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_value;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
-VALUE cDate, cParser, cResolver, cNode, cPrivateType, cDomainType, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
+VALUE cDate, cParser, cResolver, cNode, cCNode, cPrivateType, cDomainType, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
 VALUE cOut, cOutSeq, cOutMap, cOutSeq, cOutScalar;
 VALUE oDefaultResolver, oGenericResolver;
 
@@ -426,6 +426,11 @@ yaml_org_handler( n, ref )
     long i = 0;
     VALUE obj = Qnil;
 
+    if ( type_id != NULL && strncmp( type_id, "tag:yaml.org,2002:", 18 ) == 0 )
+    {
+        type_id += 18;
+    }
+
     switch (n->kind)
     {
         case syck_str_kind:
@@ -694,7 +699,7 @@ rb_syck_load_handler(p, n)
     /*
      * Check for resolver
      */
-    obj = rb_funcall( resolver, s_transfer, 2, rb_str_new2( n->type_id ), obj );
+    obj = rb_funcall( resolver, s_node_import, 1, Data_Wrap_Struct( cCNode, NULL, NULL, n ) );
 
     /*
      * ID already set, let's alter the symbol table to accept the new object
@@ -884,7 +889,7 @@ syck_parser_load(argc, argv, self)
 {
     VALUE port, proc, model, input;
 	SyckParser *parser;
-    struct parser_xtra bonus;
+    struct parser_xtra *bonus = S_ALLOC_N( struct parser_xtra, 1 );
     volatile VALUE hash;	/* protect from GC */
 
     rb_scan_args(argc, argv, "11", &port, &proc);
@@ -894,13 +899,13 @@ syck_parser_load(argc, argv, self)
     model = rb_hash_aref( rb_attr_get( self, s_options ), sym_model );
 	syck_set_model( parser, input, model );
 
-	bonus.taint = syck_parser_assign_io(parser, port);
-    bonus.data = hash = rb_hash_new();
-    bonus.resolver = rb_attr_get( self, s_resolver );
-	if ( NIL_P( proc ) ) bonus.proc = 0;
-    else                 bonus.proc = proc;
+	bonus->taint = syck_parser_assign_io(parser, port);
+    bonus->data = hash = rb_hash_new();
+    bonus->resolver = rb_attr_get( self, s_resolver );
+	if ( NIL_P( proc ) ) bonus->proc = 0;
+    else                 bonus->proc = proc;
     
-	parser->bonus = (void *)&bonus;
+	parser->bonus = (void *)bonus;
 
     return syck_parse( parser );
 }
@@ -1012,7 +1017,73 @@ VALUE
 syck_resolver_node_import( self, node )
     VALUE self, node;
 {
-    ;
+    SyckNode *n;
+    VALUE obj;
+    int i = 0;
+	Data_Get_Struct(node, SyckNode, n);
+
+    switch (n->kind)
+    {
+        case syck_str_kind:
+            obj = rb_str_new( n->data.str->ptr, n->data.str->len );
+        break;
+
+        case syck_seq_kind:
+            obj = rb_ary_new2( n->data.list->idx );
+            for ( i = 0; i < n->data.list->idx; i++ )
+            {
+                rb_ary_store( obj, i, syck_seq_read( n, i ) );
+            }
+        break;
+
+        case syck_map_kind:
+            obj = rb_hash_new();
+            for ( i = 0; i < n->data.pairs->idx; i++ )
+            {
+				VALUE k = syck_map_read( n, map_key, i );
+				VALUE v = syck_map_read( n, map_value, i );
+				int skip_aset = 0;
+
+				/*
+				 * Handle merge keys
+				 */
+				if ( rb_obj_is_kind_of( k, cMergeKey ) )
+				{
+					if ( rb_obj_is_kind_of( v, rb_cHash ) )
+					{
+						VALUE dup = rb_funcall( v, s_dup, 0 );
+						rb_funcall( dup, s_update, 1, obj );
+						obj = dup;
+						skip_aset = 1;
+					}
+					else if ( rb_obj_is_kind_of( v, rb_cArray ) )
+					{
+						VALUE end = rb_ary_pop( v );
+						if ( rb_obj_is_kind_of( end, rb_cHash ) )
+						{
+							VALUE dup = rb_funcall( end, s_dup, 0 );
+							v = rb_ary_reverse( v );
+							rb_ary_push( v, obj );
+							rb_iterate( rb_each, v, syck_merge_i, dup );
+							obj = dup;
+							skip_aset = 1;
+						}
+					}
+				}
+                else if ( rb_obj_is_kind_of( k, cDefaultKey ) )
+                {
+                    rb_funcall( obj, s_default_set, 1, v );
+                    skip_aset = 1;
+                }
+
+				if ( ! skip_aset )
+				{
+					rb_hash_aset( obj, k, v );
+				}
+            }
+        break;
+    }
+    return rb_funcall( self, s_transfer, 2, rb_str_new2( n->type_id ), obj );
 }
 
 /*
@@ -1095,7 +1166,7 @@ syck_resolver_transfer( self, type, val )
         {
             val = rb_funcall( subclass, s_yaml_new, 2, type, val );
         }
-        else
+        else if ( !NIL_P( subclass ) )
         {
             val = rb_obj_alloc( subclass );
             if ( rb_respond_to( val, s_yaml_initialize ) )
@@ -1134,7 +1205,14 @@ VALUE
 syck_defaultresolver_node_import( self, node )
     VALUE self, node;
 {
-    return self;
+    SyckNode *n;
+    VALUE obj;
+	Data_Get_Struct( node, SyckNode, n );
+    if ( !yaml_org_handler( n, &obj ) )
+    {
+        obj = rb_funcall( self, s_transfer, 2, rb_str_new2( n->type_id ), obj );
+    }
+    return obj;
 }
 
 /*
@@ -1315,7 +1393,6 @@ syck_mark_emitter(emitter)
     SyckEmitter *emitter;
 {
     struct emitter_xtra *bonus;
-    rb_gc_mark(emitter->ignore_id);
     if ( emitter->bonus != NULL )
     {
         bonus = (struct emitter_xtra *)emitter->bonus;
@@ -1603,6 +1680,7 @@ Init_syck()
 	s_push = rb_intern("push");
     s_haskey = rb_intern("has_key?");
 	s_keys = rb_intern("keys");
+    s_node_import = rb_intern("node_import");
 	s_to_str = rb_intern("to_str");
 	s_tr_bang = rb_intern("tr!");
     s_unpack = rb_intern("unpack");
@@ -1642,10 +1720,10 @@ Init_syck()
     rb_define_method( cResolver, "use_types_at", syck_resolver_use_types_at, 1 );
     rb_define_method( cResolver, "detect_implicit", syck_resolver_detect_implicit, 1 );
     rb_define_method( cResolver, "transfer", syck_resolver_transfer, 2 );
-    rb_define_method( cResolver, "node_import", syck_resolver_node_import, 2 );
+    rb_define_method( cResolver, "node_import", syck_resolver_node_import, 1 );
 
     oDefaultResolver = rb_funcall( cResolver, rb_intern( "new" ), 0 );
-    rb_define_singleton_method( oDefaultResolver, "node_import", syck_defaultresolver_node_import, 2 );
+    rb_define_singleton_method( oDefaultResolver, "node_import", syck_defaultresolver_node_import, 1 );
     rb_define_singleton_method( oDefaultResolver, "detect_implicit", syck_defaultresolver_detect_implicit, 2 );
     rb_define_const( rb_syck, "DefaultResolver", oDefaultResolver );
     oGenericResolver = rb_funcall( cResolver, rb_intern( "new" ), 0 );
@@ -1663,6 +1741,11 @@ Init_syck()
     rb_define_method(cParser, "load", syck_parser_load, -1);
     rb_define_method(cParser, "load_documents", syck_parser_load_documents, -1);
     rb_define_method(cParser, "set_resolver", syck_parser_set_resolver, 1);
+
+    /*
+     * Define YAML::Syck::CNode class
+     */
+    cCNode = rb_define_class_under( rb_syck, "CNode", rb_cObject );
 
     /*
      * Define YAML::Syck::Node class

@@ -5,6 +5,7 @@ require 'yaml/compat'
 #
 # Type conversions
 #
+class YAML::TypeError < StandardError; end
 
 class Class
 	def to_yaml( opts = {} )
@@ -38,7 +39,7 @@ class Hash
         elsif Hash === val
             update val
         else
-            raise YAML::Error, "Invalid map explicitly tagged #{ tag }: " + val.inspect
+            raise YAML::TypeError, "Invalid map explicitly tagged #{ tag }: " + val.inspect
         end
     end
 	def to_yaml( opts = {} )
@@ -95,7 +96,7 @@ class Struct
             end
             st
         else
-            raise YAML::Error, "Invalid Ruby Struct: " + val.inspect
+            raise YAML::TypeError, "Invalid Ruby Struct: " + val.inspect
         end
     end
 	def to_yaml( opts = {} )
@@ -175,6 +176,7 @@ class String
     end
     def String.yaml_new( tag, val )
         tag, obj_class = YAML.read_type_class( tag, self )
+        val = { 'str' => val } if String === val
         if Hash === val
             s = YAML::object_maker( obj_class, {} )
             # Thank you, NaHi
@@ -184,7 +186,7 @@ class String
             val.each { |k,v| s.instance_variable_set( k, v ) }
             s
         else
-            raise YAML::Error, "Invalid String: " + val.inspect
+            raise YAML::TypeError, "Invalid String: " + val.inspect
         end
     end
     def to_yaml_fold; nil; end
@@ -214,7 +216,7 @@ class Symbol
             val = YAML::load( "--- #{val}") if val =~ /^["'].*['"]$/
             val.intern
         else
-            raise YAML::Error, "Invalid Symbol: " + val.inspect
+            raise YAML::TypeError, "Invalid Symbol: " + val.inspect
         end
     end
 	def to_yaml( opts = {} )
@@ -256,7 +258,7 @@ class Range
             val.each { |k,v| r.instance_variable_set( k, v ) }
             r
         else
-            raise YAML::Error, "Invalid Range: " + val.inspect
+            raise YAML::TypeError, "Invalid Range: " + val.inspect
         end
     end
 	def to_yaml( opts = {} )
@@ -309,7 +311,7 @@ class Regexp
             val.each { |k,v| r.instance_variable_set( k, v ) }
             r
         else
-            raise YAML::Error, "Invalid Regular expression: " + val.inspect
+            raise YAML::TypeError, "Invalid Regular expression: " + val.inspect
         end
     end
 	def to_yaml( opts = {} )
@@ -323,7 +325,7 @@ class Regexp
                         map.add( 'regexp', $1 )
                         map.add( 'mods', $2 )
                     else
-		                raise YAML::Error, "Invalid Regular expression: " + src
+		                raise YAML::TypeError, "Invalid Regular expression: " + src
                     end
                     to_yaml_properties.each do |m|
                         map.add( m, instance_variable_get( m ) )
@@ -347,7 +349,7 @@ class Time
             val.each { |k,v| t.instance_variable_set( k, v ) }
             t
         else
-            raise YAML::Error, "Invalid Time: " + val.inspect
+            raise YAML::TypeError, "Invalid Time: " + val.inspect
         end
     end
 	def to_yaml( opts = {} )

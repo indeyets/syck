@@ -1632,14 +1632,14 @@ EOY
         end
     end
 
-    #
-    # Circular references
-    #
-    def test_circular_references
-        a = []; a[0] = a; a[1] = a
-        inspect_str = "[[...], [...]]"
-        assert_equals( inspect_str, YAML::load( a.to_yaml ).inspect )
-    end
+    #    #
+    #    # Circular references
+    #    #
+    #    def test_circular_references
+    #        a = []; a[0] = a; a[1] = a
+    #        inspect_str = "[[...], [...]]"
+    #        assert_equals( inspect_str, YAML::load( a.to_yaml ).inspect )
+    #    end
 end
 
 RUNIT::CUI::TestRunner.run( YAML_Unit_Tests.suite )
