@@ -21,7 +21,16 @@ python_syck_handler(p, n)
     switch (n->kind)
     {
         case syck_str_kind:
-            o = PyString_FromStringAndSize( n->data.str->ptr, n->data.str->len );
+            if ( strcmp( n->type_id, "null" ) == 0 )
+                o = Py_None;
+            else if ( strcmp( n->type_id, "int#hex" ) == 0 )
+                o = PyLong_FromString( n->data.str->ptr, NULL, 16 );
+            else if ( strcmp( n->type_id, "int#oct" ) == 0 )
+                o = PyLong_FromString( n->data.str->ptr, NULL, 8 );
+            else if ( strcmp( n->type_id, "int" ) == 0 )
+                o = PyLong_FromString( n->data.str->ptr, NULL, 10 );
+            else
+                o = PyString_FromStringAndSize( n->data.str->ptr, n->data.str->len );
         break;
 
         case syck_seq_kind:

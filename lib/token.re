@@ -112,7 +112,7 @@ ODELIMS = [\{\[] ;
 CDELIMS = [\}\]] ;
 INLINEX = ( CDELIMS | "," ENDSPC ) ;
 ALLX = ( ":" ENDSPC ) ;
-DIR = "#" WORDC ":" WORDC ;
+DIR = "%" WORDC ":" WORDC ;
 
 DIGITS = [0-9] ;
 SIGN = [-+] ;
@@ -238,7 +238,7 @@ Directive:
 
 /*!re2c
 
-DIR                 {   ; }
+DIR ENDSPC          {   goto Directive; }
 
 ANY                 {   YYCURSOR = YYTOKTMP;
                         return DOCSEP;

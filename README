@@ -1,4 +1,19 @@
 
+ 
+                             . syck .
+
+
+
+
+                ~ the ~
+              ~ scripters' ~
+                    ~ yaml ~
+                       ~ cobble-yourself-together-a-parser ~
+                                                      ~ kit ~
+
+
+
+
 INSTALLATION
 
    ./configure
@@ -12,7 +27,7 @@ pass on those machines.  If tests aren't passing, then that's a problem.
 
 ABOUT
 
-Syck is the Scripting YAML Cobbling Together a Parser Kit.  I don't
+Syck is the Scripters' YAML Cobble-Yourself-a-Parser Kit.  I don't
 much care if the acronym works, as long as the library does!
 
 The whole point of Syck is to make parsing and emitting YAML very
