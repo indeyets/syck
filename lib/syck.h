@@ -10,7 +10,7 @@
 #ifndef SYCK_H
 #define SYCK_H
 
-#define SYCK_VERSION    "0.25"
+#define SYCK_VERSION    "0.28"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
@@ -229,6 +229,7 @@ void syck_parser_str( SyckParser *, char *, long, SyckIoStrRead );
 void syck_parser_str_auto( SyckParser *, char *, SyckIoStrRead );
 SyckLevel *syck_parser_current_level( SyckParser * );
 void syck_parser_add_level( SyckParser *, int, enum syck_level_status );
+void syck_parser_pop_level( SyckParser * );
 void free_any_io( SyckParser * );
 long syck_parser_read( SyckParser * );
 long syck_parser_readlen( SyckParser *, long );

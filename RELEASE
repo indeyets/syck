@@ -1,0 +1,128 @@
+released: { name: Syck, version: 0.28 }
+for: [ Ruby, PHP, Python ]
+by: why the lucky stiff
+about: >
+
+  Syck is a YAML parser, an extension for scripting
+  languages, written in C.  
+
+  So what is YAML?  YAML is a new language for data.
+  Describe objects in plain text.  Load the data into
+  your scripting language as arrays, dictionaries,
+  classes, or primitives.
+
+links:
+  YAML: http://www.yaml.org/
+  YAML Cookbook: http://yaml4r.sf.net/cookbook/
+  YAML Type Repository: http://yaml.org/type/
+  YAML Specification: http://yaml.org/spec/
+  Syck: http://www.whytheluckystiff.net/syck/
+  Syck Benchmarks: http://www.whytheluckystiff.net/arch/2003/03/19
+  Tarball @ SourceForge: http://aleron.dl.sourceforge.net/sourceforge/yaml4r/syck-0.25.tar.gz
+
+status: >
+
+  Syck is about 80% compliant with the YAML spec.  Syck currently
+  has a few issues with type families before an mapping.  I've also
+  noticed some whitespace issues.  The seq-in-map shortcut is not
+  yet supported.
+
+  The extensions are quite usable, though.  Ruby, PHP and Python
+  can load from a string containing YAML.  Ruby also has support
+  for stream loading from any IO object.
+
+  This release also introduces the YAML.rb 0.50 source code into
+  the Ruby extension.  Which means: YPath, emitting, Okay.
+
+benchmarks: >
+
+  Syck is quite speedy, although not as swift as most language's
+  native serialization.
+
+  Syck runs at about:
+
+  30-35% of the speed of Ruby's Marshal.
+  35-90% of the speed of PHP's deserialize().
+  600% of the speed of Python's Pickle.
+  33-40% of the speed of Python's cPickle.
+
+  (Based on various types of structured data.)
+
+installation: >
+
+  Syck contains working extensions for the Ruby, PHP, and Python
+  languages.  Each requires compilation of the libsyck library,
+  followed by compilation of the extension.
+
+  To compile libsyck, first download libsyck.
+
+    tar xzvf syck-0.25.tar.gz
+    cd syck-0.25
+    ./configure
+    make
+    sudo make install
+
+  To install the Ruby extension:
+
+    cd ext/ruby
+    ruby install.rb config
+    ruby install.rb setup
+    sudo ruby install.rb install
+
+  To install the Python extension:
+
+    cd ext/python
+    python setup.py build
+    sudo python setup.py install
+
+  To install the PHP extension:
+
+    sh make_module.sh
+    sudo make install (if you weren't root during make_module.sh)
+    php -q syck.php
+
+examples:
+
+  To load this document in Ruby: |
+
+     ($:~)$ irb
+     >> require 'syck'
+     => true
+     >> yp = YAML::Syck::Parser.new( {} )
+     => #<YAML::Syck::Parser:0x8058530>
+     >> yp.load( File.open( 'syck-0.25.yml' ) )
+     => {"status"=>"Syck is about 60% compliant ..."}
+
+  To load this document in PHP: |
+
+     ($:~)$ php -a
+     Interactive mode enabled
+
+     <? dl( 'syck.so' ); print_r( syck_load( implode( '', file( 'syck-0.25.yml' ) ) ) ); ?>
+  
+     .. php then outputs ..
+
+     X-Powered-By: PHP/4.2.3
+     Content-type: text/html
+     
+     Array
+     (   
+         [released] => Array
+             (   
+                 [name] => Syck
+                 [version] => 0.25
+             )
+
+     .. and so on ..
+
+  To load this document in Python: |
+
+     ($:~)$ python
+     Python 2.1.3 (#1, Jul 11 2002, 17:52:24) 
+     [GCC 2.95.3 20010315 (release) [FreeBSD]] on freebsd4
+     Type "copyright", "credits" or "license" for more information.
+     >>> import syck
+     >>> f = open( 'syck-0.25.yml' )
+     >>> syck.load( f.read() )
+     {'by': 'why the lucky stiff', ... }
+

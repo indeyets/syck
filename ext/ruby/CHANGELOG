@@ -1,0 +1,302 @@
+--- %YAML:1.0
+- version: 0.60
+  date: 2003-04-24
+  changes:
+    - New parser backed by Syck. [http://whytheluckystiff.net/syck/]  100x faster.
+
+- version: 0.50
+  date: 2003-01-13
+  changes:
+    - YAML::Store more like PStore fixes.  Thank you, Eric Hodel.
+    - Bug fix to transfer methods, anchors, aliases in a seq-map shortcut.  Thank you, Brad Hilton.
+    - Prototype YPath support nearly complete (still need to handle '..').
+    - New YAML::YamlNode#select! method will transform the results of a selection.
+    - No more '+' and '-' boolean implicits.
+    - Sequence-in-sequence shortcut nailed.
+    - Output YAML repaired for YTS.
+    - Radical 0.6 + YAML patches.
+
+- version: 0.49
+  date: 2003-01-12
+  changes:
+    - New, cleaner, more efficient tokenizer.  Three months worth of work, kids.
+    - Line numbers now reported on errors.
+    - New map-seq shortcut.
+    - New collection types. !omap, !pairs, !set.
+    - New implicits for !null, !float, and !boolean.
+    - Merge token changed to '<<'.
+    - Added sexagecimal format (for time and degrees).
+    - Removed the 'undef' possibility.
+    - Fixed implicit empties in inline sequences.
+    - Flow values allowed in their own indentation.
+    - Parsing plain scalars better than ever.
+
+- version: 0.48
+  date: 2003-01-04
+  changes:
+    - Empty string implicit.
+    - New merge type rules!  See http://www.yaml.org/type/merge/.
+    - URL encoding removed, replaced with YAML escaping.
+    - Binary type now does base64 exclusively.
+    - Removed parentheses syntax from !null, !bool and !float implicits.
+    - Fixes to the seq-map shortcut, addition of the new map-seq shortcut!
+    - Enhanced !okay/rpc's server.about return.
+    - The install script's --force command was removed.
+    - Directives now in %KEY:VALUE format.
+
+- version: 0.47
+  date: 2002-11-11
+  changes:
+    - New IO via StringIO and IO#readline.  A change from 0.50 that's being merged in now for speed.
+    - Trailing document separator bugfix.
+    - DomainType class for handling undefined type families.
+    - YAML::each_document alias for YAML::load_documents
+    - YAML::each_node alias for YAML::parse_documents
+
+- version: 0.46
+  date: 2002-11-01
+  changes:
+    - RubyConf fluf release.
+    - In other words, no real changes.
+    - I'm talking about total jubilation.
+
+- version: 0.45
+  date: 2002-10-31
+  changes:
+    - Yod generates PDF (requires Ruby-ClibPDF).
+    - Speed improvement of 20-30% in yaml.rb parser.
+    - Support for Okay modules.
+    - Long single-line strings will be folded if emitter has folding on.
+
+- version: 0.44
+  date: 2002-10-10
+  changes:
+    - New !okay/news and !okay/rpc specifications.
+    - Racc no longer a run YAML.
+
+- version: 0.43
+  date: 2002-09-17
+  changes:
+    - Strings now anchored only if the string contains a new line.
+    - Prototype for the !okay/type schema validator now included.
+    - Typing and implicit checking system now wired to YAML::transfer_method.
+
+- version: 0.42
+  date: 2002-09-16
+  changes:
+    - Timestamp usec fixes galore from Michael Witrant.
+    - New API with parse_* and load_* for accessing the generic and native models, respectively.
+    - Basic YPath support checked in.
+
+- version: 0.41
+  date: 2002-09-06
+  changes:
+    - New taguri typing mechanism (from Last Call spec).
+    - The '/' character allowed to start unquoted strings (from Last Call spec).
+    - Added YAML::Pairs type which capitalizes on the seq-map shortcut in the spec.
+    - Repaired cases in which nested inline collections were screwing things up.
+    - Emitter now emits the seq-map shortcut when possible.
+    - Custom classes which extend from Array and Object should round-trip.
+
+- version: 0.40
+  date: 2002-08-28
+  changes:
+    - Added Emitter#map and Emitter#seq, along with YAML::quick_emit to ease writing to_yaml methods.
+    - Fixes to headless documents.
+    - Fix to PrivateType.
+    - Fix to empty classes extended from Array and Object.
+    - New reference checker uses anchors and aliases to prevent circular references.
+    - Binary data now emitting.
+    - Kernel::y method for dumping data as an alternative to Kernel::p.
+
+- version: 0.39
+  date: 2002-08-15
+  changes:
+    - 'Improved multi-line scalar emissions.  Beware of Iconv module with large text blocks.
+      It appears to be cutting off after a few k.'
+    - Problem with space indicators emitted by String#to_yaml.  Bug reported by Tom Sawyer.
+    - Bug in comment-handling code.  YAML couldn't parse the README.
+    - Yod now generating compilable CHM.
+
+- version: 0.38
+  date: 2002-08-12
+  changes:
+    - Moved the Emitter into its own class.  Thread-safe now.
+    - Added some basic Unicode support.
+    - More progress on Yod.
+
+- version: 0.37
+  date: 2002-08-04
+  changes:
+    - Finished descriptions in the Cookbook.
+    - Added simpler inline Regexp and Range serialization.
+
+- version: 0.36
+  date: 2002-08-01
+  changes:
+    - Renamed YAML.rb.
+    - Fixed slight inconsistency with space indicators in plain scalars.
+
+- version: 0.35
+  date: 2002-07-29
+  changes:
+    - Range#to_yaml added.
+    - Space indicators now required as the spec prescribes (http://yaml.org/spec/#space_indicators).
+    - Negative numbers parsing fixed.
+
+- version: 0.34
+  date: 2002-07-29
+  changes:
+    - Symbol#to_yaml added with abbreviated !ruby/sym syntax.
+    - Problems with NaN, Infinity, Floats emission.
+    - Complex keys, Symbol keys, Regexp keys bugfixes.
+    - Bug in Time#to_yaml.  My bad.
+
+- version: 0.33
+  date: 2002-07-29
+  changes:
+    - Better String#to_yaml, uses the parser's implicit type checker now!
+    - Headless documents now skipping the initial newline properly.
+    - Turned off SortKeys by default; still turned on in the tests.
+
+- version: 0.32
+  date: 2002-07-28
+  changes:
+    - Opened up unquoted strings to more characters, is closer to spec now.
+    - Round tripping started with YTS.
+    - Problems with foreign characters fixed.  Thanks, Robert Wagner.
+    - Problems with Array#to_yaml and Hash#to_yaml not giving a newline when nested.  Again, RW.
+    - Bugs in positive timezones with Time#to_yaml fixed by Tobias Peters!
+
+- version: 0.31
+  date: 2002-07-27
+  changes:
+    - Fixed bug in multiline quoted strings.
+    - Added YTS cases for odd newline and spaced block scalars.
+
+- version: 0.30
+  date: 2002-07-26
+  changes:
+    - Added support for Steve's new YTS streams.
+    - Refactored newline handling across all blocks.
+
+- version: 0.29
+  date: 2002-07-24
+  changes:
+    - First stab at Unicode support.
+    - Basic tests fixed.
+
+- version: 0.28
+  date: 2002-07-24
+  changes:
+    - Special comment key and default key supported.
+    - Multiline unquoted supported in in-line constructs.
+
+- version: 0.27
+  date: 2002-07-24
+  changes:
+    - Handling of literal and folded blocks finally matches the spec for indented blocks.
+    - All indentation should be handled correctly.
+    - Indented comments properly handled.
+
+- version: 0.26
+  date: 2002-07-23
+  changes:
+    - Fixed Timestamps to handle single character usec.
+    - Complete spec now in YTS.
+
+- version: 0.25
+  date: 2002-07-21
+  changes:
+    - New Object#to_yaml provides a good generic export for most Ruby objects.
+    - Fixes to the TrueClass, FalseClass, NilClass export methods.
+    - Test harness for the YTS (YamlTestingSuite).
+    - Distribution now includes yaml4r.rb directly, use --force to remake.
+
+- version: 0.24
+  date: 2002-07-17
+  changes:
+    - Started CHM output for Yod.
+    - Better support for multiline scalars, multiline double-quoted strings, and multiline single-quoted strings.
+    - Cleaned up the parser code, its indentation and comments.
+
+- version: 0.23
+  date: 2002-07-16
+  changes:
+    - Major fixes to the Time emitter and parser.  Time zones should work.
+    - Fixes to indentation at the start of a document.
+    - More Yod work.
+
+- version: 0.22
+  date: 2002-07-16
+  changes:
+    - Started Yod documentation.
+    - Working to fix indentation problems.
+
+- version: 0.21
+  date: 2002-07-15
+  changes:
+    - Private types now available via add_private_type or returns a PrivateType class.
+    - URI escaping.
+    - All ruby types now registered under the ruby.yaml.org domain as the spec describes.
+    - Fixed double-quoted string ending on last character of the document.
+
+- version: 0.20
+  date: 2002-07-14
+  changes:
+    - Better error reporting from the parser.  Shows the sensitive area and sometimes a bit of advice.
+    - Binary data builtin now suported for strings and scalar blocks.
+    - Spanning quoted strings should be good.
+    - Pause marker supported.
+
+- version: 0.19
+  date: 2002-07-12
+  changes:
+    - Parsing of multiple documents via YAML4R::load_document and Parser#parse_documents.
+
+- version: 0.18
+  date: 2002-07-11
+  changes:
+    - New YAML4R::add_domain_type, YAML4R::add_ruby_type, YAML4R::add_builtin_type!  Beginning of an era!
+    - Transfer method prefixing.
+    - Better support for commas, colons in unquoted strings.
+    - All supported types now added with add_builtin_type.
+    - Separators in scalars was throwing the parser off.
+    - Seperated unit tests into smaller, more specific functions.
+    - README and CHANGELOG now fully parsed by YAML4R.
+    - The install.rb now has a --force option to force Racc to remake the grammar.
+
+- version: 0.17
+  date: 2002-07-10
+  changes: 
+    - Implicit Time elements added (without timezones).
+    - Folded and literal blocks alot closer.
+    - Spanned strings making progress.
+    - Struct fully round-trip.
+
+- version: 0.16
+  date: 2002-07-09
+  changes: 
+    - Nearing completion of scalar blocks, literal and folded both implemented.
+    - Improvements to the Struct class round-trip.
+    - Adjunct words are combined to prevent odd errors.
+
+- version: 0.15
+  date: 2002-07-09
+  changes:
+    - Added ! explicit implicit operator.
+    - Added Struct#to_yaml.
+    - Fixes to double-quoted strings.
+    - Fixes to Regexp#to_yaml.  Added unit tests to reflect.
+
+- version: 0.14
+  date: 2002-07-08
+  changes:
+    - Initial public release.
+    - README in YAML.
+    - Complex keys.
+    - Single-quoted, double-quoted scalars.
+    - Transfer methods now parsed.
+    - Cleaned up the grammar a bit more.
+    - Anchors and aliases.
+

@@ -107,10 +107,18 @@ syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
 void
 syck_parser_reset_levels( SyckParser *p )
 {
-    p->lvl_idx = 1;
-    p->levels[0].spaces = -1;
-    p->levels[0].domain = syck_strndup( "", 1 );  // YAML_DOMAIN + "/";
-    p->levels[0].status = syck_lvl_header;
+    while ( p->lvl_idx > 1 )
+    {
+        syck_parser_pop_level( p );
+    }
+
+    if ( p->lvl_idx < 1 )
+    {
+        p->lvl_idx = 1;
+        p->levels[0].spaces = -1;
+        p->levels[0].domain = "";  // YAML_DOMAIN + "/";
+        p->levels[0].status = syck_lvl_header;
+    }
 }
 
 void
@@ -153,6 +161,7 @@ syck_new_parser()
     p->taguri_expansion = 0;
     p->bufsize = SYCK_BUFFERSIZE;
     p->buffer = NULL;
+    p->lvl_idx = 0;
     syck_parser_reset_levels( p );
     return p;
 }
@@ -207,7 +216,9 @@ syck_free_parser( SyckParser *p )
     //
     // Free all else
     //
+    syck_parser_reset_levels( p );
     S_FREE( p->levels );
+
     if ( p->buffer != NULL )
     {
         S_FREE( p->buffer );

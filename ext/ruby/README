@@ -1,0 +1,400 @@
+#
+#
+#            .. yaml.rb .....
+#            .              .
+#            .              .
+#            .              .
+#            ....... v0.49 ..
+#
+#
+#            
+#            {o}
+#             ^
+#                    {o}
+#                     ^
+#
+# Load this README! 
+#
+# >> YAML::load( File.open( 'README' ) )
+#
+--- %YAML:1.0
+title: YAML.rb
+version: 0.49
+author: [Why the Lucky Stiff, yaml-core@whytheluckystiff.net]
+websites: [http://www.yaml.org, http://yaml4r.sf.net, http://sf.net/projects/yaml4r/]
+installation: >
+  YAML.rb depends on Racc, available in the RAA:
+
+     http://www.ruby-lang.org/en/raa-list.rhtml?name=Racc
+
+  Once Racc is installed, run the install.rb script in this
+  distribution:
+
+     ruby install.rb
+
+  To run the included unit tests:
+
+    ruby tests/basic.rb
+
+  To run the new YamlTestingSuite:
+
+    cd yts
+    ruby yts.rb
+
+about: >
+  From the specification:
+
+  "YAML(tm) (rhymes with 'camel') is a
+  straightforward machine parsable data serialization format designed for
+  human readability and interaction with scripting languages such as Perl 
+  and Python. YAML is optimized for data serialization, formatted
+  dumping, configuration files, log files, Internet messaging and
+  filtering. This specification describes the YAML information model and
+  serialization format. Together with the Unicode standard for characters, it
+  provides all the information necessary to understand YAML Version 1.0
+  and construct computer programs to process it."
+
+  For Ruby developers, YAML is a natural fit for object serialization and
+  general data storage.  Really, it's quite fantastic.  Spreads right on
+  your Rubyware like butter on bread!
+
+  The possible uses for YAML are innumerable.  Configuration files,
+  custom internet protocols, documentation, the list goes on and on.
+  Also, with YAML readers popping up for other languages (see YAML.pm 
+  and others), you can pass data easily to colleagues in distant lands,
+  swamped in their archaic languages.
+
+  YAML is a beacon of light, reaching out to them all. ;)
+
+  If I can-- quickly, of course-- in the Pickaxe book-- my all-time favorite
+  coding book-- Dave Thomas and Andy Hunt say:
+
+  "When we discovered Ruby, we realized that we'd found what we'd been looking
+  for.  More than any other language with which we have worked, Ruby stays
+  out of your way.  You can concentrate on solving the problem at hand, instead
+  of struggling with compiler and language issues.  That's how it can help you
+  become a better programmer: by giving you the chance to spend your time
+  creating solutions for your users, not for the compiler."
+
+  HeiL!  So true.  Ruby's elegance, its readability, its common sense!  Such
+  it is with YAML.  YAML is completely readable, in fact much of its syntax
+  parallels Ruby's own data structure syntax!
+
+  Another one from the Pickaxe:
+
+  "Ruby is easy to learn. Everyday tasks are simple to code and once you've done
+  them, they are easy to maintain and grow.  Apparently difficult things often
+  turn out not to have been difficult after all.  Ruby follows the Principle
+  of Least Surprise--things work the way you would expect them to, with very
+  few special cases or exceptions.  And that really does make a difference
+  when you're programming."
+
+  A quick look at YAML and you can see your data structure immediately.  If
+  I compare it to SOAP or XML-RPC, the difference is immense.  With XML-RPC,
+  you can see the data structures, but its terribly verbose.  More time is
+  spent describing the structure than anything else.  Again, the Principle
+  of Least Surprise is wholly present in YAML.  Thank God!
+
+  Well, welcome to YAML.rb.  Now let's look at the API and see what we're
+  dealing with!
+
+lets show off:
+  - section: Exporting objects to YAML
+    explanation: >
+
+      Ruby encourages objects to have their own exporting methods.  Hence, YAML.rb
+      adds #to_yaml methods for built-in types.  The NilClass, FalseClass, TrueClass, Symbol, Range,
+      Numeric, Date, Time, Regexp, String, Array, and Hash all contain the to_yaml method.
+
+    example: |
+    
+      require 'yaml'
+      h = { 'test' => 12, 'another' => 13 }
+      puts h.to_yaml
+      
+  - section: Loading a single YAML document
+    explanation: >
+
+      Although you'll often want to store multiple YAML documents in a single
+      file, YAML.rb has a mechanism for loading and storing a single document in
+      a single file.  I wanted to offer a simpler API for those who don't care
+      for the multiple document styling and just want to store a single object.
+
+    example: |
+
+      require 'yaml'
+      obj = YAML::load( File::open( "/tmp/yaml.store.1" ) )
+
+  - section: Loading an object from a string
+    explanation: >
+
+      Perhaps you get an object from an HTTP post.  String objects can be
+      loaded through the same YAML::load used with the File object above.
+      You can also pass StringIO into YAML::load.
+
+    example: |
+
+      require 'yaml'
+      obj = YAML::load( <<EOY
+      --- %YAML:1.0
+      - armless
+      - falling
+      - birds
+      EOY
+      )
+      p obj
+      #=> [ 'armless', 'falling', 'birds' ]
+
+  - section: Replacing PStore with YAML
+    explanation: >
+      
+      PStore is an excellent utility for Ruby developers.  Akin to Python's pickle,
+      objects can be serialized to a file.  In YAML.rb, the PStore API is replicated
+      identically, as a drop-in replacement for PStore code.
+
+    example: |
+
+      require 'yaml'
+      y = YAML::Store.new( "/tmp/yaml.store.1", :Indent => 2, :Separator => '---.pstore' )
+      y.transaction do
+        y['names'] = ['Crispin', 'Glover']
+        y['hello'] = {'hi' => 'hello', 'yes' => 'YES!!' }
+      end
+
+  - section: Exporting multiple documents to YAML
+    explanation: >
+
+      A single YAML file can store several documents, each opened with a YAML separator ('---').
+      This can be especially useful for streaming data over a socket or for separating
+      log file entries (as see in the spec -- http://yaml.org/spec/).
+      
+      This release writes all documents out upon calling YAML::Stream#emit, but future
+      releases will allow document writing to stream individually.
+    
+    example: |
+
+      y = YAML::Stream.new( :Indent => 2, :UseVersion => true )
+      y.add( {'my_regex' => /hello [Jj][Aa][Mm][Ee][Ss]/, 'my_age' => 90 } )
+      y.add( {'hi' => 'wow!', 'bye' => 'wow!'} )
+      y.add( {['Red Socks','Boston'] => ['One', 'Two', 'Three']} )
+      y.add( [true, false, false] ) 
+      puts y.emit
+
+  - section: Loading multiple documents at once into a YAML::Stream
+    explanation: >
+
+      In using YAML::Stream to write your objects, you may find that
+      you want a quick way to load several documents at once back into
+      a YAML::Stream, for editing and rewriting.
+
+    example: |
+
+      require 'yaml'
+      File.open( "/home/why/.personalrc", "rw" ) { |rc|
+        # Load the objects from the file
+        y = YAML::load_stream( rc )
+        # Make edits to the objects
+        doc2 = y.documents[2]
+        doc2['car'] = '1997 Subaru Outback'
+        y.edit( 2, doc2 )
+        # Save back out
+        rc.rewind
+        rc.write( y.emit )
+        rc.close
+      }
+
+  - section: Loading multiple documents from a YAML stream
+    explanation: |
+
+      When reading YAML from a socket or a pipe, you should
+      consider using the event-based parser, which will parse
+      documents one at a time. 
+
+    example: |
+
+      require 'yaml'
+      log = File.open( "/var/log/apache.yaml" )
+      yp = YAML::load_documents( log ) { |doc|
+        puts "#{doc['at']} #{doc['type']} #{doc['url}"
+      }
+
+# Note the YAML document embedded in the YAML document!
+cheat sheet: |
+    # A YAML reference card
+    --- %YAML:1.0
+
+    Collection indicators:
+        '? ' : Key indicator.
+        ': ' : Key / value separator.
+        '- ' : Nested series entry indicator.
+        ', ' : Separate in-line branch entries.
+        '[]' : Surround in-line series branch.
+        '{}' : Surround in-line keyed branch.
+
+    Scalar indicators:
+        '''' : Surround in-line unescaped scalar ('' escaped ').
+        '"'  : Surround in-line escaped scalar (see escape codes below).
+        '|'  : Block scalar indicator.
+        '>'  : Folded scalar indicator.
+        '-'  : Strip chomp modifier ('|-' or '>-').
+        '+'  : Keep chomp modifier ('|+' or '>+').
+        int  : Explicit indentation modifier ('|10' or '>2').
+             # Modifiers can be combined ('|2-', '>+10').
+
+    Alias indicators:
+        '&'  : Anchor property.
+        '*'  : Alias indicator.
+
+    Transfer indicators:
+        '!'  : Transfer method indicator.
+        '!!' : Transfer method with private type family.
+        '^'  : Establish/use global type family prefix.
+        '|'  : Separate global type family from format.
+
+    Document indicators:
+       '%'   : Directive indicator.
+       '---' : Document separator.
+       '...' : Document terminator.
+
+    Misc indicators:
+        ' #' : Throwaway comment indicator.
+        '='  : Default value map key.
+        '<<' : Insert keys from map key.
+
+    Core types: ### Almost never given explicitly
+      '!map' : [ Hash table, dictionary, mapping ]
+      '!seq' : [ List, array, tuple, vector, sequence ]
+      '!str' : Unicode string
+
+    Language Independent Scalar types:
+      [ , ~, null ]         : Null (no value).
+      [ 1,234, 0x4D2, 02333, 20:34 ] : [ Decimal int, Hexadecimal, Octal, Base60 ]
+      [ 1,230.15, 12.3015e+02, 20:20.15 ] : [ Fixed float, Exponential, Base60 ]
+      [ .inf, -.Inf, .NAN ] : [ Infinity (float), Negative, Not a number ]
+      [ +, true, Yes, ON  ] : Boolean true
+      [ -, false, No, OFF ] : Boolean false
+      ? !binary >
+          R0lG...BADS=
+      :
+          Base 64 binary value.
+
+    Escape codes:
+     Numeric   : { "\xXX": 8-bit, "\uXXXX": 16-bit, "\UXXXXXXXX": 32-bit }
+     Protective: { "\\": '\', "\"": '"', "\ ": ' ' }
+     C: { "\a": BEL, "\b": BS, "\f": FF, "\n": LF, "\r": CR, "\t": TAB, "\v": VTAB }
+     Additional: { "\e": ESC, "\0": NUL, "\_": NBSP, "\N": NEL, "\L": LS, "\P": PS }
+
+compliance:
+  - feature: YAML Separators
+    supported?: (Yes)
+    notes: Custom YAML separators are allowed and will be used in exporting multiple documents.
+  - feature: YAML directives
+    supported?: (Yes)
+    notes: >
+      Directives are parsed correctly, but are of little use.  The TAB directive is completely
+      ignored, as tabs are not supported at this time.
+  - feature: Transfer methods
+    supported?: (Yes)
+  - feature: Private types
+    supported?: (Yes)
+  - feature: URI Escaping
+    supported?: (Yes)
+  - feature: URI Prefixing
+    supported?: (Yes)
+  - feature: Throwaway comments
+    supported?: (Yes)
+  - feature: Anchors
+    supported?: (Yes)
+  - feature: Aliases
+    supported?: (Yes)
+  - feature: Sequences
+    supported?: (Yes)
+    notes: Nested and flow both supported.
+  - feature: Mappings
+    supported?: (Yes)
+    notes: Nested and flow both supported.
+  - feature: Key indicators
+    supported?: (Yes)
+  - feature: Explicit indent
+    supported?: (Yes)
+  - feature: Chomping
+    supported?: (Yes)
+  - feature: Literal scalar
+    supported?: (Yes)
+  - feature: Folded scalar
+    supported?: (Yes)
+  - feature: Unquoted scalars
+    supported?: (Yes)
+    notes: No support for spanning unquoted.
+  - feature: Single-quoted scalars
+    supported?: (Yes)
+  - feature: Double-quoted scalars
+    supported?: (Yes)
+  - feature: Escape characters
+    supported?: (Yes)
+    notes: Most should be.
+  - feature: Strings
+    supported?: (Yes)
+  - feature: Null
+    supported?: (Yes)
+    feature: Canonical and english.
+  - feature: Boolean
+    supported?: (Yes)
+    notes: Canonical and english.
+  - feature: Integer
+    supported?: (Yes)
+    notes: Canonical, oct, dec, and hex.
+  - feature: Float
+    supported?: (Yes)
+    notes: Canonical, exp, fix, english
+  - feature: Time
+    supported?: (Yes)
+    notes: Canonical, iso8601, spaced and ymd (as Date).
+  - feature: Binary
+    supported?: (Yes)
+  - feature: Default key
+    supported?: (Yes)
+
+acknowledgements:
+  - who: Brian Ingerson
+    why?: |
+      Ingy's YAML.pm was INDISPENSABLE in writing this library.  In fact,
+      most of the emitter code follows the YAML.pm code quite closely.
+      I also borrowed from his testing suite.  Hopefully in the near
+      future, YAML.rb and YAML.pm will use the same testing suite.
+
+      Brian is also the creator of YAML.  I'd say he's the free software
+      equivalent of an Olympic long jumper.
+    email: ingy@ttul.org
+
+  - who: Steve Howell
+    why?: |
+      Comrade on the Yaml-core mailing list.  He's working on the
+      Python YAML implementation.  Very encouraging of this project.
+      I plan on stealing his Ruby code to handle circular data structures.
+      Steve has also contributed to the YAML Testing Suite.
+    email: showell@zipcon.net
+
+  - who: Clark Evans
+    why?: |
+      Clark showed immediate excitement upon discovery of YAML.rb.
+      And at that point I hadn't really done much yet, but the
+      encouragement sure helped alot.
+
+  - who: Oren Ben-Kiki
+    why?: |
+      For his work on the spec and the quick reference.  All three
+      of these guys have built a well-written specification, paying
+      great attention to details.
+
+  - who: Yukihiro Matsumoto
+    why?: |
+      Creator of the Ruby language.  The most innovative man in
+      software development bar none!
+      
+  - who: qwilk 
+    why?: |
+      Long-time friend at desktopian.org, developer of Blackbox for
+      Windows, Robin Hood web server.  Excellent chum, persistent
+      BeOS fanatic and leader of a generation of shell folk.
+
