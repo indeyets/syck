@@ -157,19 +157,27 @@ syck_yaml2byte_handler(p, n)
             while(1) {
                 ch = *current;
                 if('\n' == ch || 0 == ch || current > finish) {
-                    if(current > start) {
+                    if(current >= start) {
                         bytestring_append(val, nextcode, start, current);
                         nextcode = YAMLBYTE_CONTINUE;
-                        start = current + 1;
                     }
+                    start = current + 1;
                     if(current > finish)
+                    {
                         break;
+                    }
                     else if('\n' == ch )
+                    {
                         bytestring_append(val,YAMLBYTE_NEWLINE,NULL,NULL);
+                    }
                     else if(0 == ch)
+                    {
                         bytestring_append(val,YAMLBYTE_NULLCHAR,NULL,NULL);
+                    }
                     else 
+                    {
                         assert("oops");
+                    }
                 }
                 current += 1;
             }

@@ -60,6 +60,11 @@ char *get_inline( SyckParser *parser );
                 YYPOS(0); \
             return '-'; \
         \
+            case syck_lvl_map: \
+                lvl->ncount++; \
+                ADD_LEVEL(len, s); \
+            break; \
+        \
             case syck_lvl_open: \
                 lvl->status = s; \
             break; \
@@ -211,15 +216,50 @@ DOC | PAU   {   ENSURE_YAML_IEND(lvl, -1);
                 return 0;
             }
 
-MAP     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_map); 
+MAP     {   int complex = 0;
+            if ( lvl->ncount % 2 == 0 && ( lvl->status == syck_lvl_map || lvl->status == syck_lvl_seq ) )
+            {
+                complex = 1;
+            }
+            ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_map); 
+            if ( complex )
+            {
+                FORCE_NEXT_TOKEN( YAML_IOPEN );
+                return '?';
+            }
             return YAML_IOPEN;
         }
 
-SEQ     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_seq);
+SEQ     {   int complex = 0;
+            if ( lvl->ncount % 2 == 0 && ( lvl->status == syck_lvl_map || lvl->status == syck_lvl_seq ) )
+            {
+                complex = 1;
+            }
+            ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_seq);
+            if ( complex )
+            {
+                FORCE_NEXT_TOKEN( YAML_IOPEN );
+                return '?';
+            }
             return YAML_IOPEN;
         }
 
-END     {   POP_LEVEL();
+END     {   if ( lvl->status == syck_lvl_seq && lvl->ncount == 0 )
+            {
+                lvl->ncount++;
+                YYPOS(0);
+                FORCE_NEXT_TOKEN( ']' );
+                return '[';
+            }
+            else if ( lvl->status == syck_lvl_map && lvl->ncount == 0 )
+            {
+                lvl->ncount++;
+                YYPOS(0);
+                FORCE_NEXT_TOKEN( '}' );
+                return '{';
+            }
+            
+            POP_LEVEL();
             lvl = CURRENT_LEVEL();
             if ( lvl->status == syck_lvl_seq )
             {
@@ -227,7 +267,6 @@ END     {   POP_LEVEL();
             }
             else if ( lvl->status == syck_lvl_map )
             {
-                lvl->ncount++;
                 if ( lvl->ncount % 2 == 1 )
                 {
                     FORCE_NEXT_TOKEN(':');
@@ -324,7 +363,6 @@ LF      {   if ( lvl->status == syck_lvl_seq )
             }
             else if ( lvl->status == syck_lvl_map )
             {
-                lvl->ncount++;
                 if ( lvl->ncount % 2 == 1 ) return ':';
                 else                        return YAML_INDENT;
             }
