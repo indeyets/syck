@@ -92,7 +92,7 @@ python_syck_handler(p, n)
             for ( i = 0; i < n->data.list->idx; i++ )
             {
                 oid = syck_seq_read( n, i );
-                syck_lookup_sym( p, oid, &o2 );
+                syck_lookup_sym( p, oid, (char **)&o2 );
                 PyList_SetItem( o, i, o2 );
             }
         break;
@@ -102,14 +102,14 @@ python_syck_handler(p, n)
             for ( i = 0; i < n->data.pairs->idx; i++ )
             {
                 oid = syck_map_read( n, map_key, i );
-                syck_lookup_sym( p, oid, &o2 );
+                syck_lookup_sym( p, oid, (char **)&o2 );
                 oid = syck_map_read( n, map_value, i );
-                syck_lookup_sym( p, oid, &o3 );
+                syck_lookup_sym( p, oid, (char **)&o3 );
                 PyDict_SetItem( o, o2, o3 );
             }
         break;
     }
-    oid = syck_add_sym( p, o );
+    oid = syck_add_sym( p, (char *)o );
     return oid;
 }
 
@@ -125,13 +125,16 @@ syck_load( self, args )
 
     if (!PyArg_ParseTuple(args, "s", &yamlstr))
         return NULL;
+
     syck_parser_str_auto( parser, yamlstr, NULL );
     syck_parser_handler( parser, python_syck_handler );
     syck_parser_error_handler( parser, NULL );
     syck_parser_implicit_typing( parser, 1 );
     syck_parser_taguri_expansion( parser, 0 );
+
     v = syck_parse( parser );
-    syck_lookup_sym( parser, v, &obj );
+    syck_lookup_sym( parser, v, (char **)&obj );
+
     syck_free_parser( parser );
 
     return obj;

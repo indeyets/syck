@@ -37,6 +37,13 @@ typedef struct RVALUE {
 
 #define RUBY_DOMAIN   "ruby.yaml.org,2002"
 
+#ifndef StringValue
+#define StringValue(v)
+#endif
+
+/*
+ * symbols and constants
+ */
 static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match;
 static VALUE sym_model, sym_generic;
 static VALUE sym_scalar, sym_seq, sym_map;
@@ -53,6 +60,9 @@ static double S_nan() { return S_zero() / S_zero(); }
 
 static VALUE syck_node_transform( VALUE );
 
+/*
+ * handler prototypes
+ */
 SYMID rb_syck_parse_handler _((SyckParser *, SyckNode *));
 SYMID rb_syck_load_handler _((SyckParser *, SyckNode *));
 void rb_syck_err_handler _((SyckParser *, char *));
@@ -62,6 +72,7 @@ void rb_syck_output_handler _((SyckEmitter *, char *, long));
 struct parser_xtra {
     VALUE data;  /* Borrowed this idea from marshal.c to fix [ruby-core:8067] problem */
     VALUE proc;
+    int taint;
 };
 
 /*
@@ -97,31 +108,29 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
 
 /*
  * determine: are we reading from a string or io?
+ * (returns tainted? boolean)
  */
-void
+int
 syck_parser_assign_io(parser, port)
 	SyckParser *parser;
 	VALUE port;
 {
+    int taint = Qfalse;
     if (rb_respond_to(port, rb_intern("to_str"))) {
-#if 0
-	    arg.taint = OBJ_TAINTED(port); /* original taintedness */
+	    taint = OBJ_TAINTED(port); /* original taintedness */
 	    StringValue(port);	       /* possible conversion */
-#endif
 	    syck_parser_str( parser, RSTRING(port)->ptr, RSTRING(port)->len, NULL );
     }
     else if (rb_respond_to(port, s_read)) {
         if (rb_respond_to(port, s_binmode)) {
             rb_funcall2(port, s_binmode, 0, 0);
         }
-#if 0
-        arg.taint = Qfalse;
-#endif
         syck_parser_str( parser, (char *)port, 0, rb_syck_io_str_read );
     }
     else {
         rb_raise(rb_eTypeError, "instance of IO needed");
     }
+    return taint;
 }
 
 /*
@@ -234,7 +243,7 @@ rb_syck_parse_handler(p, n)
     SyckParser *p;
     SyckNode *n;
 {
-    VALUE t, v, obj;
+    VALUE t, obj, v = Qnil;
     int i;
     struct parser_xtra *bonus;
 
@@ -277,10 +286,8 @@ rb_syck_parse_handler(p, n)
     }
 
     bonus = (struct parser_xtra *)p->bonus;
-	if ( bonus->proc != 0 )
-	{
-		rb_funcall(bonus->proc, s_call, 1, v);
-	}
+    if ( bonus->taint)      OBJ_TAINT( obj );
+	if ( bonus->proc != 0 ) rb_funcall(bonus->proc, s_call, 1, v);
 
     rb_iv_set(obj, "@value", v);
     rb_hash_aset(bonus->data, INT2FIX(RHASH(bonus->data)->tbl->num_entries), obj);
@@ -311,9 +318,8 @@ rb_syck_load_handler(p, n)
     SyckParser *p;
     SyckNode *n;
 {
-    VALUE obj;
+    VALUE obj = Qnil;
     long i;
-    int str = 0;
     int check_transfers = 0;
     struct parser_xtra *bonus;
 
@@ -476,10 +482,8 @@ rb_syck_load_handler(p, n)
     }
 
     bonus = (struct parser_xtra *)p->bonus;
-	if ( bonus->proc != 0 )
-	{
-		rb_funcall(bonus->proc, s_call, 1, obj);
-	}
+    if ( bonus->taint)      OBJ_TAINT( obj );
+	if ( bonus->proc != 0 ) rb_funcall(bonus->proc, s_call, 1, obj);
 
     if ( check_transfers == 1 && n->type_id != NULL )
     {
@@ -511,6 +515,9 @@ rb_syck_err_handler(p, msg)
            p->lineptr); 
 }
 
+/*
+ * provide bad anchor object to the parser.
+ */
 SyckNode *
 rb_syck_bad_anchor_handler(p, a)
     SyckParser *p;
@@ -546,26 +553,8 @@ syck_set_model( parser, model )
 }
 
 /*
- * wrap syck_parse().
+ * mark parser nodes
  */
-static VALUE
-rb_run_syck_parse(parser)
-    SyckParser *parser;
-{
-    return syck_parse(parser);
-}
-
-/*
- * free parser.
- */
-static VALUE
-rb_syck_ensure(parser)
-    SyckParser *parser;
-{
-    syck_free_parser( parser );
-    return 0;
-}
-
 static void
 syck_mark_parser(parser)
     SyckParser *parser;
@@ -620,27 +609,23 @@ syck_parser_load(argc, argv, self)
     VALUE *argv;
 	VALUE self;
 {
-    VALUE port, proc, v, model;
+    VALUE port, proc, model;
 	SyckParser *parser;
     struct parser_xtra bonus;
     volatile VALUE hash;	/* protect from GC */
 
     rb_scan_args(argc, argv, "11", &port, &proc);
 	Data_Get_Struct(self, SyckParser, parser);
-	syck_parser_assign_io(parser, port);
 
 	model = rb_hash_aref( rb_iv_get( self, "@options" ), sym_model );
 	syck_set_model( parser, model );
 
+	bonus.taint = syck_parser_assign_io(parser, port);
     bonus.data = hash = rb_hash_new();
 	if ( NIL_P( proc ) ) bonus.proc = 0;
     else                 bonus.proc = proc;
     
 	parser->bonus = (void *)&bonus;
-
-#if 0
-    v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
-#endif
 
     return syck_parse( parser );
 }
@@ -661,11 +646,11 @@ syck_parser_load_documents(argc, argv, self)
 
     rb_scan_args(argc, argv, "1&", &port, &proc);
 	Data_Get_Struct(self, SyckParser, parser);
-	syck_parser_assign_io(parser, port);
 
 	model = rb_hash_aref( rb_iv_get( self, "@options" ), sym_model );
 	syck_set_model( parser, model );
     
+	bonus.taint = syck_parser_assign_io(parser, port);
     while ( 1 )
 	{
         /* Reset hash for tracking nodes */
@@ -730,7 +715,7 @@ syck_loader_add_domain_type( argc, argv, self )
     VALUE *argv;
        VALUE self;
 {
-    VALUE domain, type_re, proc, families, ruby_yaml_org, domain_types;
+    VALUE domain, type_re, proc;
 
     rb_scan_args(argc, argv, "2&", &domain, &type_re, &proc);
     syck_loader_add_type_family( self, domain, type_re, proc );
@@ -747,7 +732,7 @@ syck_loader_add_builtin_type( argc, argv, self )
     VALUE *argv;
        VALUE self;
 {
-    VALUE type_re, proc, families, ruby_yaml_org, domain_types;
+    VALUE type_re, proc;
 
     rb_scan_args(argc, argv, "1&", &type_re, &proc);
     syck_loader_add_type_family( self, rb_str_new2( YAML_DOMAIN ), type_re, proc );
@@ -763,7 +748,7 @@ syck_loader_add_ruby_type( argc, argv, self )
     VALUE *argv;
        VALUE self;
 {
-    VALUE type_re, proc, families, ruby_yaml_org, domain_types;
+    VALUE type_re, proc;
 
     rb_scan_args(argc, argv, "1&", &type_re, &proc);
     syck_loader_add_type_family( self, rb_str_new2( RUBY_DOMAIN ), type_re, proc );
@@ -836,10 +821,6 @@ syck_loader_transfer( self, type, val )
 {
     char *taguri = NULL;
 
-#if 0
-	rb_p(rb_str_new2( "-- TYPE --" ));
-	rb_p(type);
-#endif
     if (NIL_P(type) || !RSTRING(type)->ptr || RSTRING(type)->len == 0) 
     {
         /*
@@ -858,14 +839,11 @@ syck_loader_transfer( self, type, val )
 
     if ( taguri != NULL )
     {
-        VALUE scheme, domain, name, type_hash, type_proc = Qnil;
+        VALUE scheme, name, type_hash, domain = Qnil, type_proc = Qnil;
         VALUE type_uri = rb_str_new2( taguri );
         VALUE str_taguri = rb_str_new2("taguri");
         VALUE str_xprivate = rb_str_new2("x-private");
         VALUE parts = rb_str_split( type_uri, ":" );
-#if 0
-        rb_p(parts);
-#endif
 
         scheme = rb_ary_shift( parts );
 
@@ -898,10 +876,6 @@ syck_loader_transfer( self, type, val )
                 name = rb_ary_shift( col );
                 type_proc = rb_ary_shift( col );
             }
-#if 0
-            rb_p(name);
-            rb_p(type_proc);
-#endif
         }
 
         if ( rb_respond_to( type_proc, s_call ) )

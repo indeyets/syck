@@ -100,10 +100,6 @@ syck_hdlr_get_anchor( SyckParser *p, char *a )
 void
 syck_add_transfer( char *uri, SyckNode *n, int taguri )
 {
-    char *comma = NULL;
-    char *slash = uri;
-    char *domain = NULL;
-
     if ( n->type_id != NULL )
     {
         S_FREE( n->type_id );

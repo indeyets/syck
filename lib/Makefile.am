@@ -2,7 +2,7 @@ INCLUDES = -I$(top_srcdir)
 
 LEXLIB = @LEXLIB@
 
-AM_YFLAGS = -d -t -v
+AM_YFLAGS = -d -t -v -p syck
 
 lib_LIBRARIES = libsyck.a
 include_HEADERS = syck.h syck_st.h

@@ -18,7 +18,7 @@
 void
 try_tag_implicit( SyckNode *n, int taguri )
 {
-    char *tid;
+    char *tid = "";
     switch ( n->kind )
     {
         case syck_str_kind:

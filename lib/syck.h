@@ -13,10 +13,11 @@
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
-#define SYCK_VERSION    "0.38"
+#define SYCK_VERSION    "0.39"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
+#include <ctype.h>
 #ifdef HAVE_ST_H
 #include <st.h>
 #else
@@ -313,6 +314,7 @@ void syck_emitter_ignore_id( SyckEmitter *, SYMID );
 void syck_emitter_handler( SyckEmitter *, SyckOutputHandler );
 void syck_free_emitter( SyckEmitter * );
 void syck_emitter_clear( SyckEmitter * );
+void syck_emitter_simple( SyckEmitter *, char *, long );
 void syck_emitter_write( SyckEmitter *, char *, long );
 void syck_emitter_flush( SyckEmitter *, long );
 char *syck_emitter_start_obj( SyckEmitter *, SYMID );
@@ -362,6 +364,11 @@ SYMID syck_seq_read( SyckNode *, long );
 long syck_seq_count( SyckNode * );
 
 void apply_seq_in_map( SyckParser *, SyckNode * );
+
+/*
+ * Lexer prototypes
+ */
+void syckerror( char *msg );
 
 #ifndef ST_DATA_T_DEFINED
 typedef long st_data_t;

@@ -133,7 +133,7 @@ TestSyckParseString2( CuTest *tc )
     parser = syck_new_parser();
     syck_parser_handler( parser, SyckParseStringHandler );
     syck_parser_str_auto( parser, "--- {test: 1, and: 2, or: &test 13}", NULL );
-    yyparse( parser );
+    syckparse( parser );
     st_foreach( parser->anchors, ListAnchors, tc );
     syck_free_parser( parser );
 }

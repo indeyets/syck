@@ -26,9 +26,9 @@
     char *name;
 };
 
-%token <name>       ANCHOR ALIAS TRANSFER ITRANSFER
-%token <nodeData>   WORD PLAIN BLOCK
-%token              DOCSEP IOPEN INDENT IEND
+%token <name>       YAML_ANCHOR YAML_ALIAS YAML_TRANSFER YAML_ITRANSFER
+%token <nodeData>   YAML_WORD YAML_PLAIN YAML_BLOCK
+%token              YAML_DOCSEP YAML_IOPEN YAML_INDENT YAML_IEND
 
 %type <nodeId>      doc basic_seq
 %type <nodeData>    atom word_rep ind_rep struct_rep atom_or_empty
@@ -45,7 +45,7 @@ doc     : struct_rep
         {
            ((SyckParser *)parser)->root = syck_hdlr_add_node( (SyckParser *)parser, $1 );
         }
-        | DOCSEP atom_or_empty
+        | YAML_DOCSEP atom_or_empty
         {
            ((SyckParser *)parser)->root = syck_hdlr_add_node( (SyckParser *)parser, $2 );
         }
@@ -60,7 +60,7 @@ atom	: word_rep
         ;
 
 ind_rep : struct_rep
-        | ANCHOR ind_rep
+        | YAML_ANCHOR ind_rep
         { 
            /*
             * _Anchors_: The language binding must keep a separate symbol table
@@ -111,17 +111,17 @@ atom_or_empty   : atom
 /*
  * Indentation abstractions
  */
-indent_open     : IOPEN
-                | indent_open INDENT
+indent_open     : YAML_IOPEN
+                | indent_open YAML_INDENT
                 ;
                 
-indent_end      : IEND
+indent_end      : YAML_IEND
                 ;
 
-indent_sep      : INDENT
+indent_sep      : YAML_INDENT
                 ;
 
-indent_flex_end : IEND
+indent_flex_end : YAML_IEND
                 | indent_sep indent_flex_end
                 ;
 
@@ -130,12 +130,12 @@ indent_flex_end : IEND
  * as keys in implicit maps and valid elements
  * for the inline structures
  */
-word_rep	: TRANSFER word_rep						
+word_rep	: YAML_TRANSFER word_rep						
             { 
                syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
                $$ = $2;
             } 
-            | ITRANSFER word_rep						
+            | YAML_ITRANSFER word_rep						
             { 
                if ( ((SyckParser *)parser)->implicit_typing == 1 )
                {
@@ -143,11 +143,11 @@ word_rep	: TRANSFER word_rep
                }
                $$ = $2;
             }
-            | ANCHOR word_rep
+            | YAML_ANCHOR word_rep
             { 
                $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $2 );
             }
-            | ALIAS										
+            | YAML_ALIAS										
             {
                /*
                 * _Aliases_: The anchor symbol table is scanned for the anchor name.
@@ -155,7 +155,7 @@ word_rep	: TRANSFER word_rep
                 */
                $$ = syck_hdlr_get_anchor( (SyckParser *)parser, $1 );
             }
-			| WORD
+			| YAML_WORD
             { 
                SyckNode *n = $1;
                if ( ((SyckParser *)parser)->taguri_expansion == 1 )
@@ -168,19 +168,19 @@ word_rep	: TRANSFER word_rep
                }
                $$ = n;
             }
-            | PLAIN
+            | YAML_PLAIN
             ;
 
 /*
  * Any of these structures can be used as
  * complex keys
  */
-struct_rep	: TRANSFER struct_rep
+struct_rep	: YAML_TRANSFER struct_rep
             { 
                 syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
                 $$ = $2;
             }
-			| BLOCK
+			| YAML_BLOCK
 			| implicit_seq
 			| inline_seq
 			| implicit_map
@@ -203,21 +203,21 @@ basic_seq       : '-' atom_or_empty
                 ;
 
 top_imp_seq     : in_implicit_seq
-                | TRANSFER indent_sep top_imp_seq
+                | YAML_TRANSFER indent_sep top_imp_seq
                 { 
                     syck_add_transfer( $1, $3, ((SyckParser *)parser)->taguri_expansion );
                     $$ = $3;
                 }
-                | TRANSFER top_imp_seq
+                | YAML_TRANSFER top_imp_seq
                 { 
                     syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
                     $$ = $2;
                 }
-                | ANCHOR indent_sep top_imp_seq
+                | YAML_ANCHOR indent_sep top_imp_seq
                 { 
                     $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $3 );
                 }
-                | ANCHOR top_imp_seq
+                | YAML_ANCHOR top_imp_seq
                 { 
                     $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $2 );
                 }
@@ -277,21 +277,21 @@ implicit_map	: indent_open top_imp_map indent_end
                 }
                 ;
 
-top_imp_map     : TRANSFER indent_sep in_implicit_map
+top_imp_map     : YAML_TRANSFER indent_sep in_implicit_map
                 { 
                     syck_add_transfer( $1, $3, ((SyckParser *)parser)->taguri_expansion );
                     $$ = $3;
                 }
-                | TRANSFER top_imp_map
+                | YAML_TRANSFER top_imp_map
                 { 
                     syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
                     $$ = $2;
                 }
-                | ANCHOR indent_sep in_implicit_map
+                | YAML_ANCHOR indent_sep in_implicit_map
                 { 
                     $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $3 );
                 }
-                | ANCHOR top_imp_map
+                | YAML_ANCHOR top_imp_map
                 { 
                     $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $2 );
                 }
