@@ -5,8 +5,6 @@ require 'yaml/compat'
 #
 # Type conversions
 #
-class YAML::TypeError < StandardError; end
-
 class Class
 	def to_yaml( opts = {} )
 		raise TypeError, "can't dump anonymous class %s" % self.class
@@ -218,16 +216,17 @@ end
 class Symbol
     tag_as "tag:ruby.yaml.org,2002:symbol"
     tag_as "tag:ruby.yaml.org,2002:sym"
+	# yaml_implicit /^:/, :yaml_new
     def Symbol.yaml_new( tag, val )
         if String === val
-            val[1..-1].intern
+            val.intern
         else
             raise YAML::TypeError, "Invalid Symbol: " + val.inspect
         end
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
-            out.scalar( taguri, ":#{ self.id2name }", :plain )
+            out.scalar( taguri, self.id2name, :plain )
         end
 	end
 end

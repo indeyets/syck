@@ -46,7 +46,7 @@ typedef struct {
 #define RUBY_DOMAIN   "ruby.yaml.org,2002"
 
 #ifndef StringValue
-#define StringValue(v)
+#define StringValue(v) (v)
 #endif
 #ifndef rb_attr_get
 #define rb_attr_get(o, i)  rb_ivar_get(o, i)
@@ -556,7 +556,7 @@ yaml_org_handler( n, ref )
                       strncmp( n->data.str->ptr, ":", 1 ) == 0 )
             {
                 obj = rb_funcall( oDefaultResolver, s_transfer, 2, 
-                                  rb_str_new2( "ruby/sym" ), 
+                                  rb_str_new2( "tag:ruby.yaml.org,2002:sym" ), 
                                   rb_str_new( n->data.str->ptr + 1, n->data.str->len - 1 ) );
             }
             else if ( strcmp( type_id, "str" ) == 0 )

@@ -8,6 +8,7 @@
 
 require 'stringio'
 require 'yaml/compat'
+require 'yaml/error'
 require 'yaml/syck'
 require 'yaml/tag'
 require 'yaml/stream'
@@ -82,9 +83,6 @@ require 'yaml/stream'
 #     end
 #
 module YAML
-
-    # General YAML errors
-    class Error < StandardError; end
 
     Resolver = YAML::Syck::Resolver
     DefaultResolver = YAML::Syck::DefaultResolver

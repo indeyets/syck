@@ -137,10 +137,12 @@ syck_tagcmp( char *tag1, char *tag2 )
         char *othorpe;
         char *tmp1 = syck_strndup( tag1, strlen( tag1 ) );
         char *tmp2 = syck_strndup( tag2, strlen( tag2 ) );
-        if ( othorpe = strstr( tmp1, "#" ) ) {
+        othorpe = strstr( tmp1, "#" );
+		if ( othorpe != NULL ) {
             othorpe[0] = '\0';
         }
-        if ( othorpe = strstr( tmp2, "#" ) ) {
+        othorpe = strstr( tmp2, "#" );
+		if ( othorpe != NULL ) {
             othorpe[0] = '\0';
         }
         i = strcmp( tmp1, tmp2 );
