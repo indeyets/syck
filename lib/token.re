@@ -24,6 +24,7 @@
 #define YYTOKEN     parser->token
 #define YYTOKTMP    parser->toktmp
 #define YYLINEPTR   parser->lineptr
+#define YYLINECTPTR parser->linectptr
 #define YYLINE      parser->linect
 #define YYFILL(n)   syck_parser_read(parser)
 
@@ -36,7 +37,7 @@
 /*
  * Track line numbers
  */
-#define NEWLINE(ptr)    YYLINE++; YYLINEPTR = ptr + 1
+#define NEWLINE(ptr)    YYLINEPTR = ptr + 1; if ( YYLINEPTR > YYLINECTPTR ) { YYLINE++; YYLINECTPTR = YYLINEPTR; }
 
 /*
  * I like seeing the level operations as macros...

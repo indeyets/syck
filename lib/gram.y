@@ -284,7 +284,6 @@ in_implicit_map : complex_mapping
                 }
 				| in_implicit_map indent_sep
                 { 
-                    apply_seq_in_map( (SyckParser *)parser, $1 );
                     $$ = $1;
                 }
                 ;
