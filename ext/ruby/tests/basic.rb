@@ -5,6 +5,11 @@ require 'runit/testcase'
 require 'runit/cui/testrunner'
 require 'yaml'
 
+# [ruby-core:01946]
+module Test
+    StructTest = Struct::new( :c )
+end
+
 class YAML_Unit_Tests < RUNIT::TestCase
 	#
 	# Convert between YAML and the object to verify correct parsing and
@@ -1209,6 +1214,12 @@ EOY
     isbn: None
 EOY
 		)
+
+        assert_to_yaml( Test::StructTest.new( 123 ), <<EOY )
+--- !ruby/struct:Test::StructTest
+c: 123
+EOY
+
 	end
 
 	def test_emitting_indicators
