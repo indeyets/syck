@@ -55,7 +55,7 @@ typedef struct {
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect, s_node_import, s_out, s_intern, s_yaml_new, s_yaml_initialize, s_to_yaml, s_write;
+static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_intern, s_yaml_new, s_yaml_initialize, s_to_yaml, s_write, s_set_resolver;
 static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_value;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
@@ -309,65 +309,6 @@ rb_syck_mktime(str, len)
         /* Make UTC time*/
         return rb_funcall(rb_cTime, s_utc, 7, year, mon, day, hour, min, sec, LONG2NUM(usec));
     }
-}
-
-/*
- * {generic mode} node handler
- * - Loads data into Node classes
- */
-SYMID
-rb_syck_parse_handler(p, n)
-    SyckParser *p;
-    SyckNode *n;
-{
-    int i;
-    VALUE t, obj, v = Qnil;
-    struct parser_xtra *bonus = (struct parser_xtra *)p->bonus;
-
-    obj = rb_obj_alloc(cNode);
-    if ( n->type_id != NULL )
-    {
-        t = rb_str_new2(n->type_id);
-        rb_ivar_set(obj, s_type_id, t);
-    }
-
-    switch (n->kind)
-    {
-        case syck_str_kind:
-            rb_ivar_set(obj, s_kind, sym_scalar);
-            v = rb_str_new( n->data.str->ptr, n->data.str->len );
-        break;
-
-        case syck_seq_kind:
-            rb_ivar_set(obj, s_kind, sym_seq);
-            v = rb_ary_new2( n->data.list->idx );
-            for ( i = 0; i < n->data.list->idx; i++ )
-            {
-                rb_ary_store( v, i, syck_seq_read( n, i ) );
-            }
-        break;
-
-        case syck_map_kind:
-            rb_ivar_set(obj, s_kind, sym_map);
-            v = rb_hash_new();
-            for ( i = 0; i < n->data.pairs->idx; i++ )
-            {
-                VALUE key = syck_node_transform( syck_map_read( n, map_key, i ) );
-                VALUE val = rb_ary_new();
-                rb_ary_push(val, syck_map_read( n, map_key, i ));
-                rb_ary_push(val, syck_map_read( n, map_value, i ));
-
-                rb_hash_aset( v, key, val );
-            }
-        break;
-    }
-
-    if ( bonus->taint)      OBJ_TAINT( obj );
-	if ( bonus->proc != 0 ) rb_funcall(bonus->proc, s_call, 1, v);
-
-    rb_ivar_set(obj, s_value, v);
-    rb_hash_aset(bonus->data, INT2FIX(RHASH(bonus->data)->tbl->num_entries), obj);
-    return obj;
 }
 
 /*
@@ -775,17 +716,16 @@ rb_syck_bad_anchor_handler(p, a)
  * data loaded based on the model requested.
  */
 void
-syck_set_model( parser, input, model )
-	SyckParser *parser;
-	VALUE input, model;
+syck_set_model( p, input, model )
+	VALUE p, input, model;
 {
+    SyckParser *parser;
+	Data_Get_Struct(p, SyckParser, parser);
+    syck_parser_handler( parser, rb_syck_load_handler );
+    /* WARN: gonna be obsoleted soon!! */
 	if ( model == sym_generic )
 	{
-		syck_parser_handler( parser, rb_syck_parse_handler );
-	}
-	else
-	{
-		syck_parser_handler( parser, rb_syck_load_handler );
+        rb_funcall( p, s_set_resolver, 1, oGenericResolver );
 	}
     syck_parser_implicit_typing( parser, 1 );
     syck_parser_taguri_expansion( parser, 1 );
@@ -915,7 +855,7 @@ syck_parser_load(argc, argv, self)
 
     input = rb_hash_aref( rb_attr_get( self, s_options ), sym_input );
     model = rb_hash_aref( rb_attr_get( self, s_options ), sym_model );
-	syck_set_model( parser, input, model );
+	syck_set_model( self, input, model );
 
 	bonus->taint = syck_parser_assign_io(parser, port);
     bonus->data = hash = rb_hash_new();
@@ -947,7 +887,7 @@ syck_parser_load_documents(argc, argv, self)
 
     input = rb_hash_aref( rb_attr_get( self, s_options ), sym_input );
     model = rb_hash_aref( rb_attr_get( self, s_options ), sym_model );
-	syck_set_model( parser, input, model );
+	syck_set_model( self, input, model );
     
 	bonus->taint = syck_parser_assign_io(parser, port);
     bonus->resolver = rb_attr_get( self, s_resolver );
@@ -1020,7 +960,7 @@ syck_resolver_use_types_at( self, hsh )
 }
 
 /*
- * YAML::Syck::Resolver#detect 
+ * YAML::Syck::Resolver#detect_implicit 
  */
 VALUE
 syck_resolver_detect_implicit( self, val )
@@ -1120,7 +1060,7 @@ syck_resolver_transfer( self, type, val )
 {
     if (NIL_P(type) || !RSTRING(type)->ptr || RSTRING(type)->len == 0) 
     {
-        type = rb_funcall( self, s_detect, 1, val );
+        type = rb_funcall( self, s_detect_implicit, 1, val );
     }
 
     if ( ! (NIL_P(type) || !RSTRING(type)->ptr || RSTRING(type)->len == 0) )
@@ -1205,7 +1145,7 @@ syck_resolver_transfer( self, type, val )
 }
 
 /*
- * YAML::Syck::DefaultResolver#detect 
+ * YAML::Syck::DefaultResolver#detect_implicit 
  */
 VALUE
 syck_defaultresolver_detect_implicit( self, val )
@@ -1237,6 +1177,60 @@ syck_defaultresolver_node_import( self, node )
     {
         obj = rb_funcall( self, s_transfer, 2, rb_str_new2( n->type_id ), obj );
     }
+    return obj;
+}
+
+/*
+ * YAML::Syck::GenericResolver#node_import
+ */
+VALUE
+syck_genericresolver_node_import( self, node )
+    VALUE self, node;
+{
+    SyckNode *n;
+    int i = 0;
+    VALUE t, obj, v = Qnil;
+	Data_Get_Struct(node, SyckNode, n);
+
+    obj = rb_obj_alloc(cNode);
+    if ( n->type_id != NULL )
+    {
+        t = rb_str_new2(n->type_id);
+        rb_ivar_set(obj, s_type_id, t);
+    }
+
+    switch (n->kind)
+    {
+        case syck_str_kind:
+            rb_ivar_set(obj, s_kind, sym_scalar);
+            v = rb_str_new( n->data.str->ptr, n->data.str->len );
+        break;
+
+        case syck_seq_kind:
+            rb_ivar_set(obj, s_kind, sym_seq);
+            v = rb_ary_new2( n->data.list->idx );
+            for ( i = 0; i < n->data.list->idx; i++ )
+            {
+                rb_ary_store( v, i, syck_seq_read( n, i ) );
+            }
+        break;
+
+        case syck_map_kind:
+            rb_ivar_set(obj, s_kind, sym_map);
+            v = rb_hash_new();
+            for ( i = 0; i < n->data.pairs->idx; i++ )
+            {
+                VALUE key = syck_node_transform( syck_map_read( n, map_key, i ) );
+                VALUE val = rb_ary_new();
+                rb_ary_push(val, syck_map_read( n, map_key, i ));
+                rb_ary_push(val, syck_map_read( n, map_value, i ));
+
+                rb_hash_aset( v, key, val );
+            }
+        break;
+    }
+
+    rb_ivar_set(obj, s_value, v);
     return obj;
 }
 
@@ -1722,7 +1716,7 @@ Init_syck()
     s_cmp = rb_intern("<=>");
     s_intern = rb_intern("intern");
 	s_update = rb_intern("update");
-    s_detect = rb_intern("detect");
+    s_detect_implicit = rb_intern("detect_implicit");
 	s_dup = rb_intern("dup");
     s_default_set = rb_intern("default=");
 	s_match = rb_intern("match");
@@ -1737,6 +1731,7 @@ Init_syck()
     s_tag_subclasses = rb_intern( "tag_subclasses?" );
     s_emitter = rb_intern( "emitter" );
     s_level = rb_intern( "level" );
+    s_set_resolver = rb_intern( "set_resolver" );
     s_to_yaml = rb_intern( "to_yaml" );
     s_yaml_new = rb_intern("yaml_new");
     s_yaml_initialize = rb_intern("yaml_initialize");
@@ -1773,9 +1768,10 @@ Init_syck()
 
     oDefaultResolver = rb_funcall( cResolver, rb_intern( "new" ), 0 );
     rb_define_singleton_method( oDefaultResolver, "node_import", syck_defaultresolver_node_import, 1 );
-    rb_define_singleton_method( oDefaultResolver, "detect_implicit", syck_defaultresolver_detect_implicit, 2 );
+    rb_define_singleton_method( oDefaultResolver, "detect_implicit", syck_defaultresolver_detect_implicit, 1 );
     rb_define_const( rb_syck, "DefaultResolver", oDefaultResolver );
     oGenericResolver = rb_funcall( cResolver, rb_intern( "new" ), 0 );
+    rb_define_singleton_method( oGenericResolver, "node_import", syck_genericresolver_node_import, 1 );
     rb_define_const( rb_syck, "GenericResolver", oGenericResolver );
 
     /*

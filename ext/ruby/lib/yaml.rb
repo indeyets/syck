@@ -83,20 +83,24 @@ require 'yaml/stream'
 #
 module YAML
 
-    Resolver = YAML::Syck::DefaultResolver
-    Resolver.use_types_at( @@tagged_classes )
+    # General YAML errors
+    class Error < StandardError; end
+
+    Resolver = YAML::Syck::Resolver
+    DefaultResolver = YAML::Syck::DefaultResolver
+    DefaultResolver.use_types_at( @@tagged_classes )
     GenericResolver = YAML::Syck::GenericResolver
     Parser = YAML::Syck::Parser
     Emitter = YAML::Syck::Emitter
 
     # Returns a new default parser
-    def YAML.parser; Parser.new( Resolver ); end
+    def YAML.parser; Parser.new( YAML.resolver ); end
     # Returns a new generic parser
     def YAML.generic_parser; Parser.new( GenericResolver ); end
     # Returns the default resolver
-    def YAML.resolver; Resolver; end
+    def YAML.resolver; DefaultResolver; end
     # Returns a new default emitter
-    def YAML.emitter; Emitter.new.set_resolver( Resolver ); end
+    def YAML.emitter; Emitter.new.set_resolver( YAML.resolver ); end
 
 	#
 	# Converts _obj_ to YAML and writes the YAML result to _io_.
