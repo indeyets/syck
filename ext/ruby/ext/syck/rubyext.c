@@ -4,7 +4,7 @@
  * $Author$
  * $Date$
  *
- * Copyright (C) 2003 why the lucky stiff
+ * Copyright (C) 2003-2005 why the lucky stiff
  */
 
 #include "ruby.h"
@@ -59,9 +59,9 @@ static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, 
 static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_value;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
-VALUE cDate, cParser, cResolver, cNode, cCNode, cPrivateType, cDomainType, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
-VALUE cOut, cOutSeq, cOutMap, cOutSeq, cOutScalar;
-VALUE oDefaultResolver, oGenericResolver;
+static VALUE cDate, cParser, cResolver, cNode, cCNode, cPrivateType, cDomainType, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
+static VALUE cOut, cOutSeq, cOutMap, cOutSeq, cOutScalar;
+static VALUE oDefaultResolver, oGenericResolver;
 
 /*
  * my private collection of numerical oddities.
@@ -92,6 +92,7 @@ struct parser_xtra {
 };
 
 struct emitter_xtra {
+    VALUE oid;
     VALUE data;
     VALUE port;
 };
@@ -921,7 +922,7 @@ syck_parser_load_documents(argc, argv, self)
 {
     VALUE port, proc, v, input, model;
 	SyckParser *parser;
-    struct parser_xtra bonus;
+    struct parser_xtra *bonus = S_ALLOC_N( struct parser_xtra, 1 );
     volatile VALUE hash;
 
     rb_scan_args(argc, argv, "1&", &port, &proc);
@@ -931,13 +932,15 @@ syck_parser_load_documents(argc, argv, self)
     model = rb_hash_aref( rb_attr_get( self, s_options ), sym_model );
 	syck_set_model( parser, input, model );
     
-	bonus.taint = syck_parser_assign_io(parser, port);
+	bonus->taint = syck_parser_assign_io(parser, port);
+    bonus->resolver = rb_attr_get( self, s_resolver );
+    parser->bonus = (void *)bonus;
+
     while ( 1 )
 	{
         /* Reset hash for tracking nodes */
-        bonus.data = hash = rb_hash_new();
-        bonus.proc = 0;
-        parser->bonus = (void *)&bonus;
+        bonus->data = hash = rb_hash_new();
+        bonus->proc = 0;
 
         /* Parse a document */
     	v = syck_parse( parser );
@@ -1386,6 +1389,24 @@ rb_syck_output_handler( emitter, str, len )
 }
 
 /*
+ * Helper function for marking nodes in the anchor
+ * symbol table.
+ */
+void
+syck_out_mark( emitter, node )
+    VALUE emitter, node;
+{
+    SyckEmitter *emitterPtr;
+    struct emitter_xtra *bonus;
+    Data_Get_Struct(emitter, SyckEmitter, emitterPtr);
+    bonus = (struct emitter_xtra *)emitterPtr->bonus;
+    /* syck_emitter_mark_node( emitterPtr, (st_data_t)node ); */
+    if ( !NIL_P( bonus->oid ) ) {
+        rb_hash_aset( bonus->data, bonus->oid, node );
+    }
+}
+
+/*
  * Mark emitter values.
  */
 static void
@@ -1497,13 +1518,11 @@ syck_emitter_emit( argc, argv, self )
     bonus = (struct emitter_xtra *)emitter->bonus;
 
     /* Calculate anchors, normalize nodes, build a simpler symbol table */
+    bonus->oid = oid;
     if ( !NIL_P( oid ) && RTEST( rb_funcall( bonus->data, s_haskey, 1, oid ) ) ) {
         symple = rb_hash_aref( bonus->data, oid );
     } else {
         symple = rb_funcall( proc, s_call, 1, rb_ivar_get( self, s_out ) );
-        if ( !NIL_P( oid ) ) {
-            rb_hash_aset( bonus->data, oid, symple );
-        }
     }
     syck_emitter_mark_node( emitter, (st_data_t)symple );
 
@@ -1551,6 +1570,7 @@ syck_out_map( self, type_id )
     VALUE self, type_id;
 {
     VALUE map = rb_funcall( cOutMap, s_new, 2, rb_ivar_get( self, s_emitter ), type_id );
+    syck_out_mark( rb_ivar_get( self, s_emitter ), map );
     rb_yield( map );
     return map;
 }
@@ -1563,6 +1583,7 @@ syck_out_seq( self, type_id )
     VALUE self, type_id;
 {
     VALUE seq = rb_funcall( cOutSeq, s_new, 2, rb_ivar_get( self, s_emitter ), type_id );
+    syck_out_mark( rb_ivar_get( self, s_emitter ), seq );
     rb_yield( seq );
     return seq;
 }
@@ -1575,6 +1596,7 @@ syck_out_scalar( self, type_id, str, block )
     VALUE self, type_id, str, block;
 {
     VALUE scalar = rb_funcall( cOutScalar, s_new, 3, type_id, str, block );
+    syck_out_mark( rb_ivar_get( self, s_emitter ), scalar );
     return scalar;
 }
 
