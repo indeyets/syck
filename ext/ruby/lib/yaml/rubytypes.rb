@@ -213,8 +213,7 @@ class Symbol
     tag_as "tag:ruby.yaml.org,2002:sym"
     def Symbol.yaml_new( tag, val )
         if String === val
-            val = YAML::load( "--- #{val}") if val =~ /^["'].*['"]$/
-            val.intern
+            val[1..-1].intern
         else
             raise YAML::TypeError, "Invalid Symbol: " + val.inspect
         end

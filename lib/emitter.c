@@ -443,8 +443,12 @@ void syck_emit_tag( SyckEmitter *e, char *tag, char *ignore )
     if ( ignore != NULL && syck_tagcmp( tag, ignore ) == 0 && e->explicit_typing == 0 ) return;
     lvl = syck_emitter_current_level( e );
 
+    /* implicit */
+    if ( strlen( tag ) == 0 ) {
+        syck_emitter_write( e, "! ", 2 );
+
     /* global types */
-    if ( strncmp( tag, "tag:", 4 ) == 0 ) {
+    } else if ( strncmp( tag, "tag:", 4 ) == 0 ) {
         int taglen = strlen( tag );
         syck_emitter_write( e, "!", 1 );
         if ( strncmp( tag + 4, YAML_DOMAIN, strlen( YAML_DOMAIN ) ) == 0 ) {
@@ -611,7 +615,13 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
     int scan;
     char *implicit;
     
-    if ( str == NULL ) return;
+    if ( str == NULL ) str = "";
+
+    /* No empty nulls as map keys */
+    if ( len == 0 && parent->status == syck_lvl_map && lvl->ncount == 0 && syck_tagcmp( tag, "tag:yaml.org,2002:null" ) == 0 ) {
+        str = "~";
+        len = 1;
+    }
 
     scan = syck_scan_scalar( force_indent, str, len );
     implicit = syck_match_implicit( str, len );
@@ -983,6 +993,15 @@ void syck_emit_item( SyckEmitter *e, st_data_t n )
         case syck_lvl_map:
         {
             SyckLevel *parent = syck_emitter_parent_level( e );
+
+            /* map-in-map */
+            if ( parent->status == syck_lvl_map && lvl->ncount == 0 ) {
+                /* complex key */
+                if ( parent->ncount % 2 == 1 ) {
+                    syck_emitter_write( e, "?", 1 );
+                    parent->status = syck_lvl_mapx;
+                }
+            }
 
             /* map-in-seq shortcut */
             if ( lvl->anctag == 0 && parent->status == syck_lvl_seq && lvl->ncount == 0 ) {

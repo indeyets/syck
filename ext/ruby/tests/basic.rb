@@ -18,13 +18,16 @@ class YAML_Unit_Tests < RUNIT::TestCase
 	def assert_to_yaml( obj, yaml )
 		assert_equal( obj, YAML::load( yaml ) )
         # assert_equal( obj, YAML::parse( yaml ).transform )
-        puts obj.to_yaml
         assert_equal( obj, YAML::load( obj.to_yaml ) )
         # assert_equal( obj, YAML::parse( obj.to_yaml ).transform )
         # assert_equal( obj, YAML::load(
 		# 	obj.to_yaml( :UseVersion => true, :UseHeader => true, :SortKeys => true ) 
 		# ) )
-        # assert_equal( obj, YAML::Syck::Parser.new( :Input => :Bytecode ).load( YAML::Syck::compile( yaml ) ) )
+
+        # yb = YAML::Parser.new
+        # yb.resolver = YAML.resolver
+        # yb.input = :bytecode
+        # assert_equal( obj, yb.load( YAML::Syck::compile( yaml ) ) )
 	end
 
     #
@@ -1040,7 +1043,7 @@ EOY
     #	end
 
 	def test_spec_domain_prefix
-		YAML.add_domain_type( "domain.tld,2002", /(invoice|customer)/ ) { |type, val|
+        customer_proc = proc { |type, val|
 			if Hash === val
                 scheme, domain, type = type.split( ':', 3 )
 				val['type'] = "domain #{type}"
@@ -1049,6 +1052,8 @@ EOY
 				raise ArgumentError, "Not a Hash in domain.tld,2002/invoice: " + val.inspect
 			end
 		}
+		YAML.add_domain_type( "domain.tld,2002", 'invoice', &customer_proc ) 
+		YAML.add_domain_type( "domain.tld,2002", 'customer', &customer_proc ) 
         map = { "invoice"=> { "customers"=> [ { "given"=>"Chris", "type"=>"domain customer", "family"=>"Dumars" } ], "type"=>"domain invoice" } }
 		assert_to_yaml( map, <<EOY )
 # 'http://domain.tld,2002/invoice' is some type family.
@@ -1179,7 +1184,7 @@ EOY
 	end
 
 	def test_spec_explicit_families
-		YAML.add_domain_type( "somewhere.com,2002", /^type$/ ) { |type, val|
+		YAML.add_domain_type( "somewhere.com,2002", 'type' ) { |type, val|
 			"SOMEWHERE: #{val}"
 		}
         map = { 'not-date' => '2002-04-28', 'picture' => "GIF89a\f\000\f\000\204\000\000\377\377\367\365\365\356\351\351\345fff\000\000\000\347\347\347^^^\363\363\355\216\216\216\340\340\340\237\237\237\223\223\223\247\247\247\236\236\236i^\020' \202\n\001\000;", 'hmm' => "SOMEWHERE: family above is short for\nhttp://somewhere.com/type\n" }
