@@ -71,6 +71,21 @@ module YAML
     # Builtin collection: !omap
     #
     class Omap < Array
+        tag_as "tag:yaml.org,2002:omap"
+        def yaml_initialize( tag, val )
+            if Array === val
+                val.each do |v|
+                    if Hash === v
+                        concat( v.to_a )		# Convert the map to a sequence
+                    else
+                        raise YAML::Error, "Invalid !omap entry: " + val.inspect
+                    end
+                end
+            else
+                raise YAML::Error, "Invalid !omap: " + val.inspect
+            end
+            self
+        end
         def self.[]( *vals )
             o = Omap.new
             0.step( vals.length - 1, 2 ) { |i|
@@ -97,36 +112,35 @@ module YAML
             true
         end
         def to_yaml( opts = {} )
-            YAML::quick_emit( self.object_id, opts ) { |out|
-                out.seq( "!omap" ) { |seq|
-                    self.each { |v|
+            YAML::quick_emit( self.object_id, opts ) do |out|
+                out.seq( tag_as ) do |seq|
+                    self.each do |v|
                         seq.add( Hash[ *v ] )
-                    }
-                }
-            }
+                    end
+                end
+            end
         end
     end
-
-    YAML.add_builtin_type( "omap" ) { |type, val|
-        if Array === val
-            p = Omap.new
-            val.each { |v|
-                if Hash === v
-                    p.concat( v.to_a )		# Convert the map to a sequence
-                else
-                    raise YAML::Error, "Invalid !omap entry: " + val.inspect
-                end
-            }
-        else
-            raise YAML::Error, "Invalid !omap: " + val.inspect
-        end
-        p
-    }
 
     #
     # Builtin collection: !pairs
     #
     class Pairs < Array
+        tag_as "tag:yaml.org,2002:pairs"
+        def yaml_initialize( tag, val )
+            if Array === val
+                val.each do |v|
+                    if Hash === v
+                        concat( v.to_a )		# Convert the map to a sequence
+                    else
+                        raise YAML::Error, "Invalid !pairs entry: " + val.inspect
+                    end
+                end
+            else
+                raise YAML::Error, "Invalid !pairs: " + val.inspect
+            end
+            self
+        end
         def self.[]( *vals )
             p = Pairs.new
             0.step( vals.length - 1, 2 ) { |i|
@@ -148,50 +162,20 @@ module YAML
             true
         end
         def to_yaml( opts = {} )
-            YAML::quick_emit( self.object_id, opts ) { |out|
-                out.seq( "!pairs" ) { |seq|
-                    self.each { |v|
+            YAML::quick_emit( self.object_id, opts ) do |out|
+                out.seq( tag_as ) do |seq|
+                    self.each do |v|
                         seq.add( Hash[ *v ] )
-                    }
-                }
-            }
+                    end
+                end
+            end
         end
     end
-
-    YAML.add_builtin_type( "pairs" ) { |type, val|
-        if Array === val
-            p = Pairs.new
-            val.each { |v|
-                if Hash === v
-                    p.concat( v.to_a )		# Convert the map to a sequence
-                else
-                    raise YAML::Error, "Invalid !pairs entry: " + val.inspect
-                end
-            }
-        else
-            raise YAML::Error, "Invalid !pairs: " + val.inspect
-        end
-        p
-    }
 
     #
     # Builtin collection: !set
     #
     class Set < Hash
-        def to_yaml_type
-            "!set"
-        end
+        tag_as "tag:yaml.org,2002:set"
     end
-
-    YAML.add_builtin_type( 'set' ) { |type, val|
-        if Array === val
-            val = Set[ *val ]
-        elsif Hash === val
-            Set[ val ]
-        else
-            raise YAML::Error, "Invalid map explicitly tagged !map: " + val.inspect
-        end
-        val
-    }
-
 end

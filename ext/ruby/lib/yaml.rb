@@ -6,9 +6,10 @@
 # Author:: why the lucky stiff
 # 
 
+require 'stringio'
 require 'yaml/compat'
 require 'yaml/syck'
-require 'yaml/loader'
+require 'yaml/tag'
 require 'yaml/stream'
 
 # == YAML
@@ -74,7 +75,7 @@ require 'yaml/stream'
 #     ruby_obj == test_obj
 #                         # => true
 #
-# To register your custom types with the global loader, use +add_domain_type+.
+# To register your custom types with the global resolver, use +add_domain_type+.
 #
 #     YAML::add_domain_type( "your-site.com,2004", "widget" ) do |type, val|
 #         Widget.new( val )
@@ -82,9 +83,19 @@ require 'yaml/stream'
 #
 module YAML
 
-    @@parser = YAML::Syck::Parser
-    @@loader = YAML::Syck::DefaultLoader
-    @@emitter = YAML::Syck::Emitter
+    @@resolver = YAML::Syck::DefaultResolver
+    @@resolver.add_types( @@tagged_classes )
+    @@parser = YAML::Syck::Parser.new( @@resolver )
+    @@parser_generic = YAML::Syck::Parser.new( YAML::Syck::GenericResolver )
+    @@emitter = YAML::Syck::Emitter.new
+    @@emitter.set_resolver( @@resolver )
+
+    # Returns the default parser
+    def parser; @@parser; end
+    # Returns the default resolver
+    def resolver; @@resolver; end
+    # Returns the default emitter
+    def emitter; @@emitter; end
 
 	#
 	# Converts _obj_ to YAML and writes the YAML result to _io_.
@@ -100,9 +111,8 @@ module YAML
     #      #=> "--- :locked"
     #
 	def YAML.dump( obj, io = nil )
-        io ||= ""
-        io << obj.to_yaml
-        io
+        obj.to_yaml( io || io2 = StringIO.new )
+        io || io2.read
 	end
 
 	#
@@ -117,7 +127,7 @@ module YAML
     #      #=> :locked
     #
 	def YAML.load( io )
-		yp = @@parser.new.load( io )
+		yp = @@parser.load( io )
 	end
 
     #
@@ -154,13 +164,13 @@ module YAML
     #
     # Can also load from a string.
     #
-    #   YAML.load( "--- :locked" )
+    #   YAML.parse( "--- :locked" )
     #      #=> #<YAML::Syck::Node:0x82edddc 
     #            @type_id="tag:ruby.yaml.org,2002:sym", 
     #            @value=":locked", @kind=:scalar>
     #
 	def YAML.parse( io )
-		yp = @@parser.new( :Model => :Generic ).load( io )
+		yp = @@parser_generic.load( io )
 	end
 
     #
@@ -201,7 +211,7 @@ module YAML
     #   end
 	#
 	def YAML.each_document( io, &block )
-		yp = @@parser.new.load_documents( io, &block )
+		yp = @@parser.load_documents( io, &block )
     end
 
 	#
@@ -231,7 +241,7 @@ module YAML
     #   end
 	#
 	def YAML.each_node( io, &doc_proc )
-		yp = @@parser.new( :Model => :Generic ).load_documents( io, &doc_proc )
+		yp = @@parser_generic.load_documents( io, &doc_proc )
     end
 
 	#
@@ -255,12 +265,11 @@ module YAML
     # loaded documents.
 	#
 	def YAML.load_stream( io )
-		yp = @@parser.new
 		d = nil
-		yp.load_documents( io ) { |doc|
+		@@parser.load_documents( io ) do |doc|
 			d = YAML::Stream.new( yp.options ) if not d
 			d.add( doc ) 
-		}
+        end
 		return d
 	end
 
@@ -284,43 +293,43 @@ module YAML
 	#
 	# Add a global handler for a YAML domain type.
 	#
-	def YAML.add_domain_type( domain, type_re, &transfer_proc )
-        @@loader.add_domain_type( domain, type_re, &transfer_proc )
+	def YAML.add_domain_type( domain, type_tag, &transfer_proc )
+        @@resolver.add_type( "tag:#{ domain }:#{ type_re }", transfer_proc )
 	end
 
 	#
 	# Add a transfer method for a builtin type
 	#
-	def YAML.add_builtin_type( type_re, &transfer_proc )
-	    @@loader.add_builtin_type( type_re, &transfer_proc )
+	def YAML.add_builtin_type( type_tag, &transfer_proc )
+	    @@resolver.add_type( "tag:yaml.org,2002:#{ type_tag }", transfer_proc )
 	end
 
 	#
 	# Add a transfer method for a builtin type
 	#
 	def YAML.add_ruby_type( type, &transfer_proc )
-        @@loader.add_ruby_type( type, &transfer_proc )
+	    @@resolver.add_type( "tag:ruby.yaml.org,2002:#{ type_tag }", transfer_proc )
 	end
 
 	#
 	# Add a private document type
 	#
 	def YAML.add_private_type( type_re, &transfer_proc )
-	    @@loader.add_private_type( type_re, &transfer_proc )
+	    @@resolver.add_type( type_re, transfer_proc )
 	end
 
     #
     # Detect typing of a string
     #
     def YAML.detect_implicit( val )
-        @@loader.detect_implicit( val )
+        @@resolver.detect_implicit( val )
     end
 
     #
     # Apply a transfer method to a Ruby object
     #
     def YAML.transfer( type_id, obj )
-        @@loader.transfer( type_id, obj )
+        @@resolver.transfer( type_id, obj )
     end
 
 	#
@@ -359,24 +368,13 @@ module YAML
 	# Allocate an Emitter if needed
 	#
 	def YAML.quick_emit( oid, opts = {}, &e )
-		old_opt = nil
-		if opts[:Emitter].is_a? @@emitter
-			out = opts.delete( :Emitter )
-			old_opt = out.options.dup
-			out.options.update( opts )
-		else
-			out = @@emitter.new( opts )
-		end
-        aidx = out.start_object( oid )
-        if aidx
-            out.simple( "*#{ aidx }" )
-        else
-            e.call( out )
-        end
-		if old_opt.is_a? Hash
-			out.options = old_opt
-		end 
-		out.end_object
+        out = 
+            if opts.is_a? @@emitter
+                opts
+            else
+                @@emitter.reset( opts )
+            end
+        out.object_handler( oid, &e )
 	end
 	
 end
@@ -384,7 +382,7 @@ end
 require 'yaml/rubytypes'
 require 'yaml/types'
 
-module Kernel
+module Kernel # :nodoc:
     #
     # ryan:: You know how Kernel.p is a really convenient way to dump ruby
     #        structures?  The only downside is that it's not as legible as
@@ -401,7 +399,21 @@ module Kernel
     # ryan:: Either way, I certainly will have a pony parade.
     #
 
-    def y( *x )
+    # Prints any supplied _objects_ out in YAML.  Intended as
+    # a variation on +Kernel::p+.
+    #
+    #   S = Struct.new(:name, :state)
+    #   s = S['dave', 'TX']
+    #   y s
+    #
+    # _produces:_
+    #
+    #   --- !ruby/struct:S 
+    #   name: dave
+    #   state: TX
+    #
+    def y( object, *objects )
+        objects.unshift object
         puts( if x.length == 1
                   YAML::dump( *x )
               else
