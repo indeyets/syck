@@ -8,6 +8,17 @@
 
 module YAML
 
+    begin
+        require 'syck'
+        Parser = YAML::Syck::Parser
+    rescue LoadError
+        require 'yaml/parser'
+        Parser = YAML::Parser
+    end
+
+    #
+    # Allocate blank object
+    #
     def YAML.object_maker( obj_class, val )
         if Hash === val
             name = obj_class.name

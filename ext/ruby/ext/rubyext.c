@@ -12,17 +12,23 @@
 #include <sys/types.h>
 #include <time.h>
 
-static ID time_s_mkutc, s_read, s_binmode;
+static ID s_utc, s_read, s_binmode;
 static VALUE sym_model, sym_generic;
+static VALUE sym_scalar, sym_seq, sym_map;
 VALUE cNode;
 
-static double zero()    { return 0.0; }
-static double one() { return 1.0; }
-static double inf() { return one() / zero(); }
-static double nan() { return zero() / zero(); }
+//
+// my private collection of numerical oddities.
+//
+static double S_zero()    { return 0.0; }
+static double S_one() { return 1.0; }
+static double S_inf() { return S_one() / S_zero(); }
+static double S_nan() { return S_zero() / S_zero(); }
+
+static VALUE syck_node_transform( VALUE );
 
 //
-// Read from IO classes
+// read from io.
 // 
 long
 rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
@@ -36,7 +42,7 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
     if ( max_size > 0 )
     {
         //
-        // IO read
+        // call io#read.
         //
         VALUE src = (VALUE)str->ptr;
         VALUE n = LONG2NUM(max_size);
@@ -53,7 +59,7 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
 }
 
 //
-// Determine if IO is String class or IO subclass
+// determine: are we reading from a string or io?
 //
 void
 syck_parser_assign_io(parser, port)
@@ -78,7 +84,7 @@ syck_parser_assign_io(parser, port)
 }
 
 //
-// Function for creating timestamps
+// creating timestamps
 //
 SYMID
 rb_syck_mktime(str)
@@ -117,12 +123,12 @@ rb_syck_mktime(str)
     while ( !isdigit( *ptr ) ) ptr++;
     sec = INT2FIX(strtol(ptr, NULL, 10));
 
-    time = rb_funcall(rb_cTime, time_s_mkutc, 6, year, mon, day, hour, min, sec );
+    time = rb_funcall(rb_cTime, s_utc, 6, year, mon, day, hour, min, sec );
     return time;
 }
 
 //
-// Node handler
+// {generic mode} node handler
 // - Loads data into Node classes
 //
 SYMID
@@ -143,12 +149,12 @@ rb_syck_parse_handler(p, n)
     switch (n->kind)
     {
         case syck_str_kind:
-            rb_iv_set(obj, "@kind", ID2SYM(rb_intern("str")));
+            rb_iv_set(obj, "@kind", sym_scalar);
             v = rb_str_new( n->data.str->ptr, n->data.str->len );
         break;
 
         case syck_seq_kind:
-            rb_iv_set(obj, "@kind", ID2SYM(rb_intern("seq")));
+            rb_iv_set(obj, "@kind", sym_seq);
             v = rb_ary_new2( n->data.list->idx );
             for ( i = 0; i < n->data.list->idx; i++ )
             {
@@ -157,11 +163,16 @@ rb_syck_parse_handler(p, n)
         break;
 
         case syck_map_kind:
-            rb_iv_set(obj, "@kind", ID2SYM(rb_intern("map")));
+            rb_iv_set(obj, "@kind", sym_map);
             v = rb_hash_new();
             for ( i = 0; i < n->data.pairs->idx; i++ )
             {
-                rb_hash_aset( v, syck_map_read( n, map_key, i ), syck_map_read( n, map_value, i ) );
+                VALUE key = syck_node_transform( syck_map_read( n, map_key, i ) );
+                VALUE val = rb_ary_new();
+                rb_ary_push(val, syck_map_read( n, map_key, i ));
+                rb_ary_push(val, syck_map_read( n, map_value, i ));
+
+                rb_hash_aset( v, key, val );
             }
         break;
     }
@@ -176,7 +187,7 @@ rb_syck_parse_handler(p, n)
 }
 
 //
-// Node handler
+// {native mode} node handler
 // - Converts data into native Ruby types
 //
 SYMID
@@ -215,33 +226,29 @@ rb_syck_load_handler(p, n)
             {
                 obj = rb_cstr2inum( n->data.str->ptr, 8 );
             }
-            else if ( strcmp( n->type_id, "int" ) == 0 )
+            else if ( strncmp( n->type_id, "int", 3 ) == 0 )
             {
                 syck_str_blow_away_commas( n );
                 obj = rb_cstr2inum( n->data.str->ptr, 10 );
             }
-            else if ( strcmp( n->type_id, "float#exp" ) == 0 || strcmp( n->type_id, "float#fix" ) == 0 )
+            else if ( strcmp( n->type_id, "float#nan" ) == 0 )
+            {
+                obj = rb_float_new( S_nan() );
+            }
+            else if ( strcmp( n->type_id, "float#inf" ) == 0 )
+            {
+                obj = rb_float_new( S_inf() );
+            }
+            else if ( strcmp( n->type_id, "float#neginf" ) == 0 )
+            {
+                obj = rb_float_new( -S_inf() );
+            }
+            else if ( strncmp( n->type_id, "float", 5 ) == 0 )
             {
                 double f;
                 syck_str_blow_away_commas( n );
                 f = strtod( n->data.str->ptr, NULL );
                 obj = rb_float_new( f );
-            }
-            else if ( strcmp( n->type_id, "float#nan" ) == 0 )
-            {
-                obj = rb_float_new( nan() );
-            }
-            else if ( strcmp( n->type_id, "float#inf" ) == 0 )
-            {
-                obj = rb_float_new( inf() );
-            }
-            else if ( strcmp( n->type_id, "float#neginf" ) == 0 )
-            {
-                obj = rb_float_new( -inf() );
-            }
-            else if ( strcmp( n->type_id, "timestamp" ) == 0 )
-            {
-                obj = rb_syck_mktime( n->data.str->ptr );
             }
             else if ( strcmp( n->type_id, "timestamp#iso8601" ) == 0 )
             {
@@ -255,6 +262,10 @@ rb_syck_load_handler(p, n)
             {
                 S_REALLOC_N( n->data.str->ptr, char, 22 );
                 strcat( n->data.str->ptr, "t12:00:00Z" );
+                obj = rb_syck_mktime( n->data.str->ptr );
+            }
+            else if ( strncmp( n->type_id, "timestamp", 9 ) == 0 )
+            {
                 obj = rb_syck_mktime( n->data.str->ptr );
             }
             else
@@ -288,14 +299,19 @@ rb_syck_load_handler(p, n)
 }
 
 //
-// Display friendly errors
+// friendly errors.
 //
 void
 rb_syck_err_handler(p, msg)
     SyckParser *p;
     char *msg;
 {
-    p->cursor[1] = '\0';
+    char *endl = p->cursor;
+
+    while ( *endl != '\0' && *endl != '\n' )
+        endl++;
+
+    endl[0] = '\0';
     rb_raise(rb_eLoadError, "%s on line %d, col %d: `%s'",
            msg,
            p->linect,
@@ -304,7 +320,7 @@ rb_syck_err_handler(p, msg)
 }
 
 //
-// Load data based on the model requested
+// data loaded based on the model requested.
 //
 void
 syck_set_model( parser, model )
@@ -327,6 +343,9 @@ syck_set_model( parser, model )
 	}
 }
 
+//
+// wrap syck_parse().
+//
 static VALUE
 rb_run_syck_parse(parser)
     SyckParser *parser;
@@ -334,6 +353,9 @@ rb_run_syck_parse(parser)
     return syck_parse(parser);
 }
 
+//
+// free parser.
+//
 static VALUE
 rb_syck_ensure(parser)
     SyckParser *parser;
@@ -346,15 +368,23 @@ rb_syck_ensure(parser)
 // YAML::Syck::Parser.new
 //
 VALUE 
-syck_parser_new( class, options )
-	VALUE class, options;
+syck_parser_new(argc, argv, class)
+    int argc;
+    VALUE *argv;
+	VALUE class;
 {
-	VALUE argv[1];
+	VALUE pobj, options, init_argv[1];
     SyckParser *parser = syck_new_parser();
-	VALUE pobj = Data_Wrap_Struct( class, 0, syck_free_parser, parser );
 
-	argv[0] = options;
-	rb_obj_call_init(pobj, 1, argv);
+    rb_scan_args(argc, argv, "01", &options);
+	pobj = Data_Wrap_Struct( class, 0, syck_free_parser, parser );
+
+    if ( ! rb_obj_is_instance_of( options, rb_cHash ) )
+    {
+        options = rb_hash_new();
+    }
+	init_argv[0] = options;
+	rb_obj_call_init(pobj, 1, init_argv);
 	return pobj;
 }
 
@@ -389,11 +419,16 @@ syck_parser_load(argc, argv, self)
 	syck_set_model( parser, model );
 
 	parser->bonus = 0;
-	if ( !NIL_P( proc ) ) parser->bonus = (void *)proc;
+	if ( !NIL_P( proc ) ) 
+    {
+        parser->bonus = (void *)proc;
+    }
 
     v = syck_parse( parser );
     if ( v == NULL )
+    {
         return Qnil;
+    }
 
     //v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
 
@@ -444,6 +479,50 @@ syck_node_initialize( self, type_id, val )
     rb_iv_set( self, "@value", val );
 }
 
+static VALUE
+syck_node_thash( entry, t )
+    VALUE entry, t;
+{
+    VALUE key, val;
+    key = rb_ary_entry( entry, 0 );
+    val = syck_node_transform( rb_ary_entry( rb_ary_entry( entry, 1 ), 1 ) );
+    rb_hash_aset( t, key, val );
+}
+
+static VALUE
+syck_node_ahash( entry, t )
+    VALUE entry, t;
+{
+    VALUE val = syck_node_transform( entry );
+    rb_ary_push( t, val );
+}
+
+//
+// YAML::Syck::Node.transform
+//
+static VALUE
+syck_node_transform( self )
+    VALUE self;
+{
+    VALUE t = Qnil;
+    VALUE val = rb_iv_get( self, "@value" );
+    if ( rb_obj_is_instance_of( val, rb_cHash ) )
+    {
+        t = rb_hash_new();
+        rb_iterate( rb_each, val, syck_node_thash, t );
+    }
+    else if ( rb_obj_is_instance_of( val, rb_cArray ) )
+    {
+        t = rb_ary_new();
+        rb_iterate( rb_each, val, syck_node_ahash, t );
+    }
+    else
+    {
+        t = val;
+    }
+    return t;
+}
+
 //
 // Initialize Syck extension
 //
@@ -457,17 +536,20 @@ Init_syck()
 	//
 	// Global symbols
 	//
-    time_s_mkutc = rb_intern("utc");
+    s_utc = rb_intern("utc");
     s_read = rb_intern("read");
     s_binmode = rb_intern("binmode");
 	sym_model = ID2SYM(rb_intern("Model"));
 	sym_generic = ID2SYM(rb_intern("Generic"));
+    sym_map = ID2SYM(rb_intern("map"));
+    sym_scalar = ID2SYM(rb_intern("scalar"));
+    sym_seq = ID2SYM(rb_intern("seq"));
 
 	//
 	// Define YAML::Syck::Parser class
 	//
     rb_define_attr( cParser, "options", 1, 1 );
-	rb_define_singleton_method(cParser, "new", syck_parser_new, 1);
+	rb_define_singleton_method(cParser, "new", syck_parser_new, -1);
     rb_define_method(cParser, "initialize", syck_parser_initialize, 1);
     rb_define_method(cParser, "load", syck_parser_load, -1);
     rb_define_method(cParser, "load_documents", syck_parser_load_documents, -1);
@@ -481,5 +563,6 @@ Init_syck()
     rb_define_attr( cNode, "value", 1, 1 );
     rb_define_attr( cNode, "anchor", 1, 1 );
     rb_define_method( cNode, "initialize", syck_node_initialize, 2);
+    rb_define_method( cNode, "transform", syck_node_transform, 0);
 }
 
