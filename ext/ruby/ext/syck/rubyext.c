@@ -1136,18 +1136,21 @@ syck_resolver_transfer( self, type, val )
         {
             obj = rb_funcall( target_class, s_call, 2, type, val );
         }
-        else if ( rb_respond_to( target_class, s_yaml_new ) )
+        else
         {
-            obj = rb_funcall( subclass, s_yaml_new, 2, type, val );
-        }
-        else if ( !NIL_P( subclass ) )
-        {
-            obj = rb_obj_alloc( subclass );
-        }
+            if ( rb_respond_to( target_class, s_yaml_new ) )
+            {
+                obj = rb_funcall( subclass, s_yaml_new, 2, type, val );
+            }
+            else if ( !NIL_P( subclass ) )
+            {
+                obj = rb_obj_alloc( subclass );
+            }
 
-        if ( rb_respond_to( obj, s_yaml_initialize ) )
-        {
-            rb_funcall( obj, s_yaml_initialize, 2, type, val );
+            if ( rb_respond_to( obj, s_yaml_initialize ) )
+            {
+                rb_funcall( obj, s_yaml_initialize, 2, type, val );
+            }
         }
         val = obj;
     }
