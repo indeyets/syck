@@ -270,6 +270,10 @@ INDENT              {   // Isolate spaces
                         // Check for open indent
                         ENSURE_IEND(lvl, indt_len);
                         ENSURE_IOPEN(lvl, indt_len, 0);
+                        if ( indt_len == -1 )
+                        {
+                            return 0;
+                        }
                         return INDENT;
                     }
 
@@ -617,6 +621,12 @@ ENDSPC              {   SyckLevel *lvl;
                             {
                                 yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
                             }
+                        }
+
+                        if ( *YYCURSOR == '\n' )
+                        {
+                            FORCE_NEXT_TOKEN(IOPEN);
+                            ADD_LEVEL(lvl->spaces, syck_lvl_doc);
                         }
                         return TRANSFER; 
                     }
