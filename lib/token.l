@@ -36,9 +36,13 @@ syck_parser_init(SyckParser *p, int debug)
 
 "{"         return '{';
 "}"         return '}';
+"["         return '[';
+"]"         return ']';
 
+"-"[ $]+    return ':';
 ":"[ $]+    return ':';
 ","[ $]+    return ',';
+"?"[ $]+    return '?';
 
 [a-z0-9]+   {
                yylval.nodeData = syck_new_str2( yytext, yyleng );
