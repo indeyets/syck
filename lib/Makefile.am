@@ -8,6 +8,7 @@ lib_LIBRARIES = libsyck.a
 include_HEADERS = syck.h syck_st.h
 
 libsyck_a_SOURCES = \
+			emitter.c \
             handler.c \
             node.c \
             syck.c \

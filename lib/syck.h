@@ -10,6 +10,9 @@
 #ifndef SYCK_H
 #define SYCK_H
 
+#define SYCK_YAML_MAJOR 1
+#define SYCK_YAML_MINOR 0
+
 #define SYCK_VERSION    "0.35"
 #define YAML_DOMAIN     "yaml.org,2002"
 
@@ -47,6 +50,7 @@ extern "C" {
 #endif
 
 #define ALLOC_CT 8
+#define SYCK_BUFFERSIZE 262144
 #define S_ALLOC_N(type,n) (type*)malloc(sizeof(type)*(n))
 #define S_ALLOC(type) (type*)malloc(sizeof(type))
 #define S_REALLOC_N(var,type,n) (var)=(type*)realloc((char*)(var),sizeof(type)*(n))
@@ -70,11 +74,7 @@ extern "C" {
  */
 #define SYMID unsigned long
 
-typedef struct _syck_parser SyckParser;
-typedef struct _syck_file SyckIoFile;
-typedef struct _syck_str SyckIoStr;
 typedef struct _syck_node SyckNode;
-typedef struct _syck_level SyckLevel;
 
 enum syck_kind_tag {
     syck_map_kind,
@@ -123,6 +123,11 @@ struct _syck_node {
 /*
  * Parser definitions
  */
+typedef struct _syck_parser SyckParser;
+typedef struct _syck_file SyckIoFile;
+typedef struct _syck_str SyckIoStr;
+typedef struct _syck_level SyckLevel;
+
 typedef SYMID (*SyckNodeHandler)(SyckParser *, SyckNode *);
 typedef void (*SyckErrorHandler)(SyckParser *, char *);
 typedef SyckNode * (*SyckBadAnchorHandler)(SyckParser *, char *);
@@ -197,6 +202,64 @@ struct _syck_parser {
 };
 
 /*
+ * Emitter definitions
+ */
+typedef struct _syck_emitter SyckEmitter;
+
+typedef void (*SyckOutputHandler)(SyckEmitter *, char *, long); 
+
+enum doc_stage {
+    doc_open,
+    doc_need_header,
+    doc_processing
+};
+
+enum block_styles {
+    block_arbitrary,
+    block_fold,
+    block_literal
+};
+
+struct _syck_emitter {
+    /* Headerless doc flag */
+    int headless;
+    /* Sequence map shortcut flag */
+    int seq_map;
+    /* Force header? */
+    int use_header;
+    /* Force version? */
+    int use_version;
+    /* Sort hash keys */
+    int sort_keys;
+    /* Anchor format */
+    char *anchor_format;
+    /* Explicit typing on all collections? */
+    int explicit_typing;
+    /* Best width on folded scalars */
+    int best_width;
+    /* Use literal[1] or folded[2] blocks on all text? */
+    enum block_styles block_style;
+    /* Stage of written document */
+    enum doc_stage stage;
+    /* Level counter */
+    int level;
+    /* Default indentation */
+    int indent;
+    /* Object ignore ID */
+    SYMID ignore_id;
+    /* Symbol table for anchors */
+    st_table *markers, *anchors;
+    /* Custom buffer size */
+    size_t bufsize;
+    /* Buffer */
+    char *buffer, *marker;
+    /* Handler for output */
+    SyckOutputHandler handler;
+    /* Pointer for extension's use */
+    void *bonus;
+};
+
+/*
  * Handler prototypes
  */
 SYMID syck_hdlr_add_node( SyckParser *, SyckNode * );
@@ -219,6 +282,15 @@ char *syck_match_implicit( char *, size_t );
 char *syck_strndup( char *, long );
 long syck_io_file_read( char *, SyckIoFile *, long, long );
 long syck_io_str_read( char *, SyckIoStr *, long, long );
+SyckEmitter *syck_new_emitter();
+void syck_emitter_ignore_id( SyckEmitter *, SYMID );
+void syck_emitter_handler( SyckEmitter *, SyckOutputHandler );
+void syck_free_emitter( SyckEmitter * );
+void syck_emitter_clear( SyckEmitter * );
+void syck_emitter_write( SyckEmitter *, char *, long );
+void syck_emitter_flush( SyckEmitter * );
+char *syck_emitter_start_obj( SyckEmitter *, SYMID );
+void syck_emitter_end_obj( SyckEmitter * );
 SyckParser *syck_new_parser();
 void syck_free_parser( SyckParser * );
 void syck_parser_set_root_on_error( SyckParser *, SYMID );

@@ -14,22 +14,24 @@
 
 typedef struct RVALUE {
     union {
-	//struct {
-	//    unsigned long flags;	/* always 0 for freed obj */
-	//    struct RVALUE *next;
-	//} free;
+#if 0
+	struct {
+	    unsigned long flags;	/* always 0 for freed obj */
+	    struct RVALUE *next;
+	} free;
+#endif
 	struct RBasic  basic;
 	struct RObject object;
 	struct RClass  klass;
-	//struct RFloat  flonum;
-	//struct RString string;
+	/*struct RFloat  flonum;*/
+	/*struct RString string;*/
 	struct RArray  array;
-	//struct RRegexp regexp;
+	/*struct RRegexp regexp;*/
 	struct RHash   hash;
-	//struct RData   data;
+	/*struct RData   data;*/
 	struct RStruct rstruct;
-	//struct RBignum bignum;
-	//struct RFile   file;
+	/*struct RBignum bignum;*/
+	/*struct RFile   file;*/
     } as;
 } RVALUE;
 
@@ -38,7 +40,7 @@ typedef struct RVALUE {
 static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match;
 static VALUE sym_model, sym_generic;
 static VALUE sym_scalar, sym_seq, sym_map;
-VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, cMergeKey;
+VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, cMergeKey, cEmitter;
 VALUE oDefaultLoader;
 
 /*
@@ -55,9 +57,10 @@ SYMID rb_syck_parse_handler _((SyckParser *, SyckNode *));
 SYMID rb_syck_load_handler _((SyckParser *, SyckNode *));
 void rb_syck_err_handler _((SyckParser *, char *));
 SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
+void rb_syck_output_handler _((SyckEmitter *, char *, long));
 
 struct parser_xtra {
-    VALUE data;  // Borrowed this idea from marshal.c to fix [ruby-core:8067] problem
+    VALUE data;  /* Borrowed this idea from marshal.c to fix [ruby-core:8067] problem */
     VALUE proc;
 };
 
@@ -75,9 +78,9 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
 
     if ( max_size > 0 )
     {
-        //
-        // call io#read.
-        //
+        /*
+         * call io#read.
+         */
         VALUE src = (VALUE)str->ptr;
         VALUE n = LONG2NUM(max_size);
         VALUE str = rb_funcall2(src, s_read, 1, &n);
@@ -101,16 +104,20 @@ syck_parser_assign_io(parser, port)
 	VALUE port;
 {
     if (rb_respond_to(port, rb_intern("to_str"))) {
-	    //arg.taint = OBJ_TAINTED(port); /* original taintedness */
-	    //StringValue(port);	       /* possible conversion */
+#if 0
+	    arg.taint = OBJ_TAINTED(port); /* original taintedness */
+	    StringValue(port);	       /* possible conversion */
+#endif
 	    syck_parser_str( parser, RSTRING(port)->ptr, RSTRING(port)->len, NULL );
     }
     else if (rb_respond_to(port, s_read)) {
         if (rb_respond_to(port, s_binmode)) {
             rb_funcall2(port, s_binmode, 0, 0);
         }
-        //arg.taint = Qfalse;
-	    syck_parser_str( parser, (char *)port, 0, rb_syck_io_str_read );
+#if 0
+        arg.taint = Qfalse;
+#endif
+        syck_parser_str( parser, (char *)port, 0, rb_syck_io_str_read );
     }
     else {
         rb_raise(rb_eTypeError, "instance of IO needed");
@@ -144,36 +151,36 @@ rb_syck_mktime(str)
     char *ptr = str;
     VALUE year, mon, day, hour, min, sec, usec;
 
-    // Year
+    /* Year*/
     ptr[4] = '\0';
     year = INT2FIX(strtol(ptr, NULL, 10));
 
-    // Month
+    /* Month*/
     ptr += 4;
     while ( !isdigit( *ptr ) ) ptr++;
     mon = INT2FIX(strtol(ptr, NULL, 10));
 
-    // Day
+    /* Day*/
     ptr += 2;
     while ( !isdigit( *ptr ) ) ptr++;
     day = INT2FIX(strtol(ptr, NULL, 10));
 
-    // Hour
+    /* Hour*/
     ptr += 2;
     while ( !isdigit( *ptr ) ) ptr++;
     hour = INT2FIX(strtol(ptr, NULL, 10));
 
-    // Minute 
+    /* Minute */
     ptr += 2;
     while ( !isdigit( *ptr ) ) ptr++;
     min = INT2FIX(strtol(ptr, NULL, 10));
 
-    // Second 
+    /* Second */
     ptr += 2;
     while ( !isdigit( *ptr ) ) ptr++;
     sec = INT2FIX(strtol(ptr, NULL, 10));
 
-    // Millisecond 
+    /* Millisecond */
     ptr += 2;
     if ( *ptr == '.' )
     {
@@ -184,10 +191,10 @@ rb_syck_mktime(str)
         usec = INT2FIX( 0 );
     }
 
-    // Make UTC time
+    /* Make UTC time*/
     time = rb_funcall(rb_cTime, s_utc, 7, year, mon, day, hour, min, sec, usec);
 
-    // Time Zone
+    /* Time Zone*/
     while ( *ptr != 'Z' && *ptr != '+' && *ptr != '-' && *ptr != '\0' ) ptr++;
     if ( *ptr == '-' || *ptr == '+' )
     {
@@ -209,7 +216,7 @@ rb_syck_mktime(str)
             }
         }
 
-        // Make TZ time
+        /* Make TZ time*/
         utc_time = NUM2DBL(rb_funcall(time, s_to_f, 0));
         utc_time -= tz_offset;
         time = rb_funcall(rb_cTime, s_at, 1, rb_float_new(utc_time));
@@ -374,16 +381,16 @@ rb_syck_load_handler(p, n)
                 char *ptr = n->data.str->ptr;
                 VALUE year, mon, day;
 
-                // Year
+                /* Year*/
                 ptr[4] = '\0';
                 year = INT2FIX(strtol(ptr, NULL, 10));
 
-                // Month
+                /* Month*/
                 ptr += 4;
                 while ( !isdigit( *ptr ) ) ptr++;
                 mon = INT2FIX(strtol(ptr, NULL, 10));
 
-                // Day
+                /* Day*/
                 ptr += 2;
                 while ( !isdigit( *ptr ) ) ptr++;
                 day = INT2FIX(strtol(ptr, NULL, 10));
@@ -422,9 +429,9 @@ rb_syck_load_handler(p, n)
 				VALUE v = syck_map_read( n, map_value, i );
 				int merge_key = 0;
 
-				//
-				// Handle merge keys
-				//
+				/*
+				 * Handle merge keys
+				 */
 				if ( rb_obj_is_kind_of( k, cMergeKey ) )
 				{
 					if ( rb_obj_is_kind_of( v, rb_cHash ) )
@@ -458,9 +465,9 @@ rb_syck_load_handler(p, n)
         break;
     }
 
-    //
-    // ID already set, let's alter the symbol table to accept the new object
-    //
+    /*
+     * ID already set, let's alter the symbol table to accept the new object
+     */
     if (n->id > 0)
     {
         MEMCPY((void *)n->id, (void *)obj, RVALUE, 1);
@@ -631,7 +638,9 @@ syck_parser_load(argc, argv, self)
     
 	parser->bonus = (void *)&bonus;
 
-    //v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
+#if 0
+    v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
+#endif
 
     return syck_parse( parser );
 }
@@ -827,12 +836,15 @@ syck_loader_transfer( self, type, val )
 {
     char *taguri = NULL;
 
-       // rb_funcall(rb_mKernel, rb_intern("p"), 2, rb_str_new2( "-- TYPE --" ), type);
+#if 0
+	rb_p(rb_str_new2( "-- TYPE --" ));
+	rb_p(type);
+#endif
     if (NIL_P(type) || !RSTRING(type)->ptr || RSTRING(type)->len == 0) 
     {
-        //
-        // Empty transfer, detect type
-        //
+        /*
+         * Empty transfer, detect type
+         */
         if ( TYPE(val) == T_STRING )
         {
             taguri = syck_match_implicit( RSTRING(val)->ptr, RSTRING(val)->len );
@@ -851,7 +863,9 @@ syck_loader_transfer( self, type, val )
         VALUE str_taguri = rb_str_new2("taguri");
         VALUE str_xprivate = rb_str_new2("x-private");
         VALUE parts = rb_str_split( type_uri, ":" );
-               // rb_funcall(rb_mKernel, rb_intern("p"), 1, parts);
+#if 0
+        rb_p(parts);
+#endif
 
         scheme = rb_ary_shift( parts );
 
@@ -884,7 +898,10 @@ syck_loader_transfer( self, type, val )
                 name = rb_ary_shift( col );
                 type_proc = rb_ary_shift( col );
             }
-                   // rb_funcall(rb_mKernel, rb_intern("p"), 2, name, type_proc);
+#if 0
+            rb_p(name);
+            rb_p(type_proc);
+#endif
         }
 
         if ( rb_respond_to( type_proc, s_call ) )
@@ -1000,6 +1017,162 @@ syck_node_transform( self )
 }
 
 /*
+ * Handle output from the emitter
+ */
+void 
+rb_syck_output_handler( emitter, str, len )
+    SyckEmitter *emitter;
+    char *str;
+    long len;
+{
+    rb_str_cat( (VALUE)emitter->bonus, str, len );
+}
+
+/*
+ * Mark emitter values.
+ */
+static void
+syck_mark_emitter(emitter)
+    SyckEmitter *emitter;
+{
+    rb_gc_mark(emitter->ignore_id);
+}
+
+/*
+ * YAML::Syck::Emitter.new
+ */
+VALUE 
+syck_emitter_new(argc, argv, class)
+    int argc;
+    VALUE *argv;
+	VALUE class;
+{
+	VALUE pobj, options, init_argv[1];
+    SyckEmitter *emitter = syck_new_emitter();
+    syck_emitter_ignore_id( emitter, Qnil );
+    syck_emitter_handler( emitter, rb_syck_output_handler );
+
+    emitter->bonus = (void *)rb_str_new2( "" );
+
+    rb_scan_args(argc, argv, "01", &options);
+	pobj = Data_Wrap_Struct( class, syck_mark_emitter, syck_free_emitter, emitter );
+
+    if ( ! rb_obj_is_instance_of( options, rb_cHash ) )
+    {
+        options = rb_hash_new();
+    }
+	init_argv[0] = options;
+	rb_obj_call_init(pobj, 1, init_argv);
+	return pobj;
+}
+
+/*
+ * YAML::Syck::Emitter.initialize( options )
+ */
+static VALUE
+syck_emitter_initialize( self, options )
+    VALUE self, options;
+{
+	rb_iv_set(self, "@options", options);
+	return self;
+}
+
+/*
+ * YAML::Syck::Emitter.level
+ */
+VALUE
+syck_emitter_level_m( self )
+    VALUE self;
+{
+    SyckEmitter *emitter;
+
+	Data_Get_Struct(self, SyckEmitter, emitter);
+    return LONG2NUM( emitter->level );
+}
+
+/*
+ * YAML::Syck::Emitter.flush
+ */
+VALUE
+syck_emitter_flush_m( self )
+    VALUE self;
+{
+    SyckEmitter *emitter;
+
+	Data_Get_Struct(self, SyckEmitter, emitter);
+    syck_emitter_flush( emitter );
+    return self;
+}
+
+/*
+ * YAML::Syck::Emitter.write( str )
+ */
+VALUE
+syck_emitter_write_m( self, str )
+    VALUE str;
+{
+    SyckEmitter *emitter;
+
+	Data_Get_Struct(self, SyckEmitter, emitter);
+    syck_emitter_write( emitter, RSTRING(str)->ptr, RSTRING(str)->len );
+    return self;
+}
+
+/*
+ * YAML::Syck::Emitter.simple( str )
+ */
+VALUE
+syck_emitter_simple_write( self, str )
+    VALUE str;
+{
+    SyckEmitter *emitter;
+
+	Data_Get_Struct(self, SyckEmitter, emitter);
+    syck_emitter_simple( emitter, RSTRING(str)->ptr, RSTRING(str)->len );
+    return self;
+}
+
+/*
+ * YAML::Syck::Emitter.start_object( object_id )
+ */
+VALUE
+syck_emitter_start_object( self, oid )
+    VALUE self, oid;
+{
+    char *anchor_name;
+    SyckEmitter *emitter;
+
+	Data_Get_Struct(self, SyckEmitter, emitter);
+    anchor_name = syck_emitter_start_obj( emitter, oid );
+
+    if ( anchor_name == NULL )
+    {
+        return Qnil;
+    }
+
+    return rb_str_new2( anchor_name );
+}
+
+/*
+ * YAML::Syck::Emitter.end_object( object_id )
+ */
+VALUE
+syck_emitter_end_object( self, oid )
+    VALUE self, oid;
+{
+    SyckEmitter *emitter;
+
+	Data_Get_Struct(self, SyckEmitter, emitter);
+    syck_emitter_end_obj( emitter );
+
+    if ( emitter->level < 0 )
+    {
+        syck_emitter_flush( emitter );
+    }
+    return (VALUE)emitter->bonus;
+}
+
+/*
  * Initialize Syck extension
  */
 void
@@ -1009,9 +1182,9 @@ Init_syck()
     VALUE rb_syck = rb_define_module_under( rb_yaml, "Syck" );
     rb_define_const( rb_syck, "VERSION", rb_str_new2( SYCK_VERSION ) );
 
-	//
-	// Global symbols
-	//
+	/*
+	 * Global symbols
+	 */
     s_new = rb_intern("new");
     s_utc = rb_intern("utc");
     s_at = rb_intern("at");
@@ -1030,15 +1203,15 @@ Init_syck()
     sym_scalar = ID2SYM(rb_intern("scalar"));
     sym_seq = ID2SYM(rb_intern("seq"));
 
-    //
-    // Load Date module
-    //
+    /*
+     * Load Date module
+     */
     rb_require( "date" );
     cDate = rb_funcall( rb_cObject, rb_intern("const_get"), 1, rb_str_new2("Date") );
 
-	//
-    // Define YAML::Syck::Loader class
-    //
+    /*
+     * Define YAML::Syck::Loader class
+     */
     cLoader = rb_define_class_under( rb_syck, "Loader", rb_cObject );
     rb_define_attr( cLoader, "families", 1, 1 );
     rb_define_attr( cLoader, "private_types", 1, 1 );
@@ -1053,9 +1226,9 @@ Init_syck()
     oDefaultLoader = rb_funcall( cLoader, rb_intern( "new" ), 0 );
     rb_define_const( rb_syck, "DefaultLoader", oDefaultLoader );
 
-    //
-	// Define YAML::Syck::Parser class
-	//
+    /*
+     * Define YAML::Syck::Parser class
+     */
     cParser = rb_define_class_under( rb_syck, "Parser", rb_cObject );
     rb_define_attr( cParser, "options", 1, 1 );
 	rb_define_singleton_method( cParser, "new", syck_parser_new, -1 );
@@ -1063,9 +1236,9 @@ Init_syck()
     rb_define_method(cParser, "load", syck_parser_load, -1);
     rb_define_method(cParser, "load_documents", syck_parser_load_documents, -1);
 
-    //
-    // Define YAML::Syck::Node class
-    //
+    /*
+     * Define YAML::Syck::Node class
+     */
     cNode = rb_define_class_under( rb_syck, "Node", rb_cObject );
     rb_define_attr( cNode, "kind", 1, 1 );
     rb_define_attr( cNode, "type_id", 1, 1 );
@@ -1074,33 +1247,48 @@ Init_syck()
     rb_define_method( cNode, "initialize", syck_node_initialize, 2);
     rb_define_method( cNode, "transform", syck_node_transform, 0);
 
-    //
-    // Define YAML::Syck::PrivateType class
-    //
+    /*
+     * Define YAML::Syck::PrivateType class
+     */
     cPrivateType = rb_define_class_under( rb_syck, "PrivateType", rb_cObject );
     rb_define_attr( cPrivateType, "type_id", 1, 1 );
     rb_define_attr( cPrivateType, "value", 1, 1 );
     rb_define_method( cPrivateType, "initialize", syck_privatetype_initialize, 2);
 
-    //
-    // Define YAML::Syck::DomainType class
-    //
+    /*
+     * Define YAML::Syck::DomainType class
+     */
     cDomainType = rb_define_class_under( rb_syck, "DomainType", rb_cObject );
     rb_define_attr( cDomainType, "domain", 1, 1 );
     rb_define_attr( cDomainType, "type_id", 1, 1 );
     rb_define_attr( cDomainType, "value", 1, 1 );
     rb_define_method( cDomainType, "initialize", syck_domaintype_initialize, 3);
 
-    //
-    // Define YAML::Syck::BadAlias class
-    //
+    /*
+     * Define YAML::Syck::BadAlias class
+     */
     cBadAlias = rb_define_class_under( rb_syck, "BadAlias", rb_cObject );
     rb_define_attr( cBadAlias, "name", 1, 1 );
     rb_define_method( cBadAlias, "initialize", syck_badalias_initialize, 1);
 
-	//
-	// Define YAML::Syck::MergeKey class
-	//
+	/*
+	 * Define YAML::Syck::MergeKey class
+	 */
 	cMergeKey = rb_define_class_under( rb_syck, "MergeKey", rb_cObject );
+
+    /*
+     * Define YAML::Syck::Emitter class
+     */
+    cEmitter = rb_define_class_under( rb_syck, "Emitter", rb_cObject );
+    rb_define_attr( cEmitter, "options", 1, 1 );
+	rb_define_singleton_method( cEmitter, "new", syck_emitter_new, -1 );
+    rb_define_method( cEmitter, "initialize", syck_emitter_initialize, 1 );
+    rb_define_method( cEmitter, "level", syck_emitter_level_m, 0 );
+    rb_define_method( cEmitter, "write", syck_emitter_write_m, 1 );
+    rb_define_method( cEmitter, "<<", syck_emitter_write_m, 1 );
+    rb_define_method( cEmitter, "simple", syck_emitter_simple_write, 1 );
+    rb_define_method( cEmitter, "flush", syck_emitter_flush_m, 0 );
+    rb_define_method( cEmitter, "start_object", syck_emitter_start_object, 1 );
+    rb_define_method( cEmitter, "end_object", syck_emitter_end_object, 0 );
 }
 

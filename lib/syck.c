@@ -11,10 +11,6 @@
 
 #include "syck.h"
 
-#define SYCK_YAML_MAJOR 1
-#define SYCK_YAML_MINOR 0
-#define SYCK_BUFFERSIZE 262144
-
 void syck_parser_pop_level( SyckParser * );
 
 /*

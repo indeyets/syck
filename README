@@ -36,10 +36,10 @@ RUBY INSTALLATION
 You don't need to `make install', but please configure and make libsyck
 as outlined above.
 
-   cd ext/ruby/
-   ruby extconf.rb
-   make
-   sudo make install
+   cd ext/ruby
+   ruby install.rb config
+   ruby install.rb setup
+   sudo ruby install.rb install
 
 Syck works best with Ruby.  Ruby's symbol table is leveraged, as well
 as Ruby's VALUE system.  (You can read more about that below.)
