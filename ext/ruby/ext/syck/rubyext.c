@@ -1280,7 +1280,6 @@ Init_syck()
      * Define YAML::Syck::Emitter class
      */
     cEmitter = rb_define_class_under( rb_syck, "Emitter", rb_cObject );
-    rb_define_attr( cEmitter, "options", 1, 1 );
 	rb_define_singleton_method( cEmitter, "new", syck_emitter_new, -1 );
     rb_define_method( cEmitter, "initialize", syck_emitter_initialize, 1 );
     rb_define_method( cEmitter, "level", syck_emitter_level_m, 0 );

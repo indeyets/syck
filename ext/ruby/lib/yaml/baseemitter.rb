@@ -9,6 +9,18 @@ module YAML
 
     module BaseEmitter
 
+        def options( opt = nil )
+            if opt
+                @options[opt] || YAML::DEFAULTS[opt]
+            else
+                @options
+            end
+        end
+
+        def options=( opt )
+            @options = opt
+        end
+
         #
         # Emit binary data
         #
@@ -23,9 +35,9 @@ module YAML
 		def node_text( value, block = '>' )
             @seq_map = false
 			valx = value.dup
-			if @options[:UseBlock]
+			if options(:UseBlock)
 				block = '|'
-			elsif not @options[:UseFold] and valx =~ /\n[ \t]/ and not valx =~ /#{YAML::ESCAPE_CHAR}/
+			elsif not options(:UseFold) and valx =~ /\n[ \t]/ and not valx =~ /#{YAML::ESCAPE_CHAR}/
 				block = '|'
 			end 
 			str = block.dup
@@ -39,7 +51,7 @@ module YAML
 				valx = YAML::escape( valx )
 			end
 			if valx =~ /\A[ \t#]/
-				str << @options[:Indent].to_s
+				str << options(:Indent).to_s
 			end
 			if block == '>'
 				valx = fold( valx ) 
@@ -74,7 +86,7 @@ module YAML
 		#
 		def indent_text( text )
 			return "" if text.to_s.empty?
-            spacing = " " * ( level * @options[:Indent] )
+            spacing = " " * ( level * options(:Indent) )
 			return "\n" + text.gsub( /^([^\n])/, "#{spacing}\\1" )
 		end
 
@@ -83,7 +95,7 @@ module YAML
 		#
 		def indent
             #p [ self.id, @level, :INDENT ]
-			return " " * ( level * @options[:Indent] )
+			return " " * ( level * options(:Indent) )
 		end
 
 		#
@@ -99,7 +111,7 @@ module YAML
 		def fold( value )
 			value.gsub!( /\A\n+/, '' )
 			folded = $&.to_s
-			width = (0..@options[:BestWidth])
+			width = (0..options(:BestWidth))
 			while not value.empty?
 				last = value.index( /(\n+)/ )
 				chop_s = false
@@ -108,10 +120,10 @@ module YAML
 				elsif width.include?( value.length )
 					last = value.length
 				else
-					last = value.rindex( /[ \t]/, @options[:BestWidth] )
+					last = value.rindex( /[ \t]/, options(:BestWidth) )
 					chop_s = true
 				end
-				folded += value.slice!( 0, width.include?( last ) ? last + 1 : @options[:BestWidth] )
+				folded += value.slice!( 0, width.include?( last ) ? last + 1 : options(:BestWidth) )
 				folded.chop! if chop_s
 				folded += "\n" unless value.empty?
 			end
@@ -134,7 +146,7 @@ module YAML
                 @seq_map = false
 			else
                 # FIXME
-                # if @buffer.length == 1 and @options[:UseHeader] == false and type.length.zero? 
+                # if @buffer.length == 1 and options(:UseHeader) == false and type.length.zero? 
 			    #     @headless = 1 
                 # end
 
@@ -191,7 +203,7 @@ module YAML
 				self << "[]"
 			else
                 # FIXME
-                # if @buffer.length == 1 and @options[:UseHeader] == false and type.length.zero? 
+                # if @buffer.length == 1 and options(:UseHeader) == false and type.length.zero? 
 			    #     @headless = 1 
                 # end
 

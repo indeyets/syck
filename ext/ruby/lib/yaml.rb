@@ -183,7 +183,7 @@ module YAML
 		end
         aidx = out.start_object( oid )
         if aidx
-            out.simple( "*#{out.options[:AnchorFormat]} " % [ aidx ] )
+            out.simple( "*#{out.options(:AnchorFormat)} " % [ aidx ] )
         else
             e.call( out )
         end
