@@ -130,7 +130,7 @@ syck_type_id_to_uri( char *type_id )
 /*!re2c
 
 TAG = "taguri" ;
-XPRIVATE = "xprivate" ;
+XPRIVATE = "x-private" ;
 WD = [A-Za-z0-9_] ;
 WDD = [A-Za-z0-9_-] ;
 DNSCOMPRE = WD ( WDD* WD )? ;
