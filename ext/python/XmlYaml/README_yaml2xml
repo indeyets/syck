@@ -1,3 +1,11 @@
+Note: This was copied over into syck from PyYaml, it needs to 
+      be updated to use the syck parser, but other than that it
+      should work.   Also, this doesn't map directly to what is
+      at http://yaml.org/xml.html -- some list discussion and
+      eventual resolution would be helpful.  Clark
+
+...
+
                    Convert XML to and from YAML
                    ============================
 
