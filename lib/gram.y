@@ -18,6 +18,16 @@
 #define YYPARSE_PARAM   parser
 #define YYLEX_PARAM     parser
 
+#define NULL_NODE(parser, node) \
+        SyckNode *node = syck_new_str( "" ); \
+        if ( ((SyckParser *)parser)->taguri_expansion == 1 ) \
+        { \
+            node->type_id = syck_taguri( YAML_DOMAIN, "null", 4 ); \
+        } \
+        else \
+        { \
+            node->type_id = syck_strndup( "null", 4 ); \
+        }
 %}
 
 %union {
@@ -32,7 +42,7 @@
 
 %type <nodeId>      doc basic_seq
 %type <nodeData>    atom word_rep ind_rep struct_rep atom_or_empty
-%type <nodeData>    implicit_seq inline_seq implicit_map inline_map
+%type <nodeData>    implicit_seq inline_seq implicit_map inline_map inline_seq_atom inline_map_atom
 %type <nodeData>    top_imp_seq in_implicit_seq in_inline_seq basic_mapping basic_mapping2
 %type <nodeData>    top_imp_map in_implicit_map in_inline_map complex_mapping
 
@@ -82,29 +92,13 @@ ind_rep : struct_rep
 atom_or_empty   : atom
                 | indent_open indent_end
                 {
-                   SyckNode *n = syck_new_str( "" ); 
-                   if ( ((SyckParser *)parser)->taguri_expansion == 1 )
-                   {
-                       n->type_id = syck_taguri( YAML_DOMAIN, "null", 4 );
-                   }
-                   else
-                   {
-                       n->type_id = syck_strndup( "null", 4 );
-                   }
-                   $$ = n;
+                    NULL_NODE( parser, n );
+                    $$ = n;
                 }
                 |
                 {
-                   SyckNode *n = syck_new_str( "" ); 
-                   if ( ((SyckParser *)parser)->taguri_expansion == 1 )
-                   {
-                       n->type_id = syck_taguri( YAML_DOMAIN, "null", 4 );
-                   }
-                   else
-                   {
-                       n->type_id = syck_strndup( "null", 4 );
-                   }
-                   $$ = n;
+                    NULL_NODE( parser, n );
+                    $$ = n;
                 }
                 ;
 
@@ -271,15 +265,19 @@ inline_seq		: '[' in_inline_seq ']'
                 }
                 ;
 
-in_inline_seq   : atom
+in_inline_seq   : inline_seq_atom
                 {
                     $$ = syck_new_seq( syck_hdlr_add_node( (SyckParser *)parser, $1 ) );
                 }
-                | in_inline_seq ',' atom
+                | in_inline_seq ',' inline_seq_atom
 				{ 
                     syck_seq_add( $1, syck_hdlr_add_node( (SyckParser *)parser, $3 ) );
                     $$ = $1;
 				}
+                ;
+
+inline_seq_atom : atom
+                | basic_mapping2
                 ;
 
 /*
@@ -351,6 +349,16 @@ complex_mapping : basic_mapping
                 }
                 ;
 
+/* 2004-02-03
+				| '?' atom
+                {
+                    NULL_NODE( parser, n );
+                    $$ = syck_new_map( 
+                        syck_hdlr_add_node( (SyckParser *)parser, $2 ), 
+                        syck_hdlr_add_node( (SyckParser *)parser, n ) );
+                }
+*/
+
 in_implicit_map : complex_mapping
 				| in_implicit_map indent_sep basic_seq
                 { 
@@ -398,13 +406,23 @@ inline_map		: '{' in_inline_map '}'
                 }
                 ;
          
-in_inline_map	: basic_mapping2 
-				| in_inline_map ',' basic_mapping2
+in_inline_map	: inline_map_atom
+				| in_inline_map ',' inline_map_atom
 				{
                     syck_map_update( $1, $3 );
                     syck_free_node( $3 );
                     $$ = $1;
 				}
+                ;
+
+inline_map_atom : atom
+                {
+                    NULL_NODE( parser, n );
+                    $$ = syck_new_map( 
+                        syck_hdlr_add_node( (SyckParser *)parser, $1 ), 
+                        syck_hdlr_add_node( (SyckParser *)parser, n ) );
+                }
+                | basic_mapping2
                 ;
 
 %%

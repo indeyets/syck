@@ -1278,6 +1278,28 @@ EOY
     end
 
     #
+    # Test of Ranges
+    #
+    def test_ranges
+
+        # Simple numeric
+        assert_to_yaml( 1..3, <<EOY )
+--- !ruby/range 1..3
+EOY
+
+        # Simple alphabetic
+        assert_to_yaml( 'a'..'z', <<EOY )
+--- !ruby/range a..z
+EOY
+
+        # Float
+        assert_to_yaml( 10.5...30.3, <<EOY )
+--- !ruby/range 10.5...30.3
+EOY
+
+    end
+
+    #
     # Tests from Tanaka Akira on [ruby-core]
     #
     def test_akira
@@ -1311,6 +1333,20 @@ EOY
         # a = []; 1000.times { a << {"a"=>"b", "c"=>"d"} }
         # YAML::load( a.to_yaml )
 
+    end
+
+    #
+    # Test Time.now cycle
+    #
+    def test_time_now_cycle
+        #
+        # From Minero Aoki [ruby-core:2305]
+        #
+        require 'yaml'
+        t = Time.now
+        5.times do
+            assert_equals( t, YAML.load( YAML.dump( t ) ) )
+        end
     end
 
     #
