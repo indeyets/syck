@@ -521,6 +521,7 @@ INDENT              {   int indt_len;
                             yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );  
                             syck_fold_format( yylval->nodeData->data.str, blockType, lvl->spaces, nlDoWhat );
                             POP_LEVEL();
+                            YYCURSOR = YYTOKTMP;
                             return BLOCK;
                         }
                         goto ScalarBlock2;
