@@ -1,10 +1,17 @@
 require 'date'
+require 'yaml/constants'
 #
 # Type conversions
 #
 
 # Ruby 1.6.x Object#object_id
 class Object; alias_method :object_id, :id; end unless Object.respond_to? :object_id
+
+class Class
+	def to_yaml( opts = {} )
+		raise ArgumentError, "can't dump anonymous class %s" % self.class
+	end
+end
 
 class Object
     def is_complex_yaml?
@@ -270,7 +277,7 @@ class String
                             "''"
                         elsif YAML.detect_implicit( self ) != 'str'
                             "\"#{YAML.escape( self )}\"" 
-                        elsif self =~ /#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}] |\n|\'/
+                        elsif self =~ /#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}]( |\n|$)|\'/
                             "\"#{YAML.escape( self )}\"" 
                         elsif self =~ /^[^#{YAML::WORD_CHAR}]/
                             "\"#{YAML.escape( self )}\"" 
@@ -303,7 +310,7 @@ class Symbol
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) { |out|
 			out << "!ruby/sym "
-			self.object_id2name.to_yaml( :Emitter => out )
+			self.id2name.to_yaml( :Emitter => out )
 		}
 	end
 end

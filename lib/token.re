@@ -312,9 +312,11 @@ CDELIMS             {   POP_LEVEL();
 "!"                 {   ENSURE_IOPEN(lvl, 0, 1);
                         goto TransferMethod; }
 
-"'"                 {   goto SingleQuote; }
+"'"                 {   ENSURE_IOPEN(lvl, 0, 1);
+                        goto SingleQuote; }
 
-"\""                {   goto DoubleQuote; }
+"\""                {   ENSURE_IOPEN(lvl, 0, 1);
+                        goto DoubleQuote; }
 
 BLOCK               {   if ( *( YYCURSOR - 1 ) == '\n' ) 
                         {
