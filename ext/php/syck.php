@@ -24,7 +24,7 @@ $doc =<<<YAML
   i: 012
 YAML;
 
-$iter = 10000;
+$iter = 1000;
 
 echo "DOC #1 = $iter x " . strlen( $doc ) . "\n";
 $syck_start = microtime();

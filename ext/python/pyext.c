@@ -9,10 +9,17 @@
 #include <Python.h>
 #include <syck.h>
 
+staticforward PyTypeObject SyckNodeType;
+
 static double zero()    { return 0.0; }
 static double one() { return 1.0; }
 static double inf() { return one() / zero(); }
 static double i_nan() { return zero() / zero(); }
+
+SYMID py_syck_load_handler(SyckParser *p, SyckNode *n);
+static PyObject *py_syck_load( PyObject *self, PyObject *args );
+SYMID py_syck_parse_handler(SyckParser *p, SyckNode *n);
+static PyObject *py_syck_parse( PyObject *self, PyObject *args );
 
 PyObject *
 syck_PyIntMaker( long num )
@@ -26,6 +33,71 @@ syck_PyIntMaker( long num )
         return PyInt_FromLong( num );
     }
 }
+
+/*
+ * node object
+ */
+static struct PyMethodDef SyckNodeMethods[] = {
+    {"transform",  py_syck_node_transform, METH_VARARGS,
+     "Transform a node into native Python objects."},
+    {NULL, NULL, 0, NULL}        /* Sentinel */
+};
+
+static SyckNode *
+py_syck_node_alloc( char *kind, char *type_id, char *value )
+{
+    SyckNode *self;
+    self = PyObject_NEW( SyckNode, &SyckNodeType );
+    if ( self == NULL ) return NULL;
+    self->kind = kind;
+    self->type_id = type_id;
+    self->value = value;
+    return self;
+}
+
+static PyObject *
+py_syck_node_new( PyObject *self, PyObject *args )
+{
+    char *kind, *type_id, *value;
+    if ( ! PyArg_ParseTuple( args, "sss", &kind, &type_id, &value ) )
+    {
+        return NULL;
+    }
+    return (PyObject *) py_syck_node_alloc( kind, type_id, value );
+}
+
+static void
+py_syck_node_free( SyckNode *self )
+{
+    if ( self->type_id != NULL )
+        S_FREE( self->type_id );
+    if ( self->anchor != NULL )
+        S_FREE( self->anchor );
+    S_FREE( self );
+    PyMem_DEL( self );
+}
+
+static PyTypeObject SyckNodeType = {
+    PyObject_HEAD_INIT(&PyType_Type)
+    0,
+    "Node",
+    sizeof(SyckNode),
+    0,
+
+    (destructor)  py_syck_node_free,
+    (printfunc)   0,
+    (getattrfunc) py_syck_node_getattr,
+    (setattrfunc) 0,
+    (cmpfunc)     0,
+    (reprfunc)    py_syck_node_repr,
+
+    0,
+    0,   /* &py_syck_node_as_sequence, */
+    0,
+    (hashfunc)    0,
+    (ternaryfunc) 0,
+    (reprfunc)    0,
+};
 
 /*
  * default handler for ruby.yaml.org types
@@ -42,6 +114,7 @@ yaml_org_handler( p, n, ref )
     int transferred = 0;
     long i = 0;
 
+    o = Py_None;
     switch (n->kind)
     {
         case syck_str_kind:
@@ -174,7 +247,6 @@ py_syck_load_handler(p, n)
 {
     SYMID oid;
     PyObject *o;
-    long i;
 
     /*
      * Attempt common transfers
@@ -185,7 +257,7 @@ py_syck_load_handler(p, n)
 }
 
 static PyObject *
-syck_load( self, args )
+py_syck_load( self, args )
     PyObject *self;
     PyObject *args;
 {
@@ -211,8 +283,24 @@ syck_load( self, args )
     return obj;
 }
 
+SYMID
+py_syck_parse_handler(p, n)
+    SyckParser *p;
+    SyckNode *n;
+{
+    SYMID oid;
+    PyObject *o;
+
+    /*
+     * Attempt common transfers
+     */
+    int transferred = yaml_org_handler( p, n, &o );
+    oid = syck_add_sym( p, (char *)o );
+    return oid;
+}
+
 static PyObject *
-syck_parse( self, args )
+py_syck_parse( self, args )
     PyObject *self;
     PyObject *args;
 {
@@ -225,7 +313,7 @@ syck_parse( self, args )
         return NULL;
 
     syck_parser_str_auto( parser, yamlstr, NULL );
-    syck_parser_handler( parser, python_syck_handler );
+    syck_parser_handler( parser, py_syck_parse_handler );
     syck_parser_error_handler( parser, NULL );
     syck_parser_implicit_typing( parser, 1 );
     syck_parser_taguri_expansion( parser, 1 );
@@ -239,15 +327,23 @@ syck_parse( self, args )
 }
 
 static PyMethodDef SyckMethods[] = {
-    {"load",  syck_load, METH_VARARGS,
+
+    {"load",  py_syck_load, METH_VARARGS,
      "Load from a YAML string."},
-    {"parse", syck_parse, METH_VARARGS,
+    {"parse", py_syck_parse, METH_VARARGS,
      "Parse a YAML string into objects representing nodes."},
+
+    {"Node", py_syck_node_new, METH_VARARGS,
+     "Create a syck.Node object."},
+
     {NULL, NULL, 0, NULL}        /* Sentinel */
+
 };
 
 void
 initsyck(void)
 {
-        (void) Py_InitModule("syck", SyckMethods);
+    PyObject *syck, *syck_node;
+    syck = Py_InitModule("syck", SyckMethods);
 }
+

@@ -40,6 +40,8 @@ PHP_RINIT_FUNCTION(syck);
 PHP_RSHUTDOWN_FUNCTION(syck);
 PHP_MINFO_FUNCTION(syck);
 
+PHP_FUNCTION(mergekey_init);
+
 PHP_FUNCTION(syck_load);
 
 /* 

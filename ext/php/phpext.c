@@ -78,10 +78,43 @@ static void php_syck_init_globals(zend_syck_globals *syck_globals)
 */
 /* }}} */
 
+static int le_mergekeyp;
+
+zend_class_entry merge_key_entry;
+	
+/* {{{ MergeKey */
+
+static zend_function_entry mergekey_functions[] = {
+  PHP_FALIAS(mergekey,          mergekey_init,              NULL)
+  { NULL, NULL, NULL }
+};
+
+/* {{{ swfmovie_init */
+
+PHP_FUNCTION(mergekey_init)
+{   
+  object_init_ex(getThis(), &merge_key_entry);
+} 
+                                                
+
+static void destroy_MergeKey_resource(zend_rsrc_list_entry *resource TSRMLS_DC)
+{
+}
+
+/* }}} */
+
+/* }}} */
+
 /* {{{ PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION(syck)
 {
+    le_mergekeyp = zend_register_list_destructors_ex(destroy_MergeKey_resource, NULL, "MergeKey", module_number);
+
+	INIT_CLASS_ENTRY(merge_key_entry, "mergekey", mergekey_functions);
+
+	zend_register_internal_class(&merge_key_entry TSRMLS_CC);
+
 	/* If you have INI entries, uncomment these lines 
 	ZEND_INIT_MODULE_GLOBALS(syck, php_syck_init_globals, NULL);
 	REGISTER_INI_ENTRIES();
@@ -196,6 +229,11 @@ php_syck_handler(p, n)
             else if ( strcmp( n->type_id, "float#neginf" ) == 0 )
             {
                 ZVAL_DOUBLE( o, -inf() );
+            }
+            else if ( strcmp( n->type_id, "merge" ) == 0 )
+            {
+				MAKE_STD_ZVAL( o );
+				object_init_ex( o, &merge_key_entry );
             }
             else
             {
