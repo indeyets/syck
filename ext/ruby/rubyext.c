@@ -13,6 +13,7 @@
 #include <time.h>
 
 static ID time_s_mkutc;
+VALUE cNode;
 
 SYMID
 rb_syck_mktime(str)
@@ -57,6 +58,48 @@ rb_syck_mktime(str)
 
 SYMID
 rb_syck_parse_handler(p, n)
+    SyckParser *p;
+    SyckNode *n;
+{
+    VALUE t, v, obj;
+    int i;
+
+    obj = rb_obj_alloc(cNode);
+    t = rb_str_new2( n->type_id );
+    rb_iv_set(obj, "@type_id", t);
+
+    switch (n->kind)
+    {
+        case syck_str_kind:
+            rb_iv_set(obj, "@kind", ID2SYM(rb_intern("str")));
+            v = rb_str_new( n->data.str->ptr, n->data.str->len );
+        break;
+
+        case syck_seq_kind:
+            rb_iv_set(obj, "@kind", ID2SYM(rb_intern("seq")));
+            v = rb_ary_new2( n->data.list->idx );
+            for ( i = 0; i < n->data.list->idx; i++ )
+            {
+                rb_ary_store( v, i, syck_seq_read( n, i ) );
+            }
+        break;
+
+        case syck_map_kind:
+            rb_iv_set(obj, "@kind", ID2SYM(rb_intern("map")));
+            obj = rb_hash_new();
+            for ( i = 0; i < n->data.pairs->idx; i++ )
+            {
+                rb_hash_aset( v, syck_map_read( n, map_key, i ), syck_map_read( n, map_value, i ) );
+            }
+        break;
+    }
+
+    rb_iv_set(obj, "@value", v);
+    return obj;
+}
+
+SYMID
+rb_syck_load_handler(p, n)
     SyckParser *p;
     SyckNode *n;
 {
@@ -163,6 +206,31 @@ rb_syck_load(argc, argv)
 	    syck_parser_str( parser, RSTRING(port)->ptr, RSTRING(port)->len, NULL );
     }
 
+    syck_parser_handler( parser, rb_syck_load_handler );
+    syck_parser_error_handler( parser, rb_syck_err_handler );
+    v = syck_parse( parser );
+    syck_free_parser( parser );
+
+    return v;
+}
+
+VALUE
+rb_syck_parse(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE port, proc;
+    VALUE v;
+    //OpenFile *fptr;
+    SyckParser *parser = syck_new_parser();
+
+    rb_scan_args(argc, argv, "11", &port, &proc);
+    if (rb_respond_to(port, rb_intern("to_str"))) {
+	    //arg.taint = OBJ_TAINTED(port); /* original taintedness */
+	    //StringValue(port);	       /* possible conversion */
+	    syck_parser_str( parser, RSTRING(port)->ptr, RSTRING(port)->len, NULL );
+    }
+
     syck_parser_handler( parser, rb_syck_parse_handler );
     syck_parser_error_handler( parser, rb_syck_err_handler );
     v = syck_parse( parser );
@@ -171,6 +239,17 @@ rb_syck_load(argc, argv)
     return v;
 }
 
+static VALUE
+syck_node_initialize( self, type_id, val )
+    VALUE self, type_id, val;
+{
+    rb_iv_set( self, "@type_id", type_id );
+    rb_iv_set( self, "@value", val );
+}
+
+//
+// Initialize Syck extension
+//
 void
 Init_syck()
 {
@@ -178,5 +257,16 @@ Init_syck()
 
     time_s_mkutc = rb_intern("utc");
     rb_define_module_function(rb_syck, "load", rb_syck_load, -1);
+    rb_define_module_function(rb_syck, "parse", rb_syck_parse, -1);
+
+    //
+    // Define Syck::Node class
+    //
+    cNode = rb_define_class( "Node", rb_cObject );
+    rb_define_attr( cNode, "kind", 1, 1 );
+    rb_define_attr( cNode, "type_id", 1, 1 );
+    rb_define_attr( cNode, "value", 1, 1 );
+    rb_define_attr( cNode, "anchor", 1, 1 );
+    rb_define_method( cNode, "initialize", syck_node_initialize, 2);
 }
 

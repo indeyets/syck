@@ -156,7 +156,9 @@ Header:
 
 /*!re2c
 
-"---" ENDSPC        {   return DOCSEP; }
+"---" ENDSPC        {   goto Directive; }
+
+INDENT              {   goto Header; }
 
 ANY                 {   YYPOS(0);
                         goto Document; 
