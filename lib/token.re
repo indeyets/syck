@@ -116,10 +116,15 @@ DIR = "#" WORDC ":" WORDC ;
 
 DIGITS = [0-9] ;
 SIGN = [-+] ;
-HEX = [0-9a-fA-F] ;
+HEX = [0-9a-fA-F,] ;
+OCT = [0-7,] ;
 INTHEX = SIGN? "0x" HEX+ ; 
+INTOCT = SIGN? "0" OCT+ ;
 INTCANON = SIGN? DIGITS ( DIGITS | "," )* ;
-INTEGER = ( INTCANON | INTHEX ) ;
+NULLTYPE = ( "~" | "null" | "Null" | "NULL" ) ;
+BOOLYES = ( "true" | "True" | "TRUE" | "yes" | "Yes" | "YES" | "on" | "On" | "ON" ) ;
+BOOLNO = ( "false" | "False" | "FALSE" | "no" | "No" | "NO" | "off" | "Off" | "OFF" ) ;
+
 */
 
     if ( YYLINEPTR != YYCURSOR )
@@ -272,17 +277,36 @@ ANY                 {   goto Plain2; }
 
 Implicit:
     {
+        char cursch = YYCURSOR[0];
+        YYCURSOR[0] = '\0';
         YYTOKTMP = YYCURSOR;
         YYCURSOR = YYTOKEN;
 
 Implicit2:
 
+#define TAG_IMPLICIT( tid ) \
+    YYCURSOR = YYTOKTMP; \
+    yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN ); \
+    yylval->nodeData->type_id = tid; \
+    YYCURSOR[0] = cursch; \
+    return PLAIN;
+
 /*!re2c
 
-ANY                 {   YYCURSOR = YYTOKTMP;
-                        yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );
-                        return PLAIN;
-                    }
+NULLTYPE NULL       {   TAG_IMPLICIT( "null" ); }
+
+BOOLYES NULL        {   TAG_IMPLICIT( "bool#yes" ); }
+
+BOOLNO NULL         {   TAG_IMPLICIT( "bool#no" ); }
+
+INTHEX NULL         {   TAG_IMPLICIT( "int#hex" ); }
+
+INTOCT NULL         {   TAG_IMPLICIT( "int#oct" ); }
+
+INTCANON NULL       {   TAG_IMPLICIT( "int" ); }
+
+ANY                 {   TAG_IMPLICIT( "str" ); }
+
 */
     }
 

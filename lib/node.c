@@ -20,6 +20,7 @@ syck_alloc_node( enum syck_kind_tag type )
     s = S_ALLOC( SyckNode );
     s->kind = type;
     s->id = NULL;
+    s->type_id = "";
 
     return s;
 }
@@ -94,9 +95,10 @@ syck_new_str2( char *str, long len )
     SyckNode *n;
 
     n = syck_alloc_str();
-    n->data.str->ptr = S_ALLOC_N( char, len );
+    n->data.str->ptr = S_ALLOC_N( char, len + 1 );
     n->data.str->len = len;
     memcpy( n->data.str->ptr, str, len );
+    n->data.str->ptr[len] = '\0';
 
     return n;
 }

@@ -20,7 +20,20 @@ rb_syck_parse_handler(p, n)
     switch (n->kind)
     {
         case syck_str_kind:
-            obj = rb_str_new( n->data.str->ptr, n->data.str->len );
+            if ( strcmp( n->type_id, "null" ) == 0 )
+                obj = Qnil;
+            else if ( strcmp( n->type_id, "bool#yes" ) == 0 )
+                obj = Qtrue;
+            else if ( strcmp( n->type_id, "bool#no" ) == 0 )
+                obj = Qfalse;
+            else if ( strcmp( n->type_id, "int#hex" ) == 0 )
+                obj = rb_cstr2inum( n->data.str->ptr, 16 );
+            else if ( strcmp( n->type_id, "int#oct" ) == 0 )
+                obj = rb_cstr2inum( n->data.str->ptr, -8 );
+            else if ( strcmp( n->type_id, "int" ) == 0 )
+                obj = rb_cstr2inum( n->data.str->ptr, 10 );
+            else
+                obj = rb_str_new( n->data.str->ptr, n->data.str->len );
         break;
 
         case syck_seq_kind:
