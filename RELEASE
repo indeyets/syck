@@ -1,4 +1,4 @@
-released: { name: Syck, version: 0.29 }
+released: { name: Syck, version: 0.32 }
 for: [ Ruby, PHP, Python ]
 by: why the lucky stiff
 about: >
@@ -23,9 +23,7 @@ links:
 status: >
 
   Syck is about 80% compliant with the YAML spec.  Syck currently
-  has a few issues with type families before an mapping.  I've also
-  noticed some whitespace issues.  The seq-in-map shortcut is not
-  yet supported.
+  has a few issues with anchors before a mapping.
 
   The extensions are quite usable, though.  Ruby, PHP and Python
   can load from a string containing YAML.  Ruby also has support
@@ -56,8 +54,8 @@ installation: >
 
   To compile libsyck, first download libsyck.
 
-    tar xzvf syck-0.25.tar.gz
-    cd syck-0.25
+    tar xzvf syck-0.32.tar.gz
+    cd syck-0.32
     ./configure
     make
     sudo make install
@@ -90,7 +88,7 @@ examples:
      => true
      >> yp = YAML::Syck::Parser.new( {} )
      => #<YAML::Syck::Parser:0x8058530>
-     >> yp.load( File.open( 'syck-0.25.yml' ) )
+     >> yp.load( File.open( 'syck-0.32.yml' ) )
      => {"status"=>"Syck is about 60% compliant ..."}
 
   To load this document in PHP: |
@@ -98,7 +96,7 @@ examples:
      ($:~)$ php -a
      Interactive mode enabled
 
-     <? dl( 'syck.so' ); print_r( syck_load( implode( '', file( 'syck-0.25.yml' ) ) ) ); ?>
+     <? dl( 'syck.so' ); print_r( syck_load( implode( '', file( 'syck-0.32.yml' ) ) ) ); ?>
   
      .. php then outputs ..
 
@@ -110,7 +108,7 @@ examples:
          [released] => Array
              (   
                  [name] => Syck
-                 [version] => 0.25
+                 [version] => 0.32
              )
 
      .. and so on ..
@@ -122,7 +120,7 @@ examples:
      [GCC 2.95.3 20010315 (release) [FreeBSD]] on freebsd4
      Type "copyright", "credits" or "license" for more information.
      >>> import syck
-     >>> f = open( 'syck-0.25.yml' )
+     >>> f = open( 'syck-0.32.yml' )
      >>> syck.load( f.read() )
      {'by': 'why the lucky stiff', ... }
 
