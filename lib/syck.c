@@ -84,6 +84,12 @@ syck_new_parser()
 {
     SyckParser *p;
     p = S_ALLOC( SyckParser );
+    p->lvl_capa = ALLOC_CT;
+    p->lvl_idx = 1;
+    p->levels = S_ALLOC_N( SyckLevel, p->lvl_capa ); 
+    p->levels[0].spaces = -1;
+    p->levels[0].domain = "";
+    p->levels[0].status = syck_lvl_implicit;
     p->io_type = syck_io_str;
     p->io.str = NULL;
     p->syms = NULL;
@@ -119,6 +125,7 @@ syck_free_parser( SyckParser *p )
         st_free_table( p->syms );
     }
     st_free_table( p->anchors );
+    free( p->levels );
     free_any_io( p );
     free( p );
 }
@@ -171,6 +178,39 @@ void
 syck_parser_str_auto( SyckParser *p, char *ptr, SyckIoStrRead read )
 {
     syck_parser_str( p, ptr, strlen( ptr ), read );
+}
+
+SyckLevel *
+syck_parser_current_level( SyckParser *p )
+{
+    return &p->levels[p->lvl_idx-1];
+}
+
+SyckLevel *
+syck_parser_pop_level( SyckParser *p )
+{
+    ASSERT( p != NULL );
+    if ( p->lvl_idx < 1 ) return NULL;
+
+    p->lvl_idx -= 1;
+    return &p->levels[p->lvl_idx+1];
+}
+
+void 
+syck_parser_add_level( SyckParser *p, int len )
+{
+    ASSERT( p != NULL );
+    if ( p->lvl_idx + 1 > p->lvl_capa )
+    {
+        p->lvl_capa += ALLOC_CT;
+        S_REALLOC_N( p->levels, SyckLevel, p->lvl_capa );
+    }
+
+    ASSERT( len > p->levels[p->lvl_idx-1].spaces );
+    p->levels[p->lvl_idx].spaces = len;
+    p->levels[p->lvl_idx].domain = p->levels[p->lvl_idx-1].domain;
+    p->levels[p->lvl_idx].status = p->levels[p->lvl_idx-1].status;
+    p->lvl_idx += 1;
 }
 
 void

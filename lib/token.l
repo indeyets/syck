@@ -17,6 +17,9 @@ int yydebug;
 
 #define YY_INPUT(buf,result,max_size) result = syck_lex_read(buf, syck_lex_parser, max_size)
 
+#define ADD_LEVEL(len) syck_parser_add_level( syck_lex_parser, len );
+#define CURRENT_LEVEL() syck_parser_current_level( syck_lex_parser );
+
 int
 syck_lex_read( char *buf, SyckParser *p, int max_size )
 {
@@ -39,6 +42,24 @@ NONSPC [^[:blank:]]
 
 ^"---"([ ]+)        return DOCSEP;
 ^"---"$             return DOCSEP;
+
+\n+[ ]*     {   // Isolate spaces
+                int indt_len;
+                SyckLevel *lvl;
+                char *indent = yytext;
+                char *endent = yytext + yyleng;
+                while ( indent < endent ) { if ( *(indent++) != '\n' ) break; }
+
+                // Indent open?
+                lvl = CURRENT_LEVEL();
+                indt_len = endent - indent;
+                if ( lvl->spaces < indt_len )
+                {
+                    ADD_LEVEL( indt_len );
+                    return IOPEN;
+                } 
+                return INDENT;
+            }
 
 "{"         return '{';
 "}"         return '}';

@@ -11,7 +11,7 @@
 #define SYCK_H
 
 #include <stdio.h>
-#include "st.h"
+#include "syck_st.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -60,6 +60,7 @@ typedef struct _syck_parser SyckParser;
 typedef struct _syck_file SyckIoFile;
 typedef struct _syck_str SyckIoStr;
 typedef struct _syck_node SyckNode;
+typedef struct _syck_level SyckLevel;
 
 enum syck_kind_tag {
     syck_map_kind,
@@ -113,6 +114,15 @@ enum syck_io_type {
     syck_io_file
 };
 
+enum syck_level_status {
+    syck_lvl_header,
+    syck_lvl_block,
+    syck_lvl_inline,
+    syck_lvl_implicit,
+    syck_lvl_end,
+    syck_lvl_pause
+};
+
 struct _syck_parser {
     // Root node
     SYMID root;
@@ -134,6 +144,14 @@ struct _syck_parser {
     st_table *anchors;
     // Optional symbol table for SYMIDs
     st_table *syms;
+    // Levels of indentation
+    struct _syck_level {
+        int spaces;
+        char *domain;
+        enum syck_level_status status;
+    } *levels;
+    int lvl_idx;
+    int lvl_capa;
 };
 
 //
@@ -160,6 +178,8 @@ void syck_parser_handler( SyckParser *, SyckNodeHandler );
 void syck_parser_file( SyckParser *, FILE *, SyckIoFileRead );
 void syck_parser_str( SyckParser *, char *, long, SyckIoStrRead );
 void syck_parser_str_auto( SyckParser *, char *, SyckIoStrRead );
+SyckLevel *syck_parser_current_level( SyckParser * );
+void syck_parser_add_level( SyckParser *, int );
 void free_any_io( SyckParser * );
 int syck_parser_readline( char *, SyckParser * );
 int syck_parser_read( char *, SyckParser *, int );

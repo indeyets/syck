@@ -5,7 +5,7 @@
 #include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "st.h"
+#include "syck_st.h"
 
 #ifdef NT
 #include <malloc.h>
