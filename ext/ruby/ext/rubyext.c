@@ -265,7 +265,8 @@ syck_node_initialize( self, type_id, val )
 void
 Init_syck()
 {
-    VALUE rb_syck = rb_define_module( "Syck" );
+    VALUE rb_yaml = rb_define_module( "YAML" );
+    VALUE rb_syck = rb_define_module_under( rb_yaml, "Syck" );
 
     time_s_mkutc = rb_intern("utc");
     rb_define_module_function(rb_syck, "load", rb_syck_load, -1);
