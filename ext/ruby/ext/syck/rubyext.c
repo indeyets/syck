@@ -532,6 +532,7 @@ Init_syck()
     VALUE rb_yaml = rb_define_module( "YAML" );
     VALUE rb_syck = rb_define_module_under( rb_yaml, "Syck" );
 	VALUE cParser = rb_define_class_under( rb_syck, "Parser", rb_cObject );
+    rb_define_const( rb_syck, "VERSION", rb_str_new2( SYCK_VERSION ) );
 
 	//
 	// Global symbols

@@ -10,6 +10,8 @@
 #ifndef SYCK_H
 #define SYCK_H
 
+#define SYCK_VERSION    "0.25"
+
 #include <stdio.h>
 #ifdef HAVE_ST_H
 #include <st.h>

@@ -15,6 +15,8 @@ module YAML
         require 'yaml/parser'
         Parser = YAML::Parser
     end
+    require 'yaml/emitter'
+    require 'yaml/rubytypes'
 
     #
     # Allocate blank object
