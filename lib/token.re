@@ -828,6 +828,20 @@ INDENT              {   char *pacer;
                     }
 
 
+"#"                 {   lvl = CURRENT_LEVEL();
+                        if ( lvl->status != syck_lvl_block )
+                        {
+                            eat_comments( parser );
+                            YYTOKTMP = YYCURSOR;
+                        }
+                        else
+                        {
+                            QUOTECAT(qstr, qcapa, qidx, *YYTOKTMP);
+                        }
+                        goto ScalarBlock2;
+                    }
+              
+
 NULL                {   YYCURSOR--;
                         POP_LEVEL();
                         RETURN_BLOCK(); 

@@ -32,7 +32,7 @@
 
 %type <nodeId>      doc basic_seq
 %type <nodeData>    atom word_rep ind_rep struct_rep atom_or_empty
-%type <nodeData>    implicit_seq inline_seq implicit_map inline_map
+%type <nodeData>    implicit_seq top_imp_seq inline_seq implicit_map inline_map
 %type <nodeData>    in_implicit_seq in_inline_seq basic_mapping basic_mapping2
 %type <nodeData>    in_implicit_map in_inline_map complex_mapping
 
@@ -177,20 +177,36 @@ struct_rep	: TRANSFER struct_rep
 /*
  * Implicit sequence 
  */
-implicit_seq	: indent_open in_implicit_seq indent_end
+implicit_seq	: indent_open top_imp_seq indent_end
                 { 
                     $$ = $2;
-                }
-                | indent_open TRANSFER indent_sep in_implicit_seq indent_end
-                { 
-                    syck_add_transfer( $2, $4, ((SyckParser *)parser)->taguri_expansion );
-                    $$ = $4;
                 }
                 ;
 
 basic_seq       : '-' atom_or_empty             
                 { 
                     $$ = syck_hdlr_add_node( (SyckParser *)parser, $2 );
+                }
+                ;
+
+top_imp_seq     : in_implicit_seq
+                | TRANSFER indent_sep top_imp_seq
+                { 
+                    syck_add_transfer( $1, $3, ((SyckParser *)parser)->taguri_expansion );
+                    $$ = $3;
+                }
+                | TRANSFER top_imp_seq
+                { 
+                    syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
+                    $$ = $2;
+                }
+                | ANCHOR indent_sep top_imp_seq
+                { 
+                    $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $3 );
+                }
+                | ANCHOR top_imp_seq
+                { 
+                    $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $2 );
                 }
                 ;
 
