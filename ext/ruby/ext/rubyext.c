@@ -41,12 +41,10 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
         {
             len = RSTRING(str)->len;
             memcpy( buf + skip, RSTRING(str)->ptr, len );
-            buf[skip + len] = '\0';
         }
     }
-    printf( "POS: %d\n", len );
-    printf( "BUFFER: %s\n", buf );
     len += skip;
+    buf[len] = '\0';
     return len;
 }
 
@@ -278,7 +276,7 @@ rb_syck_load(argc, argv)
     syck_parser_implicit_typing( parser, 1 );
     syck_parser_taguri_expansion( parser, 0 );
     v = syck_parse( parser );
-    v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
+    //v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
 
     return v;
 }
