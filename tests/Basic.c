@@ -8,7 +8,6 @@
 //
 
 #include "syck.h"
-#include "st.h"
 #include "CuTest.h"
 
 //
@@ -19,12 +18,12 @@ TestSyckNodeAlloc( CuTest *tc )
 {
     struct SyckNode* n;
 
-    n = new_str_node( "YAML" );
+    n = syck_new_str( "YAML" );
 
-    CuAssert( tc, "Allocated 'str' node reporting as 'seq'.", n->kind != seq_kind );
-    CuAssert( tc, "Allocated 'str' node reporting as 'map'.", n->kind != map_kind );
-    CuAssert( tc, "Allocated 'str' not reporting as 'str'.", n->kind == str_kind );
-    CuAssertStrEquals( tc, "YAML", read_str_node( n ) );
+    CuAssert( tc, "Allocated 'str' node reporting as 'seq'.", n->kind != syck_seq_kind );
+    CuAssert( tc, "Allocated 'str' node reporting as 'map'.", n->kind != syck_map_kind );
+    CuAssert( tc, "Allocated 'str' not reporting as 'str'.", n->kind == syck_str_kind );
+    CuAssertStrEquals( tc, "YAML", syck_str_read( n ) );
 
     free( n );
 }
@@ -38,15 +37,15 @@ TestSyckSeqAlloc( CuTest *tc )
     struct SyckNode *n;
     SYMID id;
 
-    n = new_seq_node( 1 );
+    n = syck_new_seq( 1 );
     for ( id = 11001; id < 23000; id += 24 )
     {
-        add_seq_item( n, id );
+        syck_seq_add( n, id );
     }
 
-    CuAssert( tc, "Invalid value at '0'", 1 == read_seq_node( n, 0 ) );
-    CuAssert( tc, "Invalid value at '1'", 11001 == read_seq_node( n, 1 ) );
-    CuAssert( tc, "Invalid value at '200'", 15801 == read_seq_node( n, 201 ) );
+    CuAssert( tc, "Invalid value at '0'", 1 == syck_seq_read( n, 0 ) );
+    CuAssert( tc, "Invalid value at '1'", 11001 == syck_seq_read( n, 1 ) );
+    CuAssert( tc, "Invalid value at '200'", 15801 == syck_seq_read( n, 201 ) );
 
     free( n );
 }
@@ -59,13 +58,13 @@ TestSyckMapAlloc( CuTest *tc )
 {
     struct SyckNode *n;
 
-    n = new_map_node( 24556, 24557 );
-    add_map_pair( n, 24558, 24559 );
+    n = syck_new_map( 24556, 24557 );
+    syck_map_add( n, 24558, 24559 );
 
-    CuAssert( tc, "Invalid key at '0'.", 24556 == read_map_node( n, map_key, 0 ) );
-    CuAssert( tc, "Invalid key at '1'.", 24558 == read_map_node( n, map_key, 1 ) );
-    CuAssert( tc, "Invalid value at '0'", 24557 == read_map_node( n, map_value, 0 ) );
-    CuAssert( tc, "Invalid value at '1'", 24559 == read_map_node( n, map_value, 1 ) );
+    CuAssert( tc, "Invalid key at '0'.", 24556 == syck_map_read( n, map_key, 0 ) );
+    CuAssert( tc, "Invalid key at '1'.", 24558 == syck_map_read( n, map_key, 1 ) );
+    CuAssert( tc, "Invalid value at '0'", 24557 == syck_map_read( n, map_value, 0 ) );
+    CuAssert( tc, "Invalid value at '1'", 24559 == syck_map_read( n, map_value, 1 ) );
 
     free( n );
 }

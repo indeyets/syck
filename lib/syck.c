@@ -26,6 +26,28 @@ syck_assert( char *file_name, unsigned line_num )
     abort();
 }
 
+//
+// Allocate the parser
+//
+SyckParser *
+syck_new_parser()
+{
+    SyckParser *p;
+    p = ALLOC( SyckParser );
+    return p;
+}
+
+void
+syck_parser_handler( SyckParser *p, SyckNodeHandler hdlr )
+{
+    p->handler = hdlr;
+}
+
+SYMID
+syck_parse( SyckParser *p, char *doc )
+{
+}
+
 //static char *
 //syckp_read( prsr, len )
 //    struct SyckParser *prsr;

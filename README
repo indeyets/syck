@@ -31,10 +31,9 @@ A simple Ruby YAML::load could be built like so:
   YAML_load( VALUE str )
   {
     SyckParser* parser;
-    parser = syckParserCreate();
-    syckSetHandler( parser, YAML_handler );
-    ret = syckParse( parser, str );
-    return ret;
+    parser = syck_new_parser();
+    syck_parser_handler( parser, YAML_handler );
+    return syck_parse( parser, str );
   }
 
   static VALUE

@@ -53,10 +53,12 @@ extern "C" {
 //
 #define SYMID unsigned long
 
+typedef struct _syck_parser SyckParser;
+
 enum syck_kind_tag {
-    map_kind,
-    seq_kind,
-    str_kind
+    syck_map_kind,
+    syck_seq_kind,
+    syck_str_kind
 };
 
 enum map_part {
@@ -88,6 +90,11 @@ struct SyckNode {
     } data;
 };
 
+typedef SYMID (*SyckNodeHandler)(struct SyckNode *);
+
+struct _syck_parser {
+    SyckNodeHandler handler;
+};
 
 //
 // Parser definition
@@ -101,16 +108,23 @@ struct SyckNode {
 //
 // API prototypes
 //
-struct SyckNode *new_str_node( char * );
-char *read_str_node( struct SyckNode * );
-struct SyckNode *new_map_node( SYMID, SYMID );
-void add_map_pair( struct SyckNode *, SYMID, SYMID );
-SYMID read_map_node( struct SyckNode *, enum map_part, long );
-long read_map_count( struct SyckNode * );
-struct SyckNode *new_seq_node( SYMID );
-void add_seq_item( struct SyckNode *, SYMID );
-SYMID read_seq_node( struct SyckNode *, long );
-long read_seq_count( struct SyckNode * );
+SyckParser *syck_new_parser();
+void syck_parser_handler( SyckParser *p, SyckNodeHandler hdlr );
+SYMID syck_parse( SyckParser *p, char *doc );
+
+//
+// Allocation prototypes
+//
+struct SyckNode *syck_new_str( char * );
+char *syck_str_read( struct SyckNode * );
+struct SyckNode *syck_new_map( SYMID, SYMID );
+void syck_map_add( struct SyckNode *, SYMID, SYMID );
+SYMID syck_map_read( struct SyckNode *, enum map_part, long );
+long syck_map_count( struct SyckNode * );
+struct SyckNode *syck_new_seq( SYMID );
+void syck_seq_add( struct SyckNode *, SYMID );
+SYMID syck_seq_read( struct SyckNode *, long );
+long syck_seq_count( struct SyckNode * );
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

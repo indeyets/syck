@@ -7,10 +7,13 @@
 // Copyright (C) 2003 why the lucky stiff
 //
 
+%pure-parser
 %{
 
 #include "syck.h"
 
+#define YYPARSE_PARAM yyparm
+#define YYLEX_PARAM yyparm
 %}
 
 %union {
@@ -21,14 +24,15 @@
 
 %token <name>       ANCHOR ALIAS TRANSFER FOLD
 %token <nodeData>   WORD PLAIN FSTART RAWTEXT
-%token              "+" "-" IOPEN INDENT IEND
-%token              "[" "]" "{" "}" ":" "," "?" "="
+%token              IOPEN INDENT IEND
 
 %type <nodeId>      atom word_rep struct_rep atom_or_empty
 %type <nodeId>      scalar_block implicit_seq inline_seq implicit_map inline_map
-%type <nodeId>      basic_seq seq_map_shortcut
+%type <nodeId>      basic_seq
 %type <nodeData>    in_implicit_seq in_inline_seq simple_mapping basic_mapping
 %type <nodeData>    in_implicit_map in_inline_map complex_mapping
+
+%left               "+" "-" "[" "]" "{" "}" ":" "," "?" "="
 
 %%
 
@@ -169,7 +173,7 @@ seq_map_short	: simple_mapping
 //
 inline_seq		: '[' in_inline_seq ']'
                 { 
-                    $$ = hdlr_add_node( $1 );
+                    $$ = hdlr_add_node( $2 );
                 }
 				| '[' ']'
                 { 
@@ -237,7 +241,7 @@ in_implicit_map : complex_mapping
 //
 inline_map		: '{' in_inline_map '}'
                 {
-                    $$ = hdlr_add_node( $1 );
+                    $$ = hdlr_add_node( $2 );
                 }
           		| '{' '}'
                 {
@@ -256,6 +260,11 @@ in_inline_map	: basic_mapping
 
 %%
 
+SYMID
+hdlr_add_node( struct SyckNode *n )
+{
+    
+}
                     /* goes in syck_fold_format
 					val[2].chomp! if val[0].include?( '|' )
 					result = if val[0].include?( '+' )

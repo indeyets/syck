@@ -11,6 +11,19 @@
 #include <malloc.h>
 #endif
 
+#define SIZE32 4
+#if SIZEOF_LONG == SIZE32
+typedef long I32;
+typedef unsigned long U32;
+#define NUM2I32(x) NUM2LONG(x)
+#define NUM2U32(x) NUM2ULONG(x)
+#elif SIZEOF_INT == SIZE32
+typedef int I32;
+typedef unsigned int U32;
+#define NUM2I32(x) NUM2INT(x)
+#define NUM2U32(x) NUM2UINT(x)
+#endif
+
 typedef struct st_table_entry st_table_entry;
 
 struct st_table_entry {
@@ -539,6 +552,17 @@ strhash(string)
     }
 
     return val + (val>>5);
+#elif HASH_JENKINS
+    register const unsigned char *s_PeRlHaSh = (const unsigned char *)string;
+    register U32 hash_PeRlHaSh = 0;
+    while ((c = *s_PeRlHaSh++) != '\0') {
+        hash_PeRlHaSh += c;
+        hash_PeRlHaSh += (hash_PeRlHaSh << 10);
+        hash_PeRlHaSh ^= (hash_PeRlHaSh >> 6);
+    }
+    hash_PeRlHaSh += (hash_PeRlHaSh << 3);
+    hash_PeRlHaSh ^= (hash_PeRlHaSh >> 11);
+    return (hash_PeRlHaSh + (hash_PeRlHaSh << 15));
 #else
     register int val = 0;
 

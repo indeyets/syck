@@ -9,6 +9,8 @@ AM_INIT_AUTOMAKE(syck, 0.01)
 
 # Checks for programs.
 AC_PROG_AWK
+AM_PROG_LEX
+AC_PROG_YACC
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
@@ -20,6 +22,8 @@ AC_PROG_MAKE_SET
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(alloca.h stdlib.h string.h)
+AC_CHECK_SIZEOF(int, 4)
+AC_CHECK_SIZEOF(long, 4)
 
 # Checks for typedefs, structures, and compiler characteristics.
 

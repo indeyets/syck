@@ -13,7 +13,7 @@
 // Node allocation functions
 //
 struct SyckNode *
-alloc_node( enum syck_kind_tag type )
+syck_alloc_node( enum syck_kind_tag type )
 {
     struct SyckNode *s;
 
@@ -24,7 +24,7 @@ alloc_node( enum syck_kind_tag type )
 }
 
 struct SyckNode *
-alloc_map_node()
+syck_alloc_map()
 {
     struct SyckNode *n;
     struct SyckMap *m;
@@ -35,14 +35,14 @@ alloc_map_node()
     m->keys = ALLOC_N( SYMID, m->capa );
     m->values = ALLOC_N( SYMID, m->capa );
 
-    n = alloc_node( map_kind );
+    n = syck_alloc_node( syck_map_kind );
     n->data.pairs = m;
     
     return n;
 }
 
 struct SyckNode *
-alloc_seq_node()
+syck_alloc_seq()
 {
     struct SyckNode *n;
     struct SyckSeq *s;
@@ -52,49 +52,49 @@ alloc_seq_node()
     s->capa = ALLOC_CT;
     s->items = ALLOC_N( SYMID, s->capa );
 
-    n = alloc_node( seq_kind );
+    n = syck_alloc_node( syck_seq_kind );
     n->data.list = s;
 
     return n;
 }
 
 struct SyckNode *
-alloc_str_node()
+syck_alloc_str()
 {
-    return alloc_node( str_kind );
+    return syck_alloc_node( syck_str_kind );
 }
 
 struct SyckNode *
-new_str_node( char *str )
+syck_new_str( char *str )
 {
     struct SyckNode *n;
 
-    n = alloc_str_node();
+    n = syck_alloc_str();
     n->data.str = str;
 
     return n;
 }
 
 char *
-read_str_node( struct SyckNode *n )
+syck_str_read( struct SyckNode *n )
 {
     ASSERT( n != NULL );
     return n->data.str;
 }
 
 struct SyckNode *
-new_map_node( SYMID key, SYMID value )
+syck_new_map( SYMID key, SYMID value )
 {
     struct SyckNode *n;
 
-    n = alloc_map_node();
-    add_map_pair( n, key, value );
+    n = syck_alloc_map();
+    syck_map_add( n, key, value );
 
     return n;
 }
 
 void
-add_map_pair( struct SyckNode *map, SYMID key, SYMID value )
+syck_map_add( struct SyckNode *map, SYMID key, SYMID value )
 {
     struct SyckMap *m;
     long idx;
@@ -116,7 +116,7 @@ add_map_pair( struct SyckNode *map, SYMID key, SYMID value )
 }
 
 long
-read_map_count( struct SyckNode *map )
+syck_map_count( struct SyckNode *map )
 {
     ASSERT( map != NULL );
     ASSERT( map->data.pairs != NULL );
@@ -124,7 +124,7 @@ read_map_count( struct SyckNode *map )
 }
 
 SYMID
-read_map_node( struct SyckNode *map, enum map_part p, long idx )
+syck_map_read( struct SyckNode *map, enum map_part p, long idx )
 {
     struct SyckMap *m;
 
@@ -142,18 +142,18 @@ read_map_node( struct SyckNode *map, enum map_part p, long idx )
 }
 
 struct SyckNode *
-new_seq_node( SYMID value )
+syck_new_seq( SYMID value )
 {
     struct SyckNode *n;
 
-    n = alloc_seq_node();
-    add_seq_item( n, value );
+    n = syck_alloc_seq();
+    syck_seq_add( n, value );
 
     return n;
 }
 
 void
-add_seq_item( struct SyckNode *arr, SYMID value )
+syck_seq_add( struct SyckNode *arr, SYMID value )
 {
     struct SyckSeq *s;
     long idx;
@@ -173,7 +173,7 @@ add_seq_item( struct SyckNode *arr, SYMID value )
 }
 
 long
-read_seq_count( struct SyckNode *seq )
+syck_seq_count( struct SyckNode *seq )
 {
     ASSERT( seq != NULL );
     ASSERT( seq->data.list != NULL );
@@ -181,7 +181,7 @@ read_seq_count( struct SyckNode *seq )
 }
 
 SYMID
-read_seq_node( struct SyckNode *seq, long idx )
+syck_seq_read( struct SyckNode *seq, long idx )
 {
     struct SyckSeq *s;
 
@@ -192,17 +192,17 @@ read_seq_node( struct SyckNode *seq, long idx )
 }
 
 void
-free_node_members( struct SyckNode *n )
+syck_free_members( struct SyckNode *n )
 {
     int i;
     switch ( n->kind  )
     {
-        case seq_kind:
+        case syck_seq_kind:
             free( n->data.list->items );
             free( n->data.list );
         break;
 
-        case map_kind:
+        case syck_map_kind:
             free( n->data.pairs->keys );
             free( n->data.pairs->values );
             free( n->data.pairs );
