@@ -13,7 +13,7 @@
 
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
-#define SYCK_BUFFERSIZE 16384
+#define SYCK_BUFFERSIZE 262144
 
 //
 // Custom assert

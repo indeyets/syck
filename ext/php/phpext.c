@@ -142,7 +142,46 @@ php_syck_handler(p, n)
     switch (n->kind)
     {
         case syck_str_kind:
-			ZVAL_STRINGL(o, n->data.str->ptr, n->data.str->len, 1);
+            if ( n->type_id == NULL || strcmp( n->type_id, "str" ) == 0 )
+            {
+				ZVAL_STRINGL( o, n->data.str->ptr, n->data.str->len, 1);
+            }
+            else if ( strcmp( n->type_id, "null" ) == 0 )
+            {
+                ZVAL_NULL( o );
+            }
+            else if ( strcmp( n->type_id, "bool#yes" ) == 0 )
+            {
+				ZVAL_BOOL( o, 1 );
+            }
+            else if ( strcmp( n->type_id, "bool#no" ) == 0 )
+            {
+				ZVAL_BOOL( o, 0 );
+            }
+            else if ( strcmp( n->type_id, "int#hex" ) == 0 )
+            {
+				long intVal = strtol( n->data.str->ptr, NULL, 16 );
+				ZVAL_LONG( o, intVal );
+            }
+            else if ( strcmp( n->type_id, "int#oct" ) == 0 )
+            {
+				long intVal = strtol( n->data.str->ptr, NULL, 8 );
+				ZVAL_LONG( o, intVal );
+            }
+            else if ( strcmp( n->type_id, "int" ) == 0 )
+            {
+				long intVal = strtol( n->data.str->ptr, NULL, 10 );
+				ZVAL_LONG( o, intVal );
+            }
+            else if ( strcmp( n->type_id, "float" ) == 0 )
+            {
+				//double floatVal = strtol( n->data.str->ptr );
+				ZVAL_DOUBLE( o, 3.45 );
+            }
+            else
+            {
+				ZVAL_STRINGL(o, n->data.str->ptr, n->data.str->len, 1);
+            }
         break;
 
         case syck_seq_kind:
@@ -192,6 +231,8 @@ PHP_FUNCTION(syck_load)
 	parser = syck_new_parser();
     syck_parser_str( parser, arg, arg_len, NULL );
     syck_parser_handler( parser, php_syck_handler );
+    syck_parser_implicit_typing( parser, 1 );
+    syck_parser_taguri_expansion( parser, 0 );
     v = syck_parse( parser );
     syck_lookup_sym( parser, v, &obj );
     syck_free_parser( parser );
