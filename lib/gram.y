@@ -25,7 +25,7 @@
     char *name;
 };
 
-%token <name>       ANCHOR ALIAS TRANSFER FOLD
+%token <name>       ANCHOR ALIAS TRANSFER ITRANSFER FOLD
 %token <nodeData>   WORD PLAIN FSTART RAWTEXT
 %token              DOCSEP IOPEN INDENT IEND
 
@@ -89,6 +89,11 @@ atom_or_empty   : atom
 word_rep	: TRANSFER word_rep						
             { 
                $$ = syck_add_transfer( $1, $2 );
+            } 
+            | ITRANSFER word_rep						
+            { 
+               try_tag_implicit( $2 );
+               $$ = $2;
             }
 			| WORD
             { 

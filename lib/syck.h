@@ -178,6 +178,7 @@ int syck_add_sym( SyckParser *, char * );
 int syck_lookup_sym( SyckParser *, SYMID, char ** );
 int syck_try_implicit( SyckNode * );
 void syck_fold_format( char *, SyckNode * );
+void try_tag_implicit( SyckNode * );
 
 //
 // API prototypes
