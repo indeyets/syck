@@ -59,7 +59,10 @@ rb_syck_load(argc, argv)
     }
 
     syck_parser_handler( parser, syck_parse_handler );
-    return syck_parse( parser );
+    v = syck_parse( parser );
+    syck_free_parser( parser );
+
+    return v;
 }
 
 void

@@ -205,6 +205,7 @@ syck_parse( SyckParser *p )
 
     ASSERT( p != NULL );
     syck_parser_init( p, 0 );
+    yyrestart();
     yyparse( p );
     return p->root;
 }
