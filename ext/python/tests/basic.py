@@ -171,7 +171,7 @@ product:
                 [ [ 'one' ] ],
                 [ 'two', 'three' ],
                 { 'four': None },
-                [ { 'five': None }, 'six' ],
+                [ { 'five': [ 'six' ] } ],
                 [ 'seven' ]
               ],
               [ 'eight', 'nine' ]
@@ -181,7 +181,7 @@ product:
     - three
   - four:
   - - five:
-    - six
+      - six
   - - seven
 - - eight
   - nine
