@@ -5,6 +5,8 @@
 #
 #   Loads the parser/loader and emitter/writer.
 #
+class Object; def instance_variable_set(k, v); self.instance_eval "#{k} = v"; end; end \
+    unless Object.respond_to? :instance_variable_set
 
 module YAML
 
@@ -163,8 +165,12 @@ module YAML
     def YAML.object_maker( obj_class, val, is_attr = false )
         if Hash === val
             name = obj_class.name
-            ostr = sprintf( "%c%co:%c%s\000", Marshal::MAJOR_VERSION, Marshal::MINOR_VERSION,
-                            name.length + 5, name )
+            if Marshal::const_defined? :MAJOR_VERSION
+                ostr = sprintf( "%c%co:%c%s\000", Marshal::MAJOR_VERSION, Marshal::MINOR_VERSION,
+                                name.length + 5, name )
+            else
+                ostr = sprintf( "\004\006o:%c%s\000", name.length + 5, name )
+            end
             if is_attr
                 ostr[ -1, 1 ] = Marshal.dump( val ).sub( /^[^{]+\{/, '' )
             end

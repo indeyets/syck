@@ -202,6 +202,7 @@ SyckParser *syck_parser_ptr = NULL;
  * Accessory funcs later in this file.
  */
 void eat_comments( SyckParser * );
+char escape_seq( char );
 int is_newline( char *ptr );
 int sycklex_yaml_utf8( YYSTYPE *, SyckParser * );
 int sycklex_bytecode_utf8( YYSTYPE *, SyckParser * );
@@ -270,6 +271,7 @@ ALLX = ( ":" ENDSPC ) ;
 DIR = "%" YWORDP+ ":" YWORDP+ ;
 YBLOCK = [>|] [-+0-9]* ENDSPC ; 
 HEX = [0-9A-Fa-f] ;
+ESCSEQ = ["\\abefnrtv0 ] ;
 
 */
 
@@ -398,8 +400,7 @@ CDELIMS             {   POP_LEVEL();
                         return YYTOKEN[0]; 
                     }
 
-"&" YWORDC+         {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
-                        sycklval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
+"&" YWORDC+         {   sycklval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
 
                         /*
                          * Remove previous anchors of the same name.  Since the parser will likely
@@ -415,8 +416,7 @@ CDELIMS             {   POP_LEVEL();
                         return YAML_ALIAS;
                     }
 
-"!"                 {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
-                        goto TransferMethod; }
+"!"                 {   goto TransferMethod; }
 
 "'"                 {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
                         goto SingleQuote; }
@@ -674,19 +674,8 @@ YINDENT             {   int indt_len;
                         goto DoubleQuote2; 
                     }
 
-"\\" ["\\abefnrtv]   {  char ch = *( YYCURSOR - 1 );
-                        switch ( ch )
-                        {
-                            case 'a': ch = 7; break;
-                            case 'b': ch = '\010'; break;
-                            case 'e': ch = '\033'; break;
-                            case 'f': ch = '\014'; break;
-                            case 'n': ch = '\n'; break;
-                            case 'r': ch = '\015'; break;
-                            case 't': ch = '\t'; break;
-                            case 'v': ch = '\013'; break;
-                        }
-                        QUOTECAT(qstr, qcapa, qidx, ch);
+"\\" ESCSEQ         {  char ch = *( YYCURSOR - 1 );
+                        QUOTECAT(qstr, qcapa, qidx, escape_seq( ch ));
                         goto DoubleQuote2; 
                     }
 
@@ -790,6 +779,11 @@ ENDSPC              {   SyckLevel *lvl;
 /*
  * URL Escapes
  */
+"\\" ESCSEQ          {  char ch = *( YYCURSOR - 1 );
+                        QUOTECAT(qstr, qcapa, qidx, escape_seq( ch ));
+                        goto TransferMethod2;
+                    }
+
 "\\x" HEX HEX       {   long ch;
                         char *chr_text = syck_strndup( YYTOKTMP, 4 );
                         chr_text[0] = '0';
@@ -937,6 +931,25 @@ NULL                {   YYCURSOR--;
                         RETURN_YAML_BLOCK(); 
                     }
 
+"---" ENDSPC        {   if ( YYTOKEN == YYLINEPTR )
+                        {
+                            if ( blockType == BLOCK_FOLD )
+                            {
+                                qidx -= 1;
+                            }
+                            QUOTECAT(qstr, qcapa, qidx, '\n');
+                            POP_LEVEL();
+                            YYCURSOR = YYTOKEN;
+                            RETURN_YAML_BLOCK();
+                        }
+                        else
+                        {
+                            QUOTECAT(qstr, qcapa, qidx, *YYTOKEN);
+                            YYCURSOR = YYTOKEN + 1;
+                            goto ScalarBlock2;
+                        }
+                    }
+
 ANY                 {   QUOTECAT(qstr, qcapa, qidx, *YYTOKEN);
                         goto ScalarBlock2;
                     }
@@ -969,6 +982,24 @@ ANY                 {   goto Comment;
 
     }
 
+}
+
+char
+escape_seq( char ch )
+{
+    switch ( ch )
+    {
+        case '0': return '\0';
+        case 'a': return 7;
+        case 'b': return '\010';
+        case 'e': return '\033';
+        case 'f': return '\014';
+        case 'n': return '\n';
+        case 'r': return '\015';
+        case 't': return '\t';
+        case 'v': return '\013';
+        default: return ch;
+    }
 }
 
 int

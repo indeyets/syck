@@ -86,10 +86,6 @@ ind_rep : struct_rep
             */
            $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $2 );
         }
-        | indent_open word_rep indent_flex_end
-        {
-           $$ = $2;
-        }
         | indent_open ind_rep indent_flex_end
         {
            $$ = $2;
@@ -175,6 +171,10 @@ word_rep	: YAML_TRANSFER word_rep
                $$ = n;
             }
             | YAML_PLAIN
+            | indent_open word_rep indent_flex_end
+            {
+               $$ = $2;
+            }
             ;
 
 /*
