@@ -950,7 +950,7 @@ void syck_emit_item( SyckEmitter *e, st_data_t n )
             }
 
             /* seq-in-seq shortcut */
-            else if ( parent->anctag == 0 && parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
+            else if ( lvl->anctag == 0 && parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
                 int spcs = ( lvl->spaces - parent->spaces ) - 2;
                 if ( spcs >= 0 ) {
                     int i = 0;
@@ -972,7 +972,7 @@ void syck_emit_item( SyckEmitter *e, st_data_t n )
             SyckLevel *parent = syck_emitter_parent_level( e );
 
             /* map-in-seq shortcut */
-            if ( parent->anctag == 0 && parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
+            if ( lvl->anctag == 0 && parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
                 int spcs = ( lvl->spaces - parent->spaces ) - 2;
                 if ( spcs >= 0 ) {
                     int i = 0;
@@ -997,6 +997,15 @@ void syck_emit_item( SyckEmitter *e, st_data_t n )
                 syck_emit_indent( e );
                 lvl->status = syck_lvl_map;
             } else {
+                int i;
+                if ( lvl->spaces > 0 ) {
+                    char *spcs = S_ALLOC_N( char, lvl->spaces + 1 );
+
+                    spcs[lvl->spaces] = '\0';
+                    for ( i = 0; i < lvl->spaces; i++ ) spcs[i] = ' ';
+                    syck_emitter_write( e, spcs, lvl->spaces );
+                    S_FREE( spcs );
+                }
                 syck_emitter_write( e, ": ", 2 );
             }
         }

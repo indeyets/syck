@@ -64,9 +64,9 @@ end
 #
 class Struct
     tag_as "tag:ruby.yaml.org,2002:struct"
-    def self.tag_class_name; self.class.name.gsub( "Struct::", "" ); end
+    def self.tag_class_name; self.name.gsub( "Struct::", "" ); end
     def self.tag_read_class( name ); "Struct::#{ name }"; end
-    def Struct.yaml_new( tag, val )
+    def self.yaml_new( tag, val )
         if Hash === val
             struct_type = nil
 
@@ -403,7 +403,6 @@ end
 # Send Integer, Booleans, NilClass to String
 #
 class Numeric
-    tag_as "tag:yaml.org,2002:int"
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
             str = self.to_s
@@ -417,6 +416,12 @@ class Numeric
             out.scalar( taguri, str, :plain )
         end
 	end
+end
+class Fixnum
+    tag_as "tag:yaml.org,2002:int"
+end
+class Float
+    tag_as "tag:yaml.org,2002:float"
 end
 
 class TrueClass

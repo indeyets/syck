@@ -50,41 +50,29 @@ module YAML
     end
 end
 
-class Object # :nodoc: all
-    class << self
-        # Adds a taguri _tag_ to a class, used when dumping or loading the class
-        # in YAML.  See YAML::tag_class for detailed information on typing and
-        # taguris.
-        def tag_as( tag, sc = true )
-            @taguri, @tag_subclasses = tag, sc
-            YAML::tag_class tag, self
-        end
-        # Returns the taguri for this class.
-        def taguri; @taguri; end
-        # Flags a class so that all subclasses fall under the same type
-        # if _bool_ is true.
-        def tag_subclasses?
-            @tag_subclasses
-        end
-        # Transforms the subclass name into a name suitable for display
-        # in a subclassed tag.
-        def tag_class_name
-            self.class.name
-        end
-        # Transforms the subclass name found in the tag into a Ruby
-        # constant name.
-        def tag_read_class( name )
-            name
-        end
+class Module # :nodoc: all
+    # Adds a taguri _tag_ to a class, used when dumping or loading the class
+    # in YAML.  See YAML::tag_class for detailed information on typing and
+    # taguris.
+    def tag_as( tag, sc = true )
+        module_eval <<-"end;"
+            def taguri
+                tagstr = #{ tag.dump }
+                tagstr += ":" + self.class.tag_class_name if tag_subclasses? and self.class != YAML::tagged_classes[tagstr]
+                tagstr
+            end
+            def tag_subclasses?; #{ tag ? 'true' : 'false' }; end
+        end;
+        YAML::tag_class tag, self
     end
-    def taguri
-        if self.class.tag_subclasses? and self.class != YAML::tagged_classes[self.class.taguri]
-            "#{ self.class.taguri }:#{ self.class.tag_class_name }"
-        else
-            self.class.taguri
-        end
+    # Transforms the subclass name into a name suitable for display
+    # in a subclassed tag.
+    def tag_class_name
+        self.name
     end
-    def tag_subclasses?
-        self.class.tag_subclasses?
+    # Transforms the subclass name found in the tag into a Ruby
+    # constant name.
+    def tag_read_class( name )
+        name
     end
 end

@@ -18,6 +18,7 @@ class YAML_Unit_Tests < RUNIT::TestCase
 	def assert_to_yaml( obj, yaml )
 		assert_equal( obj, YAML::load( yaml ) )
         # assert_equal( obj, YAML::parse( yaml ).transform )
+        puts obj.to_yaml
         assert_equal( obj, YAML::load( obj.to_yaml ) )
         # assert_equal( obj, YAML::parse( obj.to_yaml ).transform )
         # assert_equal( obj, YAML::load(
