@@ -760,7 +760,7 @@ TransferMethod2:
 
 /*!re2c
 
-ENDSPC              {   SyckLevel *lvl;
+( ENDSPC | NULL )   {   SyckLevel *lvl;
                         YYCURSOR = YYTOKTMP;
                         if ( YYCURSOR == YYTOKEN + 1 )
                         {
