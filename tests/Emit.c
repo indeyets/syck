@@ -31,7 +31,7 @@ TestSyckEmit( CuTest *tc )
 
     emitter = syck_new_emitter();
     emitter->bufsize = 10;
-    emitter->handler = TestSyckEmit_Output;
+    emitter->output_handler = TestSyckEmit_Output;
 
     syck_emitter_write( emitter, "Test [1]", 8 );
     syck_emitter_write( emitter, ".", 1 );

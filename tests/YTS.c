@@ -165,7 +165,7 @@ void CuStreamCompare( CuTest* tc, char *yaml, struct test_node *stream ) {
     ystream[doc_ct] = end_node;
 
     /* Traverse the struct and the symbol table side-by-side */
-    /* DEBUG: p( stream, 0 ); p( ystream, 0 ); */
+    /* DEBUG: y( stream, 0 ); y( ystream, 0 ); */
     CuStreamCompareX( tc, stream, ystream );
 
     /* Free the node tables and the parser */
@@ -176,23 +176,98 @@ void CuStreamCompare( CuTest* tc, char *yaml, struct test_node *stream ) {
 }
 
 /*
- * Setup assertions for the emitter
+ * Setup for testing N->Y->N.
  */
-SyckNode *
-test_emit_handler(p, v)
-    SyckParser *p;
-    SYMID v;
+void 
+test_output_handler( emitter, str, len )
+    SyckEmitter *emitter;
+    char *str;
+    long len;
 {
-    SyckNode *n = NULL;
+    CuString *dest = (CuString *)emitter->bonus;
+    CuStringAppendLen( dest, str, len );
+}
 
-    switch (n->kind)
-    {
+SYMID
+build_symbol_table( SyckEmitter *emitter, struct test_node *node ) {
+    switch ( node->type ) {
+        case T_SEQ:
+        case T_MAP:
+        {
+            int i = 0;
+            while ( node->value[i].type != T_END ) {
+                SYMID id = build_symbol_table( emitter, &node->value[i] );
+                i++;
+            }        
+        }
+        break;
     }
+    return syck_emitter_mark_node( emitter, (char *)node );
 }
 
 void
-void p( struct test_node *tn ) {
+test_emitter_handler( SyckEmitter *emitter, char *data ) {
+    struct test_node *node = (struct test_node *)data;
+    switch ( node->type ) {
+        case T_STR:
+            syck_emit_scalar( emitter, node->tag, node->key, strlen( node->key ) );
+        break;
+        case T_SEQ:
+        {
+            int i = 0;
+            syck_emit_seq( emitter, node->tag );
+            while ( node->value[i].type != T_END ) {
+                syck_emit( emitter, (char *)&node->value[i] );
+                i++;
+            }        
+            syck_emit_end( emitter );
+        }
+        break;
+        case T_MAP:
+        {
+            int i = 0;
+            syck_emit_map( emitter, node->tag );
+            while ( node->value[i].type != T_END ) {
+                syck_emit( emitter, (char *)&node->value[i] );
+                i++;
+            }        
+            syck_emit_end( emitter );
+        }
+        break;
+    }
+}
 
+int
+print_marker_table( struct test_node *node, SYMID oid, char *arg )
+{
+    printf( "%lu: %d\n", oid, node->type );
+    return ST_CONTINUE;
+}
+
+void CuRoundTrip( CuTest* tc, struct test_node *stream ) {
+    int i = 0;
+    CuString *cs = CuStringNew();
+    SyckEmitter *emitter = syck_new_emitter();
+
+    /* Calculate anchors and tags */
+    build_symbol_table( emitter, stream );
+
+    /* Build the stream */
+    syck_output_handler( emitter, test_output_handler );
+    syck_emitter_handler( emitter, test_emitter_handler );
+    emitter->bonus = cs;
+    while ( stream[i].type != T_END )
+    {
+        syck_emit( emitter, (char *)&stream[i] );
+        syck_emitter_flush( emitter, 0 );
+        i++;
+    }
+
+    /* Output the stream */
+    printf( "%s\n", cs->buffer );
+    CuStringFree( cs );
+
+    syck_free_emitter( emitter );
 }
 
 /*
@@ -228,6 +303,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.2: Mapping of scalars to scalars
@@ -1297,6 +1374,121 @@ struct test_node stream[] = {
         stream
     );
 }
+/*
+ * Example 2.27: Invoice
+ */
+void
+YtsSpecificationExamples_27( CuTest *tc )
+{
+struct test_node prod1[] = {
+    { T_STR, 0, "sku" },
+        { T_STR, 0, "BL394D" },
+    { T_STR, 0, "quantity" },
+        { T_STR, 0, "4" },
+    { T_STR, 0, "description" },
+        { T_STR, 0, "Basketball" },
+    { T_STR, 0, "price" },
+        { T_STR, 0, "450.00" },
+    end_node
+};
+struct test_node prod2[] = {
+    { T_STR, 0, "sku" },
+        { T_STR, 0, "BL4438H" },
+    { T_STR, 0, "quantity" },
+        { T_STR, 0, "1" },
+    { T_STR, 0, "description" },
+        { T_STR, 0, "Super Hoop" },
+    { T_STR, 0, "price" },
+        { T_STR, 0, "2392.00" },
+    end_node
+};
+struct test_node products[] = {
+    { T_MAP, 0, 0, prod1 },
+    { T_MAP, 0, 0, prod2 },
+    end_node
+};
+struct test_node address[] = {
+    { T_STR, 0, "lines" },
+        { T_STR, 0, "458 Walkman Dr.\nSuite #292\n" },
+    { T_STR, 0, "city" },
+        { T_STR, 0, "Royal Oak" },
+    { T_STR, 0, "state" },
+        { T_STR, 0, "MI" },
+    { T_STR, 0, "postal" },
+        { T_STR, 0, "48046" },
+    end_node
+};
+struct test_node id001[] = {
+    { T_STR, 0, "given" },
+        { T_STR, 0, "Chris" },
+    { T_STR, 0, "family" },
+        { T_STR, 0, "Dumars" },
+    { T_STR, 0, "address" },
+        { T_MAP, 0, 0, address },
+    end_node
+};
+struct test_node map[] = {
+    { T_STR, 0, "invoice" },
+        { T_STR, 0, "34843" },
+    { T_STR, 0, "date" },
+        { T_STR, 0, "2001-01-23" },
+    { T_STR, 0, "bill-to" },
+        { T_MAP, 0, 0, id001 },
+    { T_STR, 0, "ship-to" },
+        { T_MAP, 0, 0, id001 },
+    { T_STR, 0, "product" },
+        { T_SEQ, 0, 0, products },
+    { T_STR, 0, "tax" },
+        { T_STR, 0, "251.42" }, 
+    { T_STR, 0, "total" },
+        { T_STR, 0, "4443.52" },
+    { T_STR, 0, "comments" },
+        { T_STR, 0, "Late afternoon is best. Backup contact is Nancy Billsmer @ 338-4338.\n" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"--- !clarkevans.com,2002/^invoice\n"
+"invoice: 34843\n"
+"date   : 2001-01-23\n"
+"bill-to: &id001\n"
+"    given  : Chris\n"
+"    family : Dumars\n"
+"    address:\n"
+"        lines: |\n"
+"            458 Walkman Dr.\n"
+"            Suite #292\n"
+"        city    : Royal Oak\n"
+"        state   : MI\n"
+"        postal  : 48046\n"
+"ship-to: *id001\n"
+"product:\n"
+"    - sku         : BL394D\n"
+"      quantity    : 4\n"
+"      description : Basketball\n"
+"      price       : 450.00\n"
+"    - sku         : BL4438H\n"
+"      quantity    : 1\n"
+"      description : Super Hoop\n"
+"      price       : 2392.00\n"
+"tax  : 251.42\n"
+"total: 4443.52\n"
+"comments: >\n"
+"  Late afternoon is best.\n"
+"  Backup contact is Nancy\n"
+"  Billsmer @ 338-4338.\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
 
 CuSuite *
 SyckGetSuite()
@@ -1328,6 +1520,7 @@ SyckGetSuite()
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_24 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_25 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_26 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_27 );
     return suite;
 }
 

@@ -1381,6 +1381,77 @@ ruby: |
            'description' => 'Super Hoop', 'price' => 2392.00 } ],
      'tax' => 251.42, 'total' => 4443.52,
      'comments' => "Late afternoon is best. Backup contact is Nancy Billsmer @ 338-4338.\n" }
+syck: |
+  struct test_node prod1[] = {
+      { T_STR, 0, "sku" },
+          { T_STR, 0, "BL394D" },
+      { T_STR, 0, "quantity" },
+          { T_STR, 0, "4" },
+      { T_STR, 0, "description" },
+          { T_STR, 0, "Basketball" },
+      { T_STR, 0, "price" },
+          { T_STR, 0, "450.00" },
+      end_node
+  };
+  struct test_node prod2[] = {
+      { T_STR, 0, "sku" },
+          { T_STR, 0, "BL4438H" },
+      { T_STR, 0, "quantity" },
+          { T_STR, 0, "1" },
+      { T_STR, 0, "description" },
+          { T_STR, 0, "Super Hoop" },
+      { T_STR, 0, "price" },
+          { T_STR, 0, "2392.00" },
+      end_node
+  };
+  struct test_node products[] = {
+      { T_MAP, 0, 0, prod1 },
+      { T_MAP, 0, 0, prod2 },
+      end_node
+  };
+  struct test_node address[] = {
+      { T_STR, 0, "lines" },
+          { T_STR, 0, "458 Walkman Dr.\nSuite #292\n" },
+      { T_STR, 0, "city" },
+          { T_STR, 0, "Royal Oak" },
+      { T_STR, 0, "state" },
+          { T_STR, 0, "MI" },
+      { T_STR, 0, "postal" },
+          { T_STR, 0, "48046" },
+      end_node
+  };
+  struct test_node id001[] = {
+      { T_STR, 0, "given" },
+          { T_STR, 0, "Chris" },
+      { T_STR, 0, "family" },
+          { T_STR, 0, "Dumars" },
+      { T_STR, 0, "address" },
+          { T_MAP, 0, 0, address },
+      end_node
+  };
+  struct test_node map[] = {
+      { T_STR, 0, "invoice" },
+          { T_STR, 0, "34843" },
+      { T_STR, 0, "date" },
+          { T_STR, 0, "2001-01-23" },
+      { T_STR, 0, "bill-to" },
+          { T_MAP, 0, 0, id001 },
+      { T_STR, 0, "ship-to" },
+          { T_MAP, 0, 0, id001 },
+      { T_STR, 0, "product" },
+          { T_SEQ, 0, 0, products },
+      { T_STR, 0, "tax" },
+          { T_STR, 0, "251.42" }, 
+      { T_STR, 0, "total" },
+          { T_STR, 0, "4443.52" },
+      { T_STR, 0, "comments" },
+          { T_STR, 0, "Late afternoon is best. Backup contact is Nancy Billsmer @ 338-4338.\n" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
 
 ---
 test: Log file

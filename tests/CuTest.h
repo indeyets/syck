@@ -26,6 +26,7 @@ void CuStringInit(CuString* str);
 CuString* CuStringNew(void);
 void CuStringRead(CuString* str, char* path);
 void CuStringAppend(CuString* str, char* text);
+void CuStringAppendLen(CuString* str, char* text, long length);
 void CuStringAppendChar(CuString* str, char ch);
 void CuStringAppendFormat(CuString* str, char* format, ...);
 void CuStringResize(CuString* str, int newSize);

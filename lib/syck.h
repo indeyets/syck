@@ -245,6 +245,7 @@ typedef struct _syck_emitter SyckEmitter;
 typedef struct _syck_emitter_node SyckEmitterNode;
 
 typedef void (*SyckOutputHandler)(SyckEmitter *, char *, long); 
+typedef void (*SyckEmitterHandler)(SyckEmitter *, char *); 
 
 enum doc_stage {
     doc_open,
@@ -296,8 +297,10 @@ struct _syck_emitter {
     char *buffer, *marker;
     /* Absolute position of the buffer */
     long bufpos;
+    /* Handler for emitter nodes */
+    SyckEmitterHandler emitter_handler;
     /* Handler for output */
-    SyckOutputHandler handler;
+    SyckOutputHandler output_handler;
     /* Pointer for extension's use */
     void *bonus;
 };
@@ -341,14 +344,18 @@ char *syck_base64enc( char *, long );
 char *syck_base64dec( char *, long );
 SyckEmitter *syck_new_emitter();
 void syck_emitter_ignore_id( SyckEmitter *, SYMID );
-void syck_emitter_handler( SyckEmitter *, SyckOutputHandler );
+void syck_output_handler( SyckEmitter *, SyckOutputHandler );
+void syck_emitter_handler( SyckEmitter *, SyckEmitterHandler );
 void syck_free_emitter( SyckEmitter * );
 void syck_emitter_clear( SyckEmitter * );
 void syck_emitter_simple( SyckEmitter *, char *, long );
 void syck_emitter_write( SyckEmitter *, char *, long );
 void syck_emitter_flush( SyckEmitter *, long );
-char *syck_emitter_start_obj( SyckEmitter *, SYMID );
-void syck_emitter_end_obj( SyckEmitter * );
+void syck_emit( SyckEmitter *, char * );
+void syck_emit_scalar( SyckEmitter *, char *, char *, long );
+void syck_emit_seq( SyckEmitter *, char * );
+void syck_emit_map( SyckEmitter *, char * );
+void syck_emit_end( SyckEmitter * );
 SyckParser *syck_new_parser();
 void syck_free_parser( SyckParser * );
 void syck_parser_set_root_on_error( SyckParser *, SYMID );

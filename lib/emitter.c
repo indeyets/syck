@@ -19,13 +19,6 @@
 static char b64_table[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-struct adjust_arg {
-    /* Position to start adjusting */
-    long startpos;
-    /* Adjusting by an offset */
-    int offset;
-};
-
 /*
  * Built-in base64 (from Ruby's pack.c)
  */
@@ -125,14 +118,14 @@ syck_new_emitter()
     e->stage = doc_open;
     e->indent = 2;
     e->level = -1;
-    e->ignore_id = 0;
     e->anchors = NULL;
     e->markers = NULL;
     e->bufsize = SYCK_BUFFERSIZE;
     e->buffer = NULL;
     e->marker = NULL;
     e->bufpos = 0;
-    e->handler = NULL;
+    e->emitter_handler = NULL;
+    e->output_handler = NULL;
     e->bonus = NULL;
     return e;
 }
@@ -141,13 +134,6 @@ int
 syck_st_free_anchors( char *key, char *name, char *arg )
 {
     S_FREE( name );
-    return ST_CONTINUE;
-}
-
-int
-syck_st_free_markers( char *key, SyckEmitterNode *n, char *arg )
-{
-    S_FREE( n );
     return ST_CONTINUE;
 }
 
@@ -169,22 +155,21 @@ syck_emitter_st_free( SyckEmitter *e )
      */
     if ( e->markers != NULL )
     {
-        st_foreach( e->markers, syck_st_free_markers, 0 );
         st_free_table( e->markers );
         e->markers = NULL;
     }
 }
 
 void
-syck_emitter_ignore_id( SyckEmitter *e, SYMID id )
+syck_emitter_handler( SyckEmitter *e, SyckEmitterHandler hdlr )
 {
-    e->ignore_id = id;
+    e->emitter_handler = hdlr;
 }
 
 void
-syck_emitter_handler( SyckEmitter *e, SyckOutputHandler hdlr )
+syck_output_handler( SyckEmitter *e, SyckOutputHandler hdlr )
 {
-    e->handler = hdlr;
+    e->output_handler = hdlr;
 }
 
 void
@@ -284,12 +269,12 @@ syck_emitter_flush( SyckEmitter *e, long check_room )
             char *header = S_ALLOC_N( char, 64 );
             S_MEMZERO( header, char, 64 );
             sprintf( header, "--- %%YAML:%d.%d ", SYCK_YAML_MAJOR, SYCK_YAML_MINOR );
-            (e->handler)( e, header, strlen( header ) );
+            (e->output_handler)( e, header, strlen( header ) );
             S_FREE( header );
         }
         else
         {
-            (e->handler)( e, "--- ", 4 );
+            (e->output_handler)( e, "--- ", 4 );
         }
         e->stage = doc_processing;
     }
@@ -301,142 +286,109 @@ syck_emitter_flush( SyckEmitter *e, long check_room )
     {
         check_room = e->marker - e->buffer;
     }
-    (e->handler)( e, e->buffer, check_room );
+    (e->output_handler)( e, e->buffer, check_room );
     e->bufpos += check_room;
     e->marker -= check_room;
 }
 
 /*
- * Emit a simple, unquoted string.
+ * Start emitting from the given node, 
  */
 void
-syck_emitter_simple( SyckEmitter *e, char *str, long len )
+syck_emit( SyckEmitter *e, char *n )
+{
+    SYMID oid;
+    char *anchor_name = NULL;
+    
+    /* Look for anchor */
+    if ( e->anchors != NULL &&
+        st_lookup( e->markers, (st_data_t)n, (st_data_t *)&oid ) &&
+        st_lookup( e->anchors, (st_data_t)oid, (st_data_t *)&anchor_name ) )
+    {
+        char *an = S_ALLOC_N( char, strlen( anchor_name ) + 2 );
+        sprintf( an, "&%s ", anchor_name );
+        syck_emitter_write( e, an, strlen( an ) );
+    }
+    (e->emitter_handler)( e, n );
+}
+
+void syck_emit_scalar( SyckEmitter *e, char *tag, char *str, long len )
 {
     e->seq_map = 0;
     syck_emitter_write( e, str, len );
 }
 
-/*
- * Shift the offsets of all applicable anchors
- */
-int
-syck_adjust_anchors( char *key, SyckEmitterNode *n, struct adjust_arg *arg )
+void syck_emit_seq( SyckEmitter *e, char *tag )
 {
-    if ( arg->startpos < n->pos )
-    {
-        n->pos += arg->offset;
-    }
-    return ST_CONTINUE;
+    syck_emitter_write( e, "SEQ", 3 );
+}
+
+void syck_emit_map( SyckEmitter *e, char *tag )
+{
+    syck_emitter_write( e, "MAP!!!", 6 );
+}
+
+void syck_emit_end( SyckEmitter *e )
+{
 }
 
 /*
- * call on start of an object's marshalling
- * (handles anchors, returns an alias)
+ * Fill markers table with emitter nodes in the
+ * soon-to-be-emitted tree.
  */
-char *
-syck_emitter_start_obj( SyckEmitter *e, SYMID oid )
+SYMID
+syck_emitter_mark_node( SyckEmitter *e, char *n )
 {
-    SyckEmitterNode *n = NULL;
+    SYMID oid = 0;
     char *anchor_name = NULL;
 
-    e->level++;
-    if ( oid != e->ignore_id )
+    /*
+     * Ensure markers table is initialized.
+     */
+    if ( e->markers == NULL )
     {
-        /*
-         * Look for anchors
-         */
-        if ( e->markers == NULL )
-        {
-            e->markers = st_init_numtable();
-        }
-
-        /*
-         * Markers table initially marks the string position of the
-         * object.  Doesn't yet create an anchor, simply notes the
-         * position.
-         */
-        if ( ! st_lookup( e->markers, (st_data_t)oid, (st_data_t *)&n ) )
-        {
-            /*
-             * Store all markers
-             */
-            n = S_ALLOC( SyckEmitterNode );
-            n->is_shortcut = 0;
-            n->indent = e->level * e->indent;
-            n->pos = e->bufpos + ( e->marker - e->buffer );
-            st_insert( e->markers, (st_data_t)oid, (st_data_t)n );
-        }
-        else
-        {
-            if ( e->anchors == NULL )
-            {
-                e->anchors = st_init_numtable();
-            }
-
-            if ( ! st_lookup( e->anchors, (st_data_t)oid, (st_data_t *)&anchor_name ) )
-            {
-                int idx = 0;
-                /*
-                 * Second time hitting this object, let's give it an anchor
-                 */
-                idx = e->anchors->num_entries + 1;
-
-                /*
-                 * Create the anchor tag
-                 */
-                if ( n->pos >= e->bufpos )
-                {
-                    int alen;
-                    struct adjust_arg *args = S_ALLOC( struct adjust_arg );
-                    char *start = e->buffer + ( n->pos - e->bufpos );
-
-                    char *anc = ( e->anchor_format == NULL ? DEFAULT_ANCHOR_FORMAT : e->anchor_format );
-                    anchor_name = S_ALLOC_N( char, strlen( anc ) + 10 );
-                    S_MEMZERO( anchor_name, char, strlen( anc ) + 10 );
-                    sprintf( anchor_name, anc, idx );
-
-                    /*
-                     * Need to flush the buffer some, if there is not room for the anchor.
-                     */
-                    alen = strlen( anchor_name ) + 2;
-                    syck_emitter_flush( e, alen );
-
-                    /*
-                     * Write the anchor into the buffer
-                     */
-                    S_MEMMOVE( start + alen, start, char, e->marker - start );
-                    S_MEMCPY( start + 1, anchor_name, char, strlen( anchor_name ) );
-                    start[0] = '&';
-                    start[alen - 1] = ' ';
-                    e->marker += alen;
-
-                    /*
-                     * Cycle through anchors, modify for the size of the anchor.
-                     */
-                    args->startpos = n->pos;
-                    args->offset = alen;
-                    st_foreach( e->markers, syck_adjust_anchors, (st_data_t)args );
-                    S_FREE( args );
-
-                    /*
-                     * Insert into anchors table
-                     */
-                    st_insert( e->anchors, (st_data_t)oid, (st_data_t)anchor_name );
-                }
-            }
-
-        }
+        e->markers = st_init_numtable();
     }
 
-    return anchor_name;
-}
+    /*
+     * Markers table initially marks the string position of the
+     * object.  Doesn't yet create an anchor, simply notes the
+     * position.
+     */
+    if ( ! st_lookup( e->markers, (st_data_t)n, (st_data_t *)&oid ) )
+    {
+        /*
+         * Store all markers
+         */
+        oid = e->markers->num_entries + 1;
+        st_insert( e->markers, (st_data_t)n, (st_data_t)oid );
+    }
+    else
+    {
+        if ( e->anchors == NULL )
+        {
+            e->anchors = st_init_numtable();
+        }
 
-/*
- * call on completion of an object's marshalling
- */
-void
-syck_emitter_end_obj( SyckEmitter *e )
-{
-    e->level--;
+        if ( ! st_lookup( e->anchors, (st_data_t)oid, (st_data_t *)&anchor_name ) )
+        {
+            int idx = 0;
+            char *anc = ( e->anchor_format == NULL ? DEFAULT_ANCHOR_FORMAT : e->anchor_format );
+
+            /*
+             * Second time hitting this object, let's give it an anchor
+             */
+            idx = e->anchors->num_entries + 1;
+            anchor_name = S_ALLOC_N( char, strlen( anc ) + 10 );
+            S_MEMZERO( anchor_name, char, strlen( anc ) + 10 );
+            sprintf( anchor_name, anc, idx );
+
+            /*
+             * Insert into anchors table
+             */
+            st_insert( e->anchors, (st_data_t)oid, (st_data_t)anchor_name );
+        }
+    }
+    return oid;
 }
 
