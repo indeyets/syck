@@ -3,6 +3,7 @@
 #
 
 require 'yaml/constants'
+require 'yaml/encoding'
 require 'yaml/error'
 
 module YAML
@@ -177,14 +178,14 @@ module YAML
         end
 
         def seq_map_shortcut
-            if @seq_map
-                # FIXME
-                # @anchor_extras[@buffer.length - 1] = "\n" + indent
-                @seq_map = false
-            else
+            # FIXME: seq_map needs to work with the new anchoring system
+            # if @seq_map
+            #     @anchor_extras[@buffer.length - 1] = "\n" + indent
+            #     @seq_map = false
+            # else
                 self << "\n"
                 indent! 
-            end
+            # end
         end
 
         #

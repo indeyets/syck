@@ -46,11 +46,24 @@ TestSyckEmit( CuTest *tc )
     syck_free_emitter( emitter );
 }
 
+/*
+ * Ensure that our base64 encoder can do some basic
+ * binary encoding.
+ */
+void TestBase64Encode( CuTest *tc )
+{
+    char gif[] = "GIF89a\001\000\001\000\200\377\000\300\300\300\000\000\000!\371\004\001\000\000\000\000,\000\000\000\000\001\000\001\000\000\002\002D\001\000;"; 
+    char *enc = syck_base64enc( gif, strlen( gif ) );
+    printf( "ENCODED:\n%s\n", enc );
+    S_FREE( enc );
+}
+
 CuSuite *
 SyckGetSuite()
 {
     CuSuite *suite = CuSuiteNew();
     SUITE_ADD_TEST( suite, TestSyckEmit );
+//  SUITE_ADD_TEST( suite, TestBase64Encode );
     return suite;
 }
 

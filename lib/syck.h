@@ -13,7 +13,7 @@
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
-#define SYCK_VERSION    "0.35"
+#define SYCK_VERSION    "0.38"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
@@ -87,36 +87,39 @@ enum map_part {
     map_value
 };
 
+/*
+ * Node metadata struct
+ */
 struct _syck_node {
-    // Symbol table ID
+    /* Symbol table ID */
     SYMID id;
-    // Underlying kind
+    /* Underlying kind */
     enum syck_kind_tag kind;
-    // Fully qualified tag-uri for type
+    /* Fully qualified tag-uri for type */
     char *type_id;
-    // Anchor name
+    /* Anchor name */
     char *anchor;
     union {
-        // Storage for map data
+        /* Storage for map data */
         struct SyckMap {
             SYMID *keys;
             SYMID *values;
             long capa;
             long idx;
         } *pairs;
-        // Storage for sequence data
+        /* Storage for sequence data */
         struct SyckSeq {
             SYMID *items;
             long capa;
             long idx;
         } *list;
-        // Storage for string data
+        /* Storage for string data */
         struct SyckStr {
             char *ptr;
             long len;
         } *str;
     } data;
-    // Shortcut node
+    /* Shortcut node */
     void *shortcut;
 };
 
@@ -151,30 +154,33 @@ enum syck_level_status {
     syck_lvl_pause
 };
 
+/*
+ * Parser struct
+ */
 struct _syck_parser {
-    // Root node
+    /* Root node */
     SYMID root, root_on_error;
-    // Implicit typing flag
+    /* Implicit typing flag */
     int implicit_typing, taguri_expansion;
-    // Scripting language function to handle nodes
+    /* Scripting language function to handle nodes */
     SyckNodeHandler handler;
-    // Error handler
+    /* Error handler */
     SyckErrorHandler error_handler;
-    // InvalidAnchor handler
+    /* InvalidAnchor handler */
     SyckBadAnchorHandler bad_anchor_handler;
-    // IO type
+    /* IO type */
     enum syck_io_type io_type;
-    // Custom buffer size
+    /* Custom buffer size */
     size_t bufsize;
-    // Buffer pointers
+    /* Buffer pointers */
     char *buffer, *linectptr, *lineptr, *toktmp, *token, *cursor, *marker, *limit;
-    // Line counter
+    /* Line counter */
     int linect;
-    // Last token from yylex()
+    /* Last token from yylex() */
     int last_token;
-    // Force a token upon next call to yylex()
+    /* Force a token upon next call to yylex() */
     int force_token;
-    // EOF flag
+    /* EOF flag */
     int eof;
     union {
         struct _syck_file {
@@ -186,11 +192,11 @@ struct _syck_parser {
             SyckIoStrRead read;
         } *str;
     } io;
-    // Symbol table for anchors
+    /* Symbol table for anchors */
     st_table *anchors, *bad_anchors;
-    // Optional symbol table for SYMIDs
+    /* Optional symbol table for SYMIDs */
     st_table *syms;
-    // Levels of indentation
+    /* Levels of indentation */
     struct _syck_level {
         int spaces;
         char *domain;
@@ -205,6 +211,7 @@ struct _syck_parser {
  * Emitter definitions
  */
 typedef struct _syck_emitter SyckEmitter;
+typedef struct _syck_emitter_node SyckEmitterNode;
 
 typedef void (*SyckOutputHandler)(SyckEmitter *, char *, long); 
 
@@ -220,6 +227,9 @@ enum block_styles {
     block_literal
 };
 
+/*
+ * Emitter struct
+ */
 struct _syck_emitter {
     /* Headerless doc flag */
     int headless;
@@ -253,10 +263,24 @@ struct _syck_emitter {
     size_t bufsize;
     /* Buffer */
     char *buffer, *marker;
+    /* Absolute position of the buffer */
+    long bufpos;
     /* Handler for output */
     SyckOutputHandler handler;
     /* Pointer for extension's use */
     void *bonus;
+};
+
+/*
+ * Emitter node metadata struct
+ */
+struct _syck_emitter_node {
+    /* Node buffer position */
+    long pos;
+    /* Current indent */
+    long indent;
+    /* Collection? */
+    int is_shortcut;
 };
 
 /*
@@ -282,13 +306,15 @@ char *syck_match_implicit( char *, size_t );
 char *syck_strndup( char *, long );
 long syck_io_file_read( char *, SyckIoFile *, long, long );
 long syck_io_str_read( char *, SyckIoStr *, long, long );
+char *syck_base64enc( char *, long );
+char *syck_base64dec( char *, long );
 SyckEmitter *syck_new_emitter();
 void syck_emitter_ignore_id( SyckEmitter *, SYMID );
 void syck_emitter_handler( SyckEmitter *, SyckOutputHandler );
 void syck_free_emitter( SyckEmitter * );
 void syck_emitter_clear( SyckEmitter * );
 void syck_emitter_write( SyckEmitter *, char *, long );
-void syck_emitter_flush( SyckEmitter * );
+void syck_emitter_flush( SyckEmitter *, long );
 char *syck_emitter_start_obj( SyckEmitter *, SYMID );
 void syck_emitter_end_obj( SyckEmitter * );
 SyckParser *syck_new_parser();

@@ -316,12 +316,12 @@ Document:
 
 /*!re2c
 
-INDENT              {   // Isolate spaces
+INDENT              {   /* Isolate spaces */
                         int indt_len;
                         GOBBLE_UP_INDENT( indt_len, YYTOKEN );
                         lvl = CURRENT_LEVEL();
 
-                        // Check for open indent
+                        /* Check for open indent */
                         ENSURE_IEND(lvl, indt_len);
                         ENSURE_IOPEN(lvl, indt_len, 0);
                         if ( indt_len == -1 )
@@ -362,11 +362,11 @@ CDELIMS             {   POP_LEVEL();
 "&" WORDC+          {   ENSURE_IOPEN(lvl, 0, 1);
                         yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
 
-                        //
-                        // Remove previous anchors of the same name.  Since the parser will likely
-                        // construct deeper nodes first, we want those nodes to be placed in the
-                        // queue for matching at a higher level of indentation.
-                        //
+                        /*
+                         * Remove previous anchors of the same name.  Since the parser will likely
+                         * construct deeper nodes first, we want those nodes to be placed in the
+                         * queue for matching at a higher level of indentation.
+                         */
                         syck_hdlr_remove_anchor(parser, yylval->name);
                         return ANCHOR;
                     }
@@ -530,7 +530,7 @@ INDENT              {   int indt_len;
                         }
                         else if ( indt_len < lvl->spaces )
                         {
-                            // Error!
+                            /* Error! */
                         }
 
                         while ( YYTOKTMP < YYCURSOR )
@@ -606,7 +606,7 @@ INDENT              {   int indt_len;
                         }
                         else if ( indt_len < lvl->spaces )
                         {
-                            // Error!
+                            /* FIXME */
                         }
 
                         if ( keep_nl == 1 )
@@ -687,6 +687,11 @@ ANY                 {   QUOTECAT(qstr, qcapa, qidx, *(YYCURSOR - 1));
 
 TransferMethod:
     {
+        int qidx = 0;
+        int qcapa = 100;
+        char *qstr = S_ALLOC_N( char, qcapa );
+
+TransferMethod2:
         YYTOKTMP = YYCURSOR;
 
 /*!re2c
@@ -695,49 +700,68 @@ ENDSPC              {   SyckLevel *lvl;
                         YYCURSOR = YYTOKTMP;
                         if ( YYCURSOR == YYTOKEN + 1 )
                         {
+                            free( qstr );
                             return ITRANSFER;
                         }
 
                         lvl = CURRENT_LEVEL();
 
-                        //
-                        // URL Prefixing
-                        //
-                        if ( *(YYTOKEN + 1) == '^' )
+                        /*
+                         * URL Prefixing
+                         */
+                        if ( *qstr == '^' )
                         {
-                            yylval->name = S_ALLOC_N( char, ( YYCURSOR - YYTOKEN ) + strlen( lvl->domain ) );
+                            yylval->name = S_ALLOC_N( char, qidx + strlen( lvl->domain ) );
                             yylval->name[0] = '\0';
                             strcat( yylval->name, lvl->domain );
-                            strncat( yylval->name, YYTOKEN + 2, ( YYCURSOR - YYTOKEN ) - 2 );
+                            strncat( yylval->name, qstr + 1, qidx - 1 );
+                            free( qstr );
                         }
                         else
                         {
-                            char *carat = YYTOKEN;
-                            while ( (++carat) < YYCURSOR )
+                            char *carat = qstr;
+                            char *qend = qstr + qidx;
+                            while ( (++carat) < qend )
                             {
                                 if ( *carat == '^' )
                                     break;
                             }
 
-                            if ( carat < YYCURSOR )
+                            if ( carat < qend )
                             {
                                 free( lvl->domain );
-                                lvl->domain = syck_strndup( YYTOKEN + 1, ( carat - YYTOKEN ) - 1 );
-                                yylval->name = S_ALLOC_N( char, ( YYCURSOR - carat ) + strlen( lvl->domain ) );
+                                lvl->domain = syck_strndup( qstr, carat - qstr );
+                                yylval->name = S_ALLOC_N( char, ( qend - carat ) + strlen( lvl->domain ) );
                                 yylval->name[0] = '\0';
                                 strcat( yylval->name, lvl->domain );
-                                strncat( yylval->name, carat + 1, ( YYCURSOR - carat ) - 1 );
+                                strncat( yylval->name, carat + 1, ( qend - carat ) - 1 );
+                                free( qstr );
                             }
                             else
                             {
-                                yylval->name = syck_strndup( YYTOKEN + 1, ( YYCURSOR - YYTOKEN ) - 1 );
+                                yylval->name = qstr;
                             }
                         }
 
                         return TRANSFER; 
                     }
 
-ANY                 {   goto TransferMethod; }
+/*
+ * URL Escapes
+ */
+"\\x" HEX HEX       {   long ch;
+                        char *chr_text = syck_strndup( YYTOKTMP, 4 );
+                        chr_text[0] = '0';
+                        ch = strtol( chr_text, NULL, 16 );
+                        free( chr_text );
+                        QUOTECAT(qstr, qcapa, qidx, ch);
+                        goto TransferMethod2;
+                    }
+
+ANY                 {   QUOTECAT(qstr, qcapa, qidx, *(YYCURSOR - 1)); 
+                        goto TransferMethod2;
+                    }
+
 
 */
     }
@@ -807,10 +831,10 @@ INDENT              {   char *pacer;
                             RETURN_BLOCK();
                         }
 
-                        //
-                        // Fold only in the event of two lines being on the leftmost
-                        // indentation.
-                        //
+                        /*
+                         * Fold only in the event of two lines being on the leftmost
+                         * indentation.
+                         */
                         if ( blockType == BLOCK_FOLD && lastIndent == 0 && ( indt_len - lvl->spaces ) == 0 )
                         {
                             fold_nl = 1;
