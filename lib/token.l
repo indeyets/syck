@@ -32,31 +32,41 @@ syck_parser_init(SyckParser *p, int debug)
 
 %}
 
+WORD [[:alnum:]_]
+NONSPC [^[:blank:]]
+
 %%
+
+^"---"([ ]+)        return DOCSEP;
+^"---"$             return DOCSEP;
 
 "{"         return '{';
 "}"         return '}';
 "["         return '[';
 "]"         return ']';
 
-"-"[ $]+    return ':';
-":"[ $]+    return ':';
-","[ $]+    return ',';
-"?"[ $]+    return '?';
+[-:,?]([ ]+)    return yytext[0];
+[-:,?]$         return yytext[0];
 
-"&"[[:alnum:]]+     {   yylval.name = syck_strndup( yytext + 1, yyleng - 1 );
+"&"{WORD}+          {   yylval.name = syck_strndup( yytext + 1, yyleng - 1 );
                         return ANCHOR;
                     }
 
-"*"[[:alnum:]]+     {   yylval.name = syck_strndup( yytext + 1, yyleng - 1 );
+"*"{WORD}+          {   yylval.name = syck_strndup( yytext + 1, yyleng - 1 );
                         return ALIAS;
                     }
 
-[[:alnum:]]+        {   yylval.nodeData = syck_new_str2( yytext, yyleng );
+"!"{NONSPC}+        {   yylval.name = syck_strndup( yytext + 1, yyleng - 1 );
+                        return TRANSFER;
+                    }
+
+{WORD}+             {   yylval.nodeData = syck_new_str2( yytext, yyleng );
                         return PLAIN;
                     }
 
-.           printf( "Unrecognized character: %s\n", yytext );
+([[:blank:]]+)
+
+.                   printf( "Unrecognized character: %s\n", yytext );
 
 %%
 

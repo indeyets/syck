@@ -25,7 +25,7 @@
 
 %token <name>       ANCHOR ALIAS TRANSFER FOLD
 %token <nodeData>   WORD PLAIN FSTART RAWTEXT
-%token              IOPEN INDENT IEND DOCEND
+%token              DOCSEP IOPEN INDENT IEND
 
 %type <nodeId>      doc basic_seq
 %type <nodeData>    atom word_rep struct_rep atom_or_empty
@@ -38,9 +38,13 @@
 
 %%
 
-doc     : atom
+doc     : struct_rep
         {
            ((SyckParser *)parser)->root = syck_hdlr_add_node( (SyckParser *)parser, $1 );
+        }
+        | DOCSEP atom        
+        {
+           ((SyckParser *)parser)->root = syck_hdlr_add_node( (SyckParser *)parser, $2 );
         }
 
 atom	: word_rep
@@ -62,11 +66,17 @@ atom	: word_rep
             */
            $$ = syck_hdlr_add_alias( (SyckParser *)parser, $1 );
         }
+        | IOPEN atom IEND
+        {
+           $$ = $2;
+        }
 
 atom_or_empty   : atom
                 |
                 {
-                   $$ = syck_new_str( "" ); 
+                   SyckNode *n = syck_new_str( "" ); 
+                   n->type_id = "null";
+                   $$ = n;
                 }
 
 //
@@ -87,14 +97,6 @@ word_rep	: TRANSFER word_rep
             | PLAIN
             {
                 $$ = $1;
-            }
-			| '+'									
-            { 
-                $$ = syck_new_str( "+" );
-            }
-			| '-'
-            { 
-                $$ = syck_new_str( "-" );
             }
 
 //
@@ -141,12 +143,6 @@ basic_seq       : '-' atom_or_empty
                 { 
                     $$ = syck_hdlr_add_node( (SyckParser *)parser, $2 );
                 }
-/* Still need to rethink this...
-				| '-' seq_map_short
-                { 
-                    $$ = syck_hdlr_add_node( (SyckParser *)parser, $2 );
-                }
-*/
 
 in_implicit_seq : basic_seq
                 {
@@ -157,21 +153,6 @@ in_implicit_seq : basic_seq
                     syck_seq_add( $1, $3 );
                     $$ = $1;
 				}
-
-//
-// The sequence-mapping shortcut
-//
-/* This needs to be rethought based on the symbol table
-seq_map_short	: simple_mapping
-			  	{
-                    $$ = syck_hdlr_add_node( (SyckParser *)parser, $1 );
-				}
-				| simple_mapping implicit_map	
-                { 
-                    syck_map_update( $1, $2 );
-                    $$ = syck_hdlr_add_node( (SyckParser *)parser, $1 );
-                }
-*/
 
 //
 // Inline sequences
@@ -202,19 +183,6 @@ implicit_map	: IOPEN in_implicit_map IEND
                 { 
                     $$ = $2;
                 }
-
-/* Default needs to be added to SyckSeq i think...
-simple_mapping	: word_rep ':' atom
-                {
-                    $$ = syck_new_map( 
-                        syck_hdlr_add_node( (SyckParser *)parser, $1 ), 
-                        syck_hdlr_add_node( (SyckParser *)parser, $3 ) );
-                }
-				| '=' ':' atom
-				{
-					result = [ :DEFAULT, val[2] ]
-				}
-*/
 
 basic_mapping	: word_rep ':' atom_or_empty
                 {

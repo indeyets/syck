@@ -69,7 +69,7 @@ TestSyckParseString( CuTest *tc )
     SyckParser *parser;
     parser = syck_new_parser();
     syck_parser_handler( parser, SyckParseStringHandler );
-    syck_parser_str_auto( parser, "{test: 1, and: 2, or: &test 13, also: *test}", NULL );
+    syck_parser_str_auto( parser, "--- {test: 1, and: 2, or: &test 13, also: *test}", NULL );
     syck_parser_init( parser, 1 );
     yyparse( parser );
     st_foreach( parser->anchors, ListAnchors, NULL );
