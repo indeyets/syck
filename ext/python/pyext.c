@@ -224,7 +224,8 @@ yaml_org_handler( p, n, ref )
             transferred = 1;
             if ( type_id == NULL || strcmp( type_id, "str" ) == 0 )
             {
-                o = PyString_FromStringAndSize( n->data.str->ptr, n->data.str->len );
+                o = PyString_FromStringAndSize( n->data.str->ptr,
+                                                n->data.str->len );
             }
             else if ( strcmp( type_id, "null" ) == 0 )
             {
@@ -232,9 +233,11 @@ yaml_org_handler( p, n, ref )
             }
             else if ( strcmp( type_id, "binary" ) == 0 )
             {
-                PyObject *str64 = PyString_FromStringAndSize( n->data.str->ptr, n->data.str->len );
+                PyObject *str64 = PyString_FromStringAndSize( 
+                                     n->data.str->ptr, n->data.str->len );
                 PyObject *base64mod = PyImport_ImportModule( "base64" );
-                PyObject *decodestring = PyObject_GetAttr( base64mod, PyString_FromString( "decodestring" ) );
+                PyObject *decodestring = PyObject_GetAttr( base64mod, 
+                                      PyString_FromString( "decodestring" ) );
                 o = PyObject_CallFunction( decodestring, "S", str64 );
             }
             else if ( strcmp( type_id, "bool#yes" ) == 0 )
@@ -283,28 +286,34 @@ yaml_org_handler( p, n, ref )
             }
             else if ( strcmp( type_id, "timestamp#iso8601" ) == 0 )
             {
-                o = PyString_FromStringAndSize( n->data.str->ptr, n->data.str->len );
+                o = PyString_FromStringAndSize( n->data.str->ptr, 
+                                                n->data.str->len );
             }
             else if ( strcmp( type_id, "timestamp#spaced" ) == 0 )
             {
-                o = PyString_FromStringAndSize( n->data.str->ptr, n->data.str->len );
+                o = PyString_FromStringAndSize( n->data.str->ptr, 
+                                                n->data.str->len );
             }
             else if ( strcmp( type_id, "timestamp#ymd" ) == 0 )
             {
-                o = PyString_FromStringAndSize( n->data.str->ptr, n->data.str->len );
+                o = PyString_FromStringAndSize( n->data.str->ptr,
+                                                n->data.str->len );
             }
             else if ( strncmp( type_id, "timestamp", 9 ) == 0 )
             {
-                o = PyString_FromStringAndSize( n->data.str->ptr, n->data.str->len );
+                o = PyString_FromStringAndSize( n->data.str->ptr, 
+                                                n->data.str->len );
             }
-			else if ( strncmp( type_id, "merge", 5 ) == 0 )
-			{
-                o = PyString_FromStringAndSize( n->data.str->ptr, n->data.str->len );
-			}
+            else if ( strncmp( type_id, "merge", 5 ) == 0 )
+            {
+                o = PyString_FromStringAndSize( n->data.str->ptr, 
+                                                n->data.str->len );
+            }
             else
             {
                 transferred = 0;
-                o = PyString_FromStringAndSize( n->data.str->ptr, n->data.str->len );
+                o = PyString_FromStringAndSize( n->data.str->ptr, 
+                                                n->data.str->len );
             }
         break;
 
@@ -399,7 +408,8 @@ py_syck_parse_handler(p, n)
     switch ( n->kind )
     {
         case syck_str_kind:
-            v = PyString_FromStringAndSize( n->data.str->ptr, n->data.str->len );
+            v = PyString_FromStringAndSize( n->data.str->ptr, 
+                                            n->data.str->len );
         break;
 
         case syck_seq_kind:
@@ -451,9 +461,7 @@ py_syck_parse( self, args )
 
     v = syck_parse( parser );
     syck_lookup_sym( parser, v, (char **)&obj );
-
     syck_free_parser( parser );
-
     return obj;
 }
 
@@ -463,12 +471,9 @@ static PyMethodDef SyckMethods[] = {
       "Load from a YAML string." },
     { "parse", py_syck_parse, METH_VARARGS,
       "Parse a YAML string into objects representing nodes." },
-
     { "Node", py_syck_node_new2, METH_VARARGS,
       "Create a syck.Node object." },
-
     { NULL, NULL, 0, NULL }        /* Sentinel */
-
 };
 
 void
