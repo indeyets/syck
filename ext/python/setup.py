@@ -9,4 +9,5 @@ syck = Extension('syck',
 setup (name = 'Syck',
        version = '1.0',
        description = 'This is a demo package',
+       py_modules = ['ypath', 'ydump'],
        ext_modules = [syck])
