@@ -176,6 +176,12 @@ syck_emitter_current_level( SyckEmitter *e )
     return &e->levels[e->lvl_idx-1];
 }
 
+SyckLevel *
+syck_emitter_parent_level( SyckEmitter *e )
+{
+    return &e->levels[e->lvl_idx-2];
+}
+
 void
 syck_emitter_pop_level( SyckEmitter *e )
 {
@@ -407,6 +413,7 @@ syck_emit( SyckEmitter *e, char *n )
             goto end_emit;
         }
     }
+
     (e->emitter_handler)( e, n );
 
     /* Pop the level */
@@ -415,6 +422,24 @@ end_emit:
     if ( e->lvl_idx == 1 ) {
         syck_emitter_write( e, "\n", 1 );
         e->stage = doc_open;
+    }
+}
+
+void syck_emit_tag( SyckEmitter *e, char *tag, char *ignore )
+{
+    if ( tag == NULL ) return;
+    if ( ignore != NULL && strcmp( tag, ignore ) == 0 && e->explicit_typing == 0 ) return;
+    if ( strncmp( tag, "tag:", 4 ) == 0 ) {
+        syck_emitter_write( e, "!", 1 );
+        if ( strncmp( tag + 4, YAML_DOMAIN, strlen( YAML_DOMAIN ) ) == 0 ) {
+            int skip = 4 + strlen( YAML_DOMAIN ) + 1;
+            syck_emitter_write( e, tag + skip, strlen( tag ) - skip );
+        }
+        syck_emitter_write( e, " ", 1 );
+    } else if ( strncmp( tag, "x-private:", 10 ) == 0 ) {
+        syck_emitter_write( e, "!!", 2 );
+        syck_emitter_write( e, tag + 10, strlen( tag ) - 10 );
+        syck_emitter_write( e, " ", 1 );
     }
 }
 
@@ -435,6 +460,7 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
 {
     int mark = 0, end = 0;
     SyckLevel *lvl = syck_emitter_current_level( e );
+    syck_emit_tag( e, tag, "tag:yaml.org,2002:str" );
 
     /* Determine block style */
     if ( force_style == block_arbitrary ) {
@@ -525,44 +551,106 @@ void syck_emit_folded( SyckEmitter *e, int width, char *str, long len )
 void syck_emit_seq( SyckEmitter *e, char *tag )
 {
     SyckLevel *lvl = syck_emitter_current_level( e );
+    syck_emit_tag( e, tag, "tag:yaml.org,2002:seq" );
     lvl->status = syck_lvl_seq;
 }
 
 void syck_emit_map( SyckEmitter *e, char *tag )
 {
     SyckLevel *lvl = syck_emitter_current_level( e );
+    syck_emit_tag( e, tag, "tag:yaml.org,2002:map" );
     lvl->status = syck_lvl_map;
 }
 
-void syck_emit_item( SyckEmitter *e )
+void syck_emit_item( SyckEmitter *e, char *n )
 {
     SyckLevel *lvl = syck_emitter_current_level( e );
     switch ( lvl->status )
     {
         case syck_lvl_seq:
+        {
+            SyckLevel *parent = syck_emitter_parent_level( e );
+
+            /* seq-in-map shortcut */
+            if ( parent->status == syck_lvl_map && lvl->ncount == 0 ) {
+                /* complex key */
+                if ( parent->ncount % 2 == 1 ) {
+                    syck_emitter_write( e, "?", 1 );
+                    parent->status = syck_lvl_mapx;
+                } else {
+                    lvl->spaces = parent->spaces;
+                }
+            }
+
+            /* seq-in-seq shortcut */
+            else if ( parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
+                int spcs = ( lvl->spaces - parent->spaces ) - 2;
+                if ( spcs >= 0 ) {
+                    int i = 0;
+                    for ( i = 0; i < spcs; i++ ) {
+                        syck_emitter_write( e, " ", 1 );
+                    }
+                    syck_emitter_write( e, "- ", 2 );
+                    break;
+                }
+            }
+
             syck_emit_indent( e );
             syck_emitter_write( e, "- ", 2 );
+        }
         break;
 
         case syck_lvl_map:
+        {
+            SyckLevel *parent = syck_emitter_parent_level( e );
+
+            /* map-in-seq shortcut */
+            if ( parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
+                int spcs = ( lvl->spaces - parent->spaces ) - 2;
+                if ( spcs >= 0 ) {
+                    int i = 0;
+                    for ( i = 0; i < spcs; i++ ) {
+                        syck_emitter_write( e, " ", 1 );
+                    }
+                    break;
+                }
+            }
+
             if ( lvl->ncount % 2 == 0 ) {
                 syck_emit_indent( e );
             } else {
                 syck_emitter_write( e, ": ", 2 );
             }
+        }
+        break;
+
+        case syck_lvl_mapx:
+        {
+            if ( lvl->ncount % 2 == 0 ) {
+                syck_emit_indent( e );
+                lvl->status = syck_lvl_map;
+            } else {
+                syck_emitter_write( e, ": ", 2 );
+            }
+        }
         break;
     }
     lvl->ncount++;
+
+    syck_emit( e, n );
 }
 
 void syck_emit_end( SyckEmitter *e )
 {
     SyckLevel *lvl = syck_emitter_current_level( e );
+    SyckLevel *parent = syck_emitter_parent_level( e );
     switch ( lvl->status )
     {
         case syck_lvl_seq:
             if ( lvl->ncount == 0 ) {
                 syck_emitter_write( e, "[]\n", 3 );
+            } else if ( parent->status == syck_lvl_mapx ) {
+                syck_emitter_write( e, "\n", 1 );
             }
         break;
 
@@ -571,6 +659,8 @@ void syck_emit_end( SyckEmitter *e )
                 syck_emitter_write( e, "{}\n", 3 );
             } else if ( lvl->ncount % 2 == 1 ) {
                 syck_emitter_write( e, ":\n", 1 );
+            } else if ( parent->status == syck_lvl_mapx ) {
+                syck_emitter_write( e, "\n", 1 );
             }
         break;
     }

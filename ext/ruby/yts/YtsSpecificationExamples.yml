@@ -1329,7 +1329,7 @@ syck: |
       end_node
   };
   struct test_node stream[] = {
-      { T_SEQ, 0, 0, seq },
+      { T_SEQ, "tag:yaml.org,2002:omap", 0, seq },
       end_node
   };
 

@@ -169,7 +169,9 @@ enum syck_level_status {
     syck_lvl_str,
     syck_lvl_inline,
     syck_lvl_end,
-    syck_lvl_pause
+    syck_lvl_pause,
+    syck_lvl_mapx,
+    syck_lvl_seqx
 };
 
 /*
@@ -365,11 +367,13 @@ void syck_emit_scalar( SyckEmitter *, char *, enum block_styles, int, char, char
 void syck_emit_folded( SyckEmitter *, int, char *, long );
 void syck_emit_literal( SyckEmitter *, char *, long );
 void syck_emit_seq( SyckEmitter *, char * );
-void syck_emit_item( SyckEmitter * );
+void syck_emit_item( SyckEmitter *, char * );
 void syck_emit_map( SyckEmitter *, char * );
 void syck_emit_end( SyckEmitter * );
+void syck_emit_tag( SyckEmitter *, char *, char * );
 void syck_emit_indent( SyckEmitter * );
 SyckLevel *syck_emitter_current_level( SyckEmitter * );
+SyckLevel *syck_emitter_parent_level( SyckEmitter * );
 void syck_emitter_pop_level( SyckEmitter * );
 void syck_emitter_add_level( SyckEmitter *, int, enum syck_level_status );
 void syck_emitter_reset_levels( SyckEmitter * );

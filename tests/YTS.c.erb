@@ -91,8 +91,9 @@ syck_copy_handler(p, n)
     }
 
     tn->tag = 0;
-    if ( n->type_id != NULL )
+    if ( n->type_id != NULL ) {
         tn->tag = syck_strndup( n->type_id, strlen( n->type_id ) );
+    }
 
     return syck_add_sym( p, (char *) tn );
 }
@@ -123,6 +124,7 @@ void CuStreamCompareX( CuTest* tc, struct test_node *s1, struct test_node *s2 ) 
     while ( 1 ) {
         CuAssertIntEquals( tc, s1[i].type, s2[i].type );
         if ( s1[i].type == T_END ) return;
+        if ( s1[i].tag != 0 && s2[i].tag != 0 ) CuAssertStrEquals( tc, s1[i].tag, s2[i].tag );
         switch ( s1[i].type ) {
             case T_STR:
                 CuAssertStrEquals( tc, s1[i].key, s2[i].key );
@@ -219,8 +221,7 @@ test_emitter_handler( SyckEmitter *emitter, char *data ) {
             int i = 0;
             syck_emit_seq( emitter, node->tag );
             while ( node->value[i].type != T_END ) {
-                syck_emit_item( emitter );
-                syck_emit( emitter, (char *)&node->value[i] );
+                syck_emit_item( emitter, (char *)&node->value[i] );
                 i++;
             }        
             syck_emit_end( emitter );
@@ -231,8 +232,7 @@ test_emitter_handler( SyckEmitter *emitter, char *data ) {
             int i = 0;
             syck_emit_map( emitter, node->tag );
             while ( node->value[i].type != T_END ) {
-                syck_emit_item( emitter );
-                syck_emit( emitter, (char *)&node->value[i] );
+                syck_emit_item( emitter, (char *)&node->value[i] );
                 i++;
             }        
             syck_emit_end( emitter );
