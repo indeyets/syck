@@ -371,10 +371,8 @@ py_syck_load_handler(p, n)
 void
 py_syck_error_handler( SyckParser *p, char *msg )
 {
-   PyErr_Format(PyExc_TypeError, "Error at [Line %d, Col %d]: %s\n",
-        p->linect,
-        p->cursor - p->lineptr,
-        msg );
+   PyErr_SetObject(PyExc_TypeError,
+       Py_BuildValue("(i,i,s)", p->linect, p->cursor - p->lineptr, msg ));
 }
 
 static PyObject *
