@@ -477,18 +477,22 @@ yaml_org_handler( n, ref )
         break;
 
         case syck_seq_kind:
+            if ( type_id == NULL || strcmp( type_id, "seq" ) == 0 )
+            {
+                transferred = 1;
+            }
             obj = rb_ary_new2( n->data.list->idx );
             for ( i = 0; i < n->data.list->idx; i++ )
             {
                 rb_ary_store( obj, i, syck_seq_read( n, i ) );
             }
-            if ( type_id == NULL || strcmp( type_id, "seq" ) == 0 )
-            {
-                transferred = 1;
-            }
         break;
 
         case syck_map_kind:
+            if ( type_id == NULL || strcmp( type_id, "map" ) == 0 )
+            {
+                transferred = 1;
+            }
             obj = rb_hash_new();
             for ( i = 0; i < n->data.pairs->idx; i++ )
             {
@@ -532,10 +536,6 @@ yaml_org_handler( n, ref )
 				{
 					rb_hash_aset( obj, k, v );
 				}
-            }
-            if ( type_id == NULL || strcmp( type_id, "map" ) == 0 )
-            {
-                transferred = 1;
             }
         break;
     }

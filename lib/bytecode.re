@@ -258,6 +258,10 @@ REF     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_str);
         }
 
 TAG     {   sycklval->name = get_inline( parser );
+            if ( sycklval->name[0] == '!' )
+            {
+                S_MEMCPY( sycklval->name, sycklval->name + 1, char, strlen( sycklval->name ) );
+            }
             return YAML_TAGURI;
         }
 

@@ -367,9 +367,9 @@ product:
 EOY
 		)
 
-        # assert_bytecode( seq, "D\nM\nSinvoice\nS34843\nSdate\nS2001-01-03\nSbill-to\nSChris Dumars\nSproduct\n" + 
-        #     "Q\nM\nSitem\nSSuper Hoop\nSquantity\nS1\nE\nM\nSitem\nSBasketball\nSquantity\nS4\nE\n" +
-        #     "M\nSitem\nSBig Shoes\nSquantity\nS1\nE\nE\nE\n" )
+        assert_bytecode( seq, "D\nM\nSinvoice\nS34843\nSdate\nS2001-01-03\nSbill-to\nSChris Dumars\nSproduct\n" + 
+            "Q\nM\nSitem\nSSuper Hoop\nSquantity\nS1\nE\nM\nSitem\nSBasketball\nSquantity\nS4\nE\n" +
+            "M\nSitem\nSBig Shoes\nSquantity\nS1\nE\nE\nE\n" )
 	end
 
     def test_spec_sequence_in_sequence_shortcut
@@ -441,8 +441,8 @@ EOY
 
 	def test_spec_preserve_indent
 		# Preserve indented spaces
-		assert_parse_only(
-			"Sammy Sosa completed another fine season with great stats.\n\n  63 Home Runs\n  0.288 Batting Average\n\nWhat a year!\n", <<EOY
+        fold = "Sammy Sosa completed another fine season with great stats.\n\n  63 Home Runs\n  0.288 Batting Average\n\nWhat a year!\n"
+		assert_parse_only( fold, <<EOY )
 --- >
  Sammy Sosa completed another
  fine season with great stats.
@@ -452,13 +452,14 @@ EOY
 
  What a year!
 EOY
-		)
+
+        assert_bytecode( fold, "D\nSSammy Sosa completed another fine season with great stats.\nN\nN\nC  63 Home Runs\nN\nC  0.288 Batting Average\nN\nN\nCWhat a year!\nN\n" )
 	end
 
 	def test_spec_indentation_determines_scope
-		assert_parse_only(
-			{ 'name' => 'Mark McGwire', 'accomplishment' => "Mark set a major league home run record in 1998.\n",
-			  'stats' => "65 Home Runs\n0.278 Batting Average\n" }, <<EOY
+        map = { 'name' => 'Mark McGwire', 'accomplishment' => "Mark set a major league home run record in 1998.\n",
+			  'stats' => "65 Home Runs\n0.278 Batting Average\n" }
+		assert_parse_only( map, <<EOY )
 name: Mark McGwire
 accomplishment: >
    Mark set a major league
@@ -467,7 +468,7 @@ stats: |
    65 Home Runs
    0.278 Batting Average
 EOY
-		)
+        assert_bytecode( map, "D\nM\nSname\nSMark McGwire\nSaccomplishment\nSMark set a major league home run record in 1998.\nN\nSstats\nS65 Home Runs\nN\nC0.278 Batting Average\nN\nE\n" )
 	end
 
 	def test_spec_quoted_scalars
@@ -486,9 +487,9 @@ EOY
 
 	def test_spec_multiline_scalars
 		# Multiline flow scalars
-	 	assert_parse_only(
-	 		{ 'plain' => 'This unquoted scalar spans many lines.',
-	 		  'quoted' => "So does this quoted scalar.\n" }, <<EOY
+        map = { 'plain' => 'This unquoted scalar spans many lines.',
+	 		  'quoted' => "So does this quoted scalar.\n" } 
+	 	assert_parse_only( map, <<EOY )
 plain: This unquoted
        scalar spans
        many lines.
@@ -496,46 +497,47 @@ quoted: "\\
   So does this quoted
   scalar.\\n"
 EOY
-		)
+        assert_bytecode( map, "D\nM\nSplain\nSThis unquoted scalar spans many lines.\nSquoted\nSSo does this quoted scalar.\nN\nE\n" )
 	end	
 
 	def test_spec_type_int
-		assert_parse_only(
-			{ 'canonical' => 12345, 'decimal' => 12345, 'octal' => '014'.oct, 'hexadecimal' => '0xC'.hex }, <<EOY
+        map = { 'canonical' => 12345, 'decimal' => 12345, 'octal' => '014'.oct, 'hexadecimal' => '0xC'.hex }
+		assert_parse_only( map, <<EOY )
 canonical: 12345
 decimal: +12,345
 octal: 014
 hexadecimal: 0xC
 EOY
-		)
+        assert_bytecode( map, "D\nM\nScanonical\nS12345\nSdecimal\nS+12,345\nSoctal\nS014\nShexadecimal\nS0xC\nE\n" )
 	end
 
 	def test_spec_type_float
-		assert_parse_only(
-			{ 'canonical' => 1230.15, 'exponential' => 1230.15, 'fixed' => 1230.15,
-			  'negative infinity' => -1.0/0.0 }, <<EOY
+        map = { 'canonical' => 1230.15, 'exponential' => 1230.15, 'fixed' => 1230.15,
+			  'negative infinity' => -1.0/0.0 }
+		assert_parse_only( map, <<EOY )
 canonical: 1.23015e+3
 exponential: 12.3015e+02
 fixed: 1,230.15
 negative infinity: -.inf
 EOY
-		)
 		nan = YAML::load( <<EOY
 not a number: .NaN
 EOY
 		)
 		assert( nan['not a number'].nan? )
+
+        assert_bytecode( map, "D\nM\nScanonical\nS1.23015e+3\nSexponential\nS12.3015e+02\nSfixed\nS1,230.15\nSnegative infinity\nS-.inf\nE\n" )
 	end
 
 	def test_spec_type_misc
-		assert_parse_only(
-			{ nil => nil, true => true, false => false, 'string' => '12345' }, <<EOY
+        map = { nil => nil, true => true, false => false, 'string' => '12345' }
+		assert_parse_only( map, <<EOY )
 null: ~
 true: yes
 false: no
 string: '12345'
 EOY
-		)
+        assert_bytecode( map, "D\nM\nSnull\nS~\nStrue\nSyes\nSfalse\nSno\nSstring\nTtag:yaml.org,2002:str\nS12345\nE\n" )
 	end
 
 	def test_spec_complex_invoice
@@ -543,15 +545,15 @@ EOY
 		id001 = { 'given' => 'Chris', 'family' => 'Dumars', 'address' =>
 			{ 'lines' => "458 Walkman Dr.\nSuite #292\n", 'city' => 'Royal Oak',
 			  'state' => 'MI', 'postal' => 48046 } }
-		assert_parse_only(
-			{ 'invoice' => 34843, 'date' => Date.new( 2001, 1, 23 ),
+        invoice = { 'invoice' => 34843, 'date' => Date.new( 2001, 1, 23 ),
 			  'bill-to' => id001, 'ship-to' => id001, 'product' =>
 			  [ { 'sku' => 'BL394D', 'quantity' => 4,
 			      'description' => 'Basketball', 'price' => 450.00 },
 				{ 'sku' => 'BL4438H', 'quantity' => 1,
 				  'description' => 'Super Hoop', 'price' => 2392.00 } ],
 			  'tax' => 251.42, 'total' => 4443.52,
-			  'comments' => "Late afternoon is best. Backup contact is Nancy Billsmer @ 338-4338.\n" }, <<EOY
+			  'comments' => "Late afternoon is best. Backup contact is Nancy Billsmer @ 338-4338.\n" }
+		assert_parse_only( invoice, <<EOY )
 invoice: 34843
 date   : 2001-01-23
 bill-to: &id001
@@ -582,7 +584,15 @@ comments: >
     Backup contact is Nancy
     Billsmer @ 338-4338.
 EOY
-		)
+        assert_bytecode( invoice, "D\nM\nSinvoice\nS34843\nSdate\nS2001-01-23\nSbill-to\nAid001\n" +
+            "M\nSgiven\nSChris\nSfamily\nT!str\nSDumars\nSaddress\n" +
+            "M\nSlines\nS458 Walkman Dr.\nN\nCSuite #292\nN\nScity\nSRoyal Oak\nSstate\nSMI\nSpostal\nS48046\nE\nE\n" +
+            "Sship-to\nRid001\nSproduct\nQ\n" +
+            "T!map\nM\nSsku\nSBL394D\nSquantity\nS4\nSdescription\nSBasketball\nSprice\nS450.00\nE\n" +
+            "M\nSsku\nSBL4438H\nSquantity\nS1\nSdescription\nSSuper Hoop\nSprice\nS2392.00\nE\nE\n" +
+            "Stax\nS251.42\nStotal\nS4443.52\nScomments\n" + 
+                "SLate afternoon is best. Backup contact is Nancy Billsmer @ 338-4338.\nN\n" + 
+            "E\n" )
 	end
 
 	def test_spec_log_file
