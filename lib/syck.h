@@ -400,7 +400,6 @@ void syck_parser_pop_level( SyckParser * );
 void free_any_io( SyckParser * );
 long syck_parser_read( SyckParser * );
 long syck_parser_readlen( SyckParser *, long );
-void syck_parser_init( SyckParser *, int );
 SYMID syck_parse( SyckParser * );
 void syck_default_error_handler( SyckParser *, char * );
 SYMID syck_yaml2byte_handler( SyckParser *, SyckNode * );
@@ -433,8 +432,6 @@ void syck_seq_add( SyckNode *, SYMID );
 void syck_seq_assign( SyckNode *, long, SYMID );
 SYMID syck_seq_read( SyckNode *, long );
 long syck_seq_count( SyckNode * );
-
-void apply_seq_in_map( SyckParser *, SyckNode * );
 
 /*
  * Lexer prototypes

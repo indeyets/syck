@@ -318,7 +318,7 @@ module YAML
 	# Add a private document type
 	#
 	def YAML.add_private_type( type_re, &transfer_proc )
-	    resolver.add_type( type_re, transfer_proc )
+	    resolver.add_type( "x-private:" + type_re, transfer_proc )
 	end
 
     #

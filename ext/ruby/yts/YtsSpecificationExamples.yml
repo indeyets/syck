@@ -1175,7 +1175,7 @@ yaml: |
     color: 0xFFEEBB
     value: Pretty vector drawing.
 ruby-setup: |
-  YAML.add_domain_type( "clarkevans.com,2002", /^graph\/shape/ ) { |type, val|
+  YAML.add_domain_type( "clarkevans.com,2002", 'graph/shape' ) { |type, val|
     if Array === val
       val << "Shape Container"
       val
@@ -1192,9 +1192,9 @@ ruby-setup: |
       raise YAML::Error, "Invalid graph of class #{ val.class }: " + val.inspect
     end
   }
-  YAML.add_domain_type( "clarkevans.com,2002", /^graph\/circle/, &one_shape_proc )
-  YAML.add_domain_type( "clarkevans.com,2002", /^graph\/line/, &one_shape_proc )
-  YAML.add_domain_type( "clarkevans.com,2002", /^graph\/label/, &one_shape_proc )
+  YAML.add_domain_type( "clarkevans.com,2002", 'graph/circle', &one_shape_proc )
+  YAML.add_domain_type( "clarkevans.com,2002", 'graph/line', &one_shape_proc )
+  YAML.add_domain_type( "clarkevans.com,2002", 'graph/label', &one_shape_proc )
 ruby: |
   [
     {

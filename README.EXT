@@ -10,6 +10,211 @@ understand the symbol table you are keeping.
 
 Syck also includes a simple symbol table implementation.
 
+== About the Source ==
+
+The Syck distribution is laid out as follows:
+
+  lib/             libsyck source (core API)
+    bytecode.re    lexer for YAML bytecode (re2c)
+    emitter.c      emitter functions
+    gram.y         grammar for YAML documents (bison)
+    handler.c      internal handlers which glue the lexer and grammar
+    implicit.re    lexer for builtin YAML types (re2c)
+    node.c         node allocation and access
+    syck.c         parser funcs, central funcs
+    syck.h         libsyck definitions
+    syck_st.c      symbol table functions
+    syck_st.h      symbol table definitions
+    token.re       lexer for YAML plaintext (re2c)
+    yaml2byte.c    simple bytecode emitter
+  ext/             ruby, python, php, cocoa extensions
+  tests/           unit tests for libsyck
+    YTS.c.rb       generates YAML Testing Suite unit test
+                   (use: ruby YTS.c.rb > YTS.c)
+    Basic.c        allocation and buffering tests
+    Parse.c        parser sanity
+    Emit.c         emitter sanity
+
+== Using SyckNodes ==
+
+The SyckNode is the structure which YAML data is loaded into
+while parsing.  It's also a good structure to use while emitting,
+however you may choose to emit directly from your native types
+if your extension is very small.
+
+SyckNodes are designed to be used in conjunction with a symbol
+table.  More on that in a moment.  For now, think of a symbol
+table as a library which stores nodes, assigning each node a
+unique identifier.
+
+This identifier is called the SYMID in Syck.  Nodes refer to
+each other by SYMIDs, rather than pointers.  This way, the
+nodes can be free'd as the parser goes.
+
+To be honest, SYMIDs are used because this is the way Ruby
+works.  And this technique means Syck can use Ruby's symbol
+table directly.  But the included symbol table is lightweight,
+solves the problem of keeping too much data in memory, and
+simply pairs SYMIDs with your native object type (such as
+PyObject pointers.)
+
+Three kinds of SyckNodes are available:
+
+1. scalar nodes (syck_str_kind):
+   These nodes store a string, a length for the string
+   and a style (indicating the format used in the YAML
+   document).
+
+2. sequence nodes (syck_seq_kind):
+   Sequences are YAML's array or list type.
+   These nodes store a list of items, which allocation
+   is handled by syck functions.
+
+3. mapping nodes (syck_map_kind):
+   Mappings are YAML's dictionary or hashtable type.
+   These nodes store a list of pairs, which allocation
+   is handled by syck functions.
+
+The syck_kind_tag enum specifies the above enumerations,
+which can be tested against the SyckNode.kind field.
+
+PLEASE leave the SyckNode.shortcut field alone!!  It's
+used by the parser to workaround parser ambiguities!!
+
+=== Node API ===
+
+  SyckNode *
+  syck_alloc_str()
+  syck_alloc_seq()
+  syck_alloc_str()
+
+    Allocates a node of a given type and initializes its 
+    internal union to emptiness.  When left as-is, these
+    nodes operate as a valid empty string, empty sequence
+    and empty map.
+
+    Remember that the node's id (SYMID) isn't set by the
+    allocation functions OR any other node functions herein.
+    It's up to your handler function to do that.
+
+  void
+  syck_free_node( SyckNode *n )
+
+    While the Syck parser will free nodes it creates, use
+    this to free your own nodes.  This function will free
+    all of its internals, its type_id and its anchor.  If
+    you don't need those members free, please be sure they
+    are set to NULL.
+
+  SyckNode *
+  syck_new_str( char *str, enum scalar_style style )
+  syck_new_str2( char *str, long len, enum scalar_style style )
+
+    Creates scalar nodes from C strings.  The first function
+    will call strlen() to determine length.
+
+  void
+  syck_replace_str( SyckNode *n, char *str, enum scalar_style style )
+  syck_replace_str2( SyckNode *n, char *str, long len, enum scalar_style style )
+
+    Replaces the string content of a node `n', while keeping
+    the node's type_id, anchor and id.
+
+  char *
+  syck_str_read( SyckNode *n )
+
+    Returns a pointer to the null-terminated string inside scalar node
+    `n'.  Normally, you might just want to use:
+
+      char *ptr = n->data.str->ptr
+      long len = n->data.str->len
+
+  SyckNode *
+  syck_new_map( SYMID key, SYMID value )
+
+    Allocates a new map with an initial pair of nodes.
+
+  void
+  syck_map_empty( SyckNode *n )
+
+    Empties the set of pairs for a mapping node.
+
+  void
+  syck_map_add( SyckNode *n, SYMID key, SYMID value )
+
+    Pushes a key-value pair on the mapping.  While the ordering
+    of pairs DOES affect the ordering of pairs on output, loaded
+    nodes are deliberately out of order (since YAML mappings do
+    not preserve ordering.)
+
+    See YAML's builtin !omap type for ordering in mapping nodes.
+
+  SYMID
+  syck_map_read( SyckNode *n, enum map_part, long index )
+
+    Loads a specific key or value from position `index' within
+    a mapping node.  Great for iteration:
+
+      for ( i = 0; i < syck_map_count( n ); i++ ) {
+        SYMID key = sym_map_read( n, map_key, i );
+        SYMID val = sym_map_read( n, map_value, i );
+      }
+
+  void
+  syck_map_assign( SyckNode *n, enum map_part, long index, SYMID id )
+
+    Replaces a specific key or value at position `index' within
+    a mapping node.  Useful for replacement only, will not allocate
+    more room when assigned beyond the end of the pair list.
+
+  long
+  syck_map_count( SyckNode *n )
+
+    Returns a count of the pairs contained by the mapping node.
+
+  void
+  syck_map_update( SyckNode *n, SyckNode *n2 )
+
+    Combines all pairs from mapping node `n2' into mapping node
+    `n'.
+
+  SyckNode *
+  syck_new_seq( SYMID val )
+
+    Allocates a new seq with an entry `val'.
+
+  void
+  syck_seq_empty( SyckNode *n )
+
+    Empties a sequence node `n'.
+
+  void
+  syck_seq_add( SyckNode *n, SYMID val )
+
+    Pushes a new item `val' onto the end of the sequence.
+
+  void
+  syck_seq_assign( SyckNode *n, long index, SYMID val )
+
+    Replaces the item at position `index' in the sequence
+    node with item `val'.  Useful for replacement only, will not allocate
+    more room when assigned beyond the end of the pair list.
+
+  SYMID
+  syck_seq_read( SyckNode *n, long index )
+
+    Reads the item at position `index' in the sequence node.
+    Again, for iteration:
+
+      for ( i = 0; i < syck_seq_count( n ); i++ ) {
+        SYMID val = sym_seq_read( n, i );
+      }
+
+  long
+  syck_seq_count( SyckNode *n )
+
+    Returns a count of items contained by sequence node `n'.
+
 == YAML Parser ==
 
 Syck's YAML parser is extremely simple.  After setting up a
@@ -39,6 +244,19 @@ Inside the node handler, the normal process should be:
    to the parser.  Found at parser->syms.
 
 4. Return the SYMID reserved in the symbol table.
+
+=== Nodes and Memory Allocation ===
+
+One thing about SyckNodes passed into your handler:
+Syck WILL free the node once your handler is done with it.
+The node is temporary.  So, if you plan on keeping a node
+around, you'll need to make yourself a new copy.
+
+And you'll probably need to reassign all the items
+in a sequence and pairs in a map.  You can do this
+with syck_seq_assign() and syck_map_assign().  But, before
+you do that, you might consider using your own node structure
+that fits your application better.
 
 === A Note About Anchors in Parsing ===
 
@@ -154,4 +372,38 @@ The loading process is:
 
     Same as the above, but uses strlen() to determine string size.
 
+  
+  SYMID
+  syck_parse( SyckParser *p )
 
+    Parses a single document from the YAML stream, returning the SYMID for
+    the root node.
+
+== YAML Emitter ==
+
+Since the YAML 0.50 release, Syck has featured a new emitter API.  The idea
+here is to let Syck figure out shortcuts that will clean up output, detect
+builtin YAML types and -- especially -- determine the best way to format
+outgoing strings.
+
+The trick with the emitter is to learn its functions and let it do its
+job.  If you don't like the formatting Syck is producing, please get in
+contact the author and pitch your ideas!!
+
+Like the YAML parser, the emitter has a couple of callbacks: namely,
+one for IO output and one for handling nodes.  Nodes aren't necessarily
+SyckNodes.  Since we're ultimately worried about creating a string, SyckNodes
+become sort of unnecessary.
+
+=== The Emitter Process ===
+
+1. Traverse the structure you will be emitting, registering all nodes
+   with the emitter using syck_emitter_mark_node().
+
+2. Call syck_emit() to begin emitting the root node.
+
+3. Within your emitter handler, use the syck_emit_* convenience methods
+   to build the document.
+
+4. Call syck_emit_flush() to end the document and push the remaining
+   document to the IO stream.
