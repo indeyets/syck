@@ -108,6 +108,7 @@ syck_parser_reset_levels( SyckParser *p )
     {
         p->lvl_idx = 1;
         p->levels[0].spaces = -1;
+        p->levels[0].ncount = 0;
         p->levels[0].domain = syck_strndup( "", 0 );
     }
     p->levels[0].status = syck_lvl_header;
@@ -365,6 +366,7 @@ syck_parser_add_level( SyckParser *p, int len, enum syck_level_status status )
 
     ASSERT( len > p->levels[p->lvl_idx-1].spaces );
     p->levels[p->lvl_idx].spaces = len;
+    p->levels[p->lvl_idx].ncount = 0;
     p->levels[p->lvl_idx].domain = syck_strndup( p->levels[p->lvl_idx-1].domain, strlen( p->levels[p->lvl_idx-1].domain ) );
     p->levels[p->lvl_idx].status = status;
     p->lvl_idx += 1;

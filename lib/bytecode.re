@@ -43,6 +43,28 @@ char *get_inline( SyckParser *parser );
 #define CURRENT_LEVEL() syck_parser_current_level( parser )
 
 /*
+ * Adding levels in bytecode requires us to make sure
+ * we've got all our tokens worked out.
+ */
+#define ADD_BYTE_LEVEL(lvl, len, s ) \
+        switch ( lvl->status ) \
+        { \
+            case syck_lvl_seq: \
+                lvl->ncount++; \
+                ADD_LEVEL(len, syck_lvl_open); \
+                YYPOS(0); \
+            return '-'; \
+        \
+            case syck_lvl_open: \
+                lvl->status = s; \
+            break; \
+        \
+            default: \
+                ADD_LEVEL(len, s); \
+            break; \
+        }
+
+/*
  * Nice little macro to ensure we're YAML_IOPENed to the current level.
  * * Only use this macro in the "Document" section *
  */
@@ -125,6 +147,8 @@ SCA = "S" ;
 SCC = "C" ;
 NNL = "N" ;
 NUL = "Z" ;
+ALI = "A" ;
+REF = "R" ;
 
 */
 
@@ -172,11 +196,11 @@ Document:
 
 /*!re2c
 
-MAP     {   ADD_LEVEL(lvl->spaces + 1, syck_lvl_map); 
+MAP     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_map); 
             return YAML_IOPEN;
         }
 
-SEQ     {   ADD_LEVEL(lvl->spaces + 1, syck_lvl_seq);
+SEQ     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_seq);
             return YAML_IOPEN;
         }
 
@@ -184,12 +208,33 @@ END     {   POP_LEVEL();
             return YAML_IEND;
         }
 
-SCA     {   if ( lvl->status == syck_lvl_seq )
-            {
-                ADD_LEVEL(lvl->spaces, syck_lvl_str); 
-                return '-';
-            }
+SCA     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_str); 
             goto Scalar;
+        }
+
+ALI     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_doc);
+            sycklval->name = get_inline( parser );
+            return YAML_ALIAS;
+        }
+
+REF     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_doc);
+            sycklval->name = get_inline( parser );
+            syck_hdlr_remove_anchor( parser, sycklval->name );
+            POP_LEVEL();
+            return YAML_ANCHOR;
+        }
+
+LF      {   if ( lvl->status == syck_lvl_seq )
+            {
+                return YAML_INDENT; 
+            }
+            else if ( lvl->status == syck_lvl_map )
+            {
+                lvl->ncount++;
+                if ( lvl->ncount % 2 == 1 ) return ':';
+                else                        return YAML_INDENT;
+            }
+            goto Document;
         }
 
 NULL    {   ENSURE_YAML_IEND(lvl, -1);
@@ -228,7 +273,15 @@ Scalar2:
 
 /*!re2c
 
-LF      {   goto ScalarEnd; }
+LF SCC  {   goto Scalar2; }
+
+LF NUL  {   CAT(str, cap, idx, '\0');
+            goto Scalar2; 
+        }
+
+LF      {   YYCURSOR = tok;
+            goto ScalarEnd; 
+        }
 
 NULL    {   YYCURSOR = tok;
             goto ScalarEnd;

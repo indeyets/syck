@@ -153,6 +153,7 @@ enum syck_parser_input {
 enum syck_level_status {
     syck_lvl_header,
     syck_lvl_doc,
+    syck_lvl_open,
     syck_lvl_seq,
     syck_lvl_map,
     syck_lvl_block,
@@ -181,6 +182,7 @@ struct _syck_str {
 
 struct _syck_level {
     int spaces;
+    int ncount;
     char *domain;
     enum syck_level_status status;
 };
