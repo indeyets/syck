@@ -112,7 +112,7 @@ module YAML
     #
 	def YAML.dump( obj, io = nil )
         obj.to_yaml( io || io2 = StringIO.new )
-        io || io2.read
+        io || ( io2.rewind; io2.read )
 	end
 
 	#
