@@ -32,9 +32,9 @@
 
 %type <nodeId>      doc basic_seq
 %type <nodeData>    atom word_rep ind_rep struct_rep atom_or_empty
-%type <nodeData>    implicit_seq top_imp_seq inline_seq implicit_map inline_map
-%type <nodeData>    in_implicit_seq in_inline_seq basic_mapping basic_mapping2
-%type <nodeData>    in_implicit_map in_inline_map complex_mapping
+%type <nodeData>    implicit_seq inline_seq implicit_map inline_map
+%type <nodeData>    top_imp_seq in_implicit_seq in_inline_seq basic_mapping basic_mapping2
+%type <nodeData>    top_imp_map in_implicit_map in_inline_map complex_mapping
 
 %left               '-' ':'
 %left               '+' '[' ']' '{' '}' ',' '?'
@@ -252,16 +252,35 @@ in_inline_seq   : atom
 /*
  * Implicit maps
  */
-implicit_map	: indent_open in_implicit_map indent_end
+implicit_map	: indent_open top_imp_map indent_end
                 { 
                     apply_seq_in_map( (SyckParser *)parser, $2 );
                     $$ = $2;
                 }
-                | indent_open TRANSFER indent_sep in_implicit_map indent_end
+                | indent_open in_implicit_map indent_end
                 { 
-                    apply_seq_in_map( (SyckParser *)parser, $4 );
-                    syck_add_transfer( $2, $4, ((SyckParser *)parser)->taguri_expansion );
-                    $$ = $4;
+                    apply_seq_in_map( (SyckParser *)parser, $2 );
+                    $$ = $2;
+                }
+                ;
+
+top_imp_map     : TRANSFER indent_sep in_implicit_map
+                { 
+                    syck_add_transfer( $1, $3, ((SyckParser *)parser)->taguri_expansion );
+                    $$ = $3;
+                }
+                | TRANSFER top_imp_map
+                { 
+                    syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
+                    $$ = $2;
+                }
+                | ANCHOR indent_sep in_implicit_map
+                { 
+                    $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $3 );
+                }
+                | ANCHOR top_imp_map
+                { 
+                    $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $2 );
                 }
                 ;
 
