@@ -227,6 +227,7 @@ yylex( YYSTYPE *yylval, SyckParser *parser )
 /*!re2c
 
 WORDC = [A-Za-z0-9_-] ;
+WORDP = [A-Za-z0-9_-\.] ;
 LF = [\n]+ ;
 ENDSPC = ( [ ]+ | LF );
 INDENT = LF [ \n]* ;
@@ -236,7 +237,7 @@ ODELIMS = [\{\[] ;
 CDELIMS = [\}\]] ;
 INLINEX = ( CDELIMS | "," ENDSPC ) ;
 ALLX = ( ":" ENDSPC ) ;
-DIR = "%" WORDC+ ":" WORDC+ ;
+DIR = "%" WORDP+ ":" WORDP+ ;
 BLOCK = [>|] [-+0-9]* ENDSPC ; 
 HEX = [0-9A-Fa-f] ;
 

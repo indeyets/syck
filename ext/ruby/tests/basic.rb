@@ -11,19 +11,17 @@ class YAML_Unit_Tests < RUNIT::TestCase
 	# emitting
 	#
 	def assert_to_yaml( obj, yaml )
-        # yaml = "--- %YAML:1.0\n" + yaml
 		assert_equal( obj, YAML::load( yaml ) )
         assert_equal( obj, YAML::load( obj.to_yaml ) )
-        # assert_equal( obj, YAML::load(
-		# 	obj.to_yaml( :UseVersion => true, :UseHeader => true, :SortKeys => true ) 
-		# ) )
+        assert_equal( obj, YAML::load(
+			obj.to_yaml( :UseVersion => true, :UseHeader => true, :SortKeys => true ) 
+		) )
 	end
 
 	#
 	# Test parser only
 	#
 	def assert_parse_only( obj, yaml )
-        # yaml = "--- %YAML:1.0\n" + yaml
 		assert_equal( obj, YAML::load( yaml ) )
 	end
 
@@ -1133,9 +1131,18 @@ EOY
 EOY
         )
 
+        # Anchored mapping [ruby-core:1071]
+        assert_to_yaml(
+            [{"a"=>"b"}] * 2, <<EOY
+- &id001
+  a: b
+- *id001
+EOY
+        )
+
         # Stress test [ruby-core:1071]
-        a = []; 1000.times { a << {"a"=>"b", "c"=>"d"} }
-        YAML::load( a.to_yaml )
+        # a = []; 1000.times { a << {"a"=>"b", "c"=>"d"} }
+        # YAML::load( a.to_yaml )
 
     end
 
