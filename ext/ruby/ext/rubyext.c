@@ -12,8 +12,43 @@
 #include <sys/types.h>
 #include <time.h>
 
-static ID time_s_mkutc;
+static ID time_s_mkutc, s_read, s_binmode;
 VALUE cNode;
+
+//
+// Read from String or IO classes
+// If str->end == 0; then IO; else String; end
+// Borrowed from Marshal.c
+// 
+long
+rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
+{
+    long len = 0;
+
+    ASSERT( str != NULL );
+    max_size -= skip;
+    if ( max_size < 0 ) max_size = 0;
+
+    if ( max_size > 0 )
+    {
+        //
+        // IO read
+        //
+        VALUE src = (VALUE)str->ptr;
+        VALUE n = LONG2NUM(max_size);
+        VALUE str = rb_funcall2(src, s_read, 1, &n);
+        if (!NIL_P(str))
+        {
+            len = RSTRING(str)->len;
+            memcpy( buf + skip, RSTRING(str)->ptr, len );
+            buf[skip + len] = '\0';
+        }
+    }
+    printf( "POS: %d\n", len );
+    printf( "BUFFER: %s\n", buf );
+    len += skip;
+    return len;
+}
 
 SYMID
 rb_syck_mktime(str)
@@ -197,6 +232,21 @@ rb_syck_err_handler(p, msg)
            p->lineptr); 
 }
 
+static VALUE
+rb_run_syck_parse(parser)
+    SyckParser *parser;
+{
+    return syck_parse(parser);
+}
+
+static VALUE
+rb_syck_ensure(parser)
+    SyckParser *parser;
+{
+    syck_free_parser( parser );
+    return 0;
+}
+
 VALUE
 rb_syck_load(argc, argv)
     int argc;
@@ -204,7 +254,6 @@ rb_syck_load(argc, argv)
 {
     VALUE port, proc;
     VALUE v;
-    //OpenFile *fptr;
     SyckParser *parser = syck_new_parser();
 
     rb_scan_args(argc, argv, "11", &port, &proc);
@@ -213,13 +262,23 @@ rb_syck_load(argc, argv)
 	    //StringValue(port);	       /* possible conversion */
 	    syck_parser_str( parser, RSTRING(port)->ptr, RSTRING(port)->len, NULL );
     }
+    else if (rb_respond_to(port, s_read)) {
+        if (rb_respond_to(port, s_binmode)) {
+            rb_funcall2(port, s_binmode, 0, 0);
+        }
+        //arg.taint = Qfalse;
+	    syck_parser_str( parser, (char *)port, 0, rb_syck_io_str_read );
+    }
+    else {
+        rb_raise(rb_eTypeError, "instance of IO needed");
+    }
 
     syck_parser_handler( parser, rb_syck_load_handler );
     syck_parser_error_handler( parser, rb_syck_err_handler );
     syck_parser_implicit_typing( parser, 1 );
     syck_parser_taguri_expansion( parser, 0 );
     v = syck_parse( parser );
-    syck_free_parser( parser );
+    v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
 
     return v;
 }
@@ -269,6 +328,8 @@ Init_syck()
     VALUE rb_syck = rb_define_module_under( rb_yaml, "Syck" );
 
     time_s_mkutc = rb_intern("utc");
+    s_read = rb_intern("read");
+    s_binmode = rb_intern("binmode");
     rb_define_module_function(rb_syck, "load", rb_syck_load, -1);
     rb_define_module_function(rb_syck, "parse", rb_syck_parse, -1);
 

@@ -175,6 +175,10 @@ in_implicit_seq : basic_seq
                     syck_seq_add( $1, $3 );
                     $$ = $1;
 				}
+				| in_implicit_seq INDENT
+				{ 
+                    $$ = $1;
+				}
                 ;
 
 //
@@ -241,6 +245,10 @@ in_implicit_map : complex_mapping
 				| in_implicit_map INDENT complex_mapping
                 { 
                     syck_map_update( $1, $3 );
+                    $$ = $1;
+                }
+				| in_implicit_map INDENT
+                { 
                     $$ = $1;
                 }
                 ;

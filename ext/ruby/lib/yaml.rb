@@ -5,9 +5,6 @@
 #
 #   Loads the parser/loader and emitter/writer.
 #
-require 'pstore'
-require 'parsedate'
-require 'date'
 
 module YAML
 

@@ -39,18 +39,33 @@ syck_strndup( char *buf, long len )
 //
 // Default IO functions
 //
-int
-syck_io_file_read( char *buf, SyckIoFile *file, int max_size, int skip )
+long
+syck_io_file_read( char *buf, SyckIoFile *file, long max_size, long skip )
 {
-    int len = 0;
+    char *beg;
+    long len = 0;
+
+    ASSERT( file != NULL );
+
+    max_size -= skip;
+    len = fread( buf + skip, max_size, sizeof( char ), file->ptr );
+#if REDEBUG
+    printf( "LEN: %d\n", len );
+#endif
+    len += skip;
+    buf[len] = '\0';
+#if REDEBUG
+    printf( "POS: %d\n", len );
+    printf( "BUFFER: %s\n", buf );
+#endif
     return len;
 }
 
-int
-syck_io_str_read( char *buf, SyckIoStr *str, int max_size, int skip )
+long
+syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
 {
     char *beg;
-    int len = 0;
+    long len = 0;
 
     ASSERT( str != NULL );
     beg = str->ptr;
@@ -89,6 +104,15 @@ syck_io_str_read( char *buf, SyckIoStr *str, int max_size, int skip )
     return len;
 }
 
+void
+syck_reset_parser_levels( SyckParser *p )
+{
+    p->lvl_idx = 1;
+    p->levels[0].spaces = -1;
+    p->levels[0].domain = "yaml.org,2002/";
+    p->levels[0].status = syck_lvl_header;
+}
+
 //
 // Allocate the parser
 //
@@ -98,11 +122,7 @@ syck_new_parser()
     SyckParser *p;
     p = S_ALLOC( SyckParser );
     p->lvl_capa = ALLOC_CT;
-    p->lvl_idx = 1;
     p->levels = S_ALLOC_N( SyckLevel, p->lvl_capa ); 
-    p->levels[0].spaces = -1;
-    p->levels[0].domain = "yaml.org,2002/";
-    p->levels[0].status = syck_lvl_header;
     p->io_type = syck_io_str;
     p->io.str = NULL;
     p->syms = NULL;
@@ -117,6 +137,7 @@ syck_new_parser()
     p->linect = 0;
     p->implicit_typing = 1;
     p->taguri_expansion = 0;
+    syck_reset_parser_levels( p );
     return p;
 }
 
@@ -308,88 +329,10 @@ free_any_io( SyckParser *p )
     }
 }
 
-void
-syck_check_limit( SyckParser *p, int len )
-{
-    if ( p->cursor == NULL )
-    {
-        p->cursor = p->buffer;
-        p->lineptr = p->buffer;
-        p->marker = p->buffer;
-    }
-    p->limit = p->buffer + len;
-}
-
-int
-syck_parser_readline( SyckParser *p )
-{
-    int len = 0;
-    int skip = 0;
-    ASSERT( p != NULL );
-    switch ( p->io_type )
-    {
-        case syck_io_str:
-            skip = syck_move_tokens( p );
-            len = (p->io.str->read)( p->buffer, p->io.str, -1, skip );
-            break;
-
-        case syck_io_file:
-            skip = syck_move_tokens( p );
-            len = (p->io.file->read)( p->buffer, p->io.file, -1, skip );
-            break;
-    }
-    syck_check_limit( p, len );
-    return len;
-}
-
-int
-syck_parser_read( SyckParser *p )
-{
-    int len = 0;
-    int skip = 0;
-    ASSERT( p != NULL );
-    switch ( p->io_type )
-    {
-        case syck_io_str:
-            skip = syck_move_tokens( p );
-            len = (p->io.str->read)( p->buffer, p->io.str, SYCK_BUFFERSIZE - 1, skip );
-            break;
-
-        case syck_io_file:
-            skip = syck_move_tokens( p );
-            len = (p->io.file->read)( p->buffer, p->io.file, SYCK_BUFFERSIZE - 1, skip );
-            break;
-    }
-    syck_check_limit( p, len );
-    return len;
-}
-
-int
-syck_parser_readlen( SyckParser *p, int max_size )
-{
-    int len = 0;
-    int skip = 0;
-    ASSERT( p != NULL );
-    switch ( p->io_type )
-    {
-        case syck_io_str:
-            skip = syck_move_tokens( p );
-            len = (p->io.str->read)( p->buffer, p->io.str, max_size, skip );
-            break;
-
-        case syck_io_file:
-            skip = syck_move_tokens( p );
-            len = (p->io.file->read)( p->buffer, p->io.file, max_size, skip );
-            break;
-    }
-    syck_check_limit( p, len );
-    return len;
-}
-
-int
+long
 syck_move_tokens( SyckParser *p )
 {
-    int count, skip;
+    long count, skip;
     ASSERT( p->buffer != NULL );
 
     if ( p->token == NULL )
@@ -416,13 +359,71 @@ syck_move_tokens( SyckParser *p )
     return skip;
 }
 
+void
+syck_check_limit( SyckParser *p, long len )
+{
+    if ( p->cursor == NULL )
+    {
+        p->cursor = p->buffer;
+        p->lineptr = p->buffer;
+        p->marker = p->buffer;
+    }
+    p->limit = p->buffer + len;
+}
+
+long
+syck_parser_read( SyckParser *p )
+{
+    long len = 0;
+    long skip = 0;
+    ASSERT( p != NULL );
+    switch ( p->io_type )
+    {
+        case syck_io_str:
+            skip = syck_move_tokens( p );
+            len = (p->io.str->read)( p->buffer, p->io.str, SYCK_BUFFERSIZE - 1, skip );
+            break;
+
+        case syck_io_file:
+            skip = syck_move_tokens( p );
+            len = (p->io.file->read)( p->buffer, p->io.file, SYCK_BUFFERSIZE - 1, skip );
+            break;
+    }
+    syck_check_limit( p, len );
+    return len;
+}
+
+long
+syck_parser_readlen( SyckParser *p, long max_size )
+{
+    long len = 0;
+    long skip = 0;
+    ASSERT( p != NULL );
+    switch ( p->io_type )
+    {
+        case syck_io_str:
+            skip = syck_move_tokens( p );
+            len = (p->io.str->read)( p->buffer, p->io.str, max_size, skip );
+            break;
+
+        case syck_io_file:
+            skip = syck_move_tokens( p );
+            len = (p->io.file->read)( p->buffer, p->io.file, max_size, skip );
+            break;
+    }
+    syck_check_limit( p, len );
+    return len;
+}
+
 SYMID
 syck_parse( SyckParser *p )
 {
     char *line;
 
     ASSERT( p != NULL );
+
     yyparse( p );
+    syck_reset_parser_levels( p );
     return p->root;
 }
 

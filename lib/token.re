@@ -48,7 +48,7 @@
 
 //
 // Nice little macro to ensure we're IOPENed to the current level.
-// * Only use this macro in the "Document" *
+// * Only use this macro in the "Document" section *
 //
 #define ENSURE_IOPEN(last_lvl, to_len, reset) \
         if ( last_lvl->spaces < to_len ) \
@@ -60,7 +60,7 @@
 
 //
 // Nice little macro to ensure closure of levels.
-// * Only use this macro in the "Document" *
+// * Only use this macro in the "Document" section *
 //
 #define ENSURE_IEND(last_lvl, to_len) \
         if ( last_lvl->spaces > to_len ) \
@@ -85,6 +85,10 @@
             s[i] = '\0'; \
         }
 
+//
+// Tags a plain scalar with a transfer method
+// * Use only in "Plain" section *
+//
 #define RETURN_IMPLICIT() \
     { \
         YYCURSOR = YYTOKTMP; \
@@ -96,6 +100,9 @@
         return PLAIN; \
     }
 
+//
+// Handles newlines, calculates indent
+//
 #define GOBBLE_UP_INDENT( ict, start ) \
     char *indent = start; \
     NEWLINE(indent); \

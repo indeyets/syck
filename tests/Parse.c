@@ -160,6 +160,19 @@ TestSyckParseFold( CuTest *tc )
     syck_free_parser( parser );
 }
 
+void 
+TestSyckParseMultidoc( CuTest *tc )
+{
+    SYMID id;
+    SyckParser *parser;
+    parser = syck_new_parser();
+    syck_parser_handler( parser, SyckParseStringHandler );
+    syck_parser_str_auto( parser, "---\ntest: |\n   deep: 1\n---\nlast: end\n  \n", NULL );
+    syck_parse( parser );
+    syck_parse( parser );
+    syck_free_parser( parser );
+}
+
 CuSuite *
 SyckGetSuite()
 {
@@ -169,6 +182,7 @@ SyckGetSuite()
     SUITE_ADD_TEST( suite, TestSyckParseString2 );
     SUITE_ADD_TEST( suite, TestSyckParseMap );
     SUITE_ADD_TEST( suite, TestSyckParseFold );
+    SUITE_ADD_TEST( suite, TestSyckParseMultidoc );
     return suite;
 }
 
