@@ -24,6 +24,9 @@ TestSyckParseString( CuTest *tc )
     SyckParser *parser;
     parser = syck_new_parser();
     syck_parser_handler( parser, SyckParseStringHandler );
+    syck_parser_str_auto( parser, "test: 1\nand: 2\nor: 3", NULL );
+    syck_parse( parser );
+    free_any_io( parser );
     free( parser );
 }
 

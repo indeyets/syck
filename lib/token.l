@@ -9,11 +9,9 @@
 //
 
 #include "syck.h"
-#include "gram.h"
 %}
 
 %option stack
-%option noyywrap
 
 COLON   :( |$)
 DASH    -( |$)

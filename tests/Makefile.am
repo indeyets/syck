@@ -1,4 +1,4 @@
-TESTS = test-basic
+TESTS = test-basic test-parse
 INCLUDES = -I$(top_srcdir)/lib
 LDFLAGS = -L$(top_srcdir)/lib
 

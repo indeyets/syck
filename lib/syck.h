@@ -10,6 +10,8 @@
 #ifndef SYCK_H
 #define SYCK_H
 
+#include <stdio.h>
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -54,6 +56,8 @@ extern "C" {
 #define SYMID unsigned long
 
 typedef struct _syck_parser SyckParser;
+typedef struct _syck_file SyckFile;
+typedef struct _syck_str SyckStr;
 
 enum syck_kind_tag {
     syck_map_kind,
@@ -90,27 +94,47 @@ struct SyckNode {
     } data;
 };
 
+//
+// Parser definitions
+//
 typedef SYMID (*SyckNodeHandler)(struct SyckNode *);
+typedef char *(*SyckFileRead)(SyckFile *); 
+typedef char *(*SyckStrRead)(SyckStr *);
 
-struct _syck_parser {
-    SyckNodeHandler handler;
+enum syck_io_type {
+    syck_io_str,
+    syck_io_file
 };
 
-//
-// Parser definition
-//
-//struct SyckParser {
-//    FILE *fp;
-//    char *ptr, *end;
-//    void (*hdlr) (struct SyckNode*);
-//};
+struct _syck_parser {
+    // Scripting language function to handle nodes
+    SyckNodeHandler handler;
+    // IO type
+    enum syck_io_type io_type;
+    union {
+        struct _syck_file {
+            FILE *ptr;
+            SyckFileRead read;
+        } *file;
+        struct _syck_str {
+            char *ptr, *end;
+            SyckStrRead read;
+        } *str;
+    } io;
+};
 
 //
 // API prototypes
 //
+char *syck_io_file_read( SyckFile * );
+char *syck_io_str_read( SyckStr * );
 SyckParser *syck_new_parser();
-void syck_parser_handler( SyckParser *p, SyckNodeHandler hdlr );
-SYMID syck_parse( SyckParser *p, char *doc );
+void syck_parser_handler( SyckParser *, SyckNodeHandler );
+void syck_parser_file( SyckParser *, FILE *, SyckFileRead );
+void syck_parser_str( SyckParser *, char *, long, SyckStrRead );
+void syck_parser_str_auto( SyckParser *, char *, SyckStrRead );
+void free_any_io( SyckParser * );
+SYMID syck_parse( SyckParser * );
 
 //
 // Allocation prototypes
