@@ -368,12 +368,21 @@ py_syck_load_handler(p, n)
     return oid;
 }
 
+void
+py_syck_error_handler( SyckParser *p, char *msg )
+{
+   PyErr_Format(PyExc_TypeError, "Error at [Line %d, Col %d]: %s\n",
+        p->linect,
+        p->cursor - p->lineptr,
+        msg );
+}
+
 static PyObject *
 py_syck_load( self, args )
     PyObject *self;
     PyObject *args;
 {
-    PyObject *obj;
+    PyObject *obj = NULL;
     SYMID v;
     char *yamlstr;
     SyckParser *parser = syck_new_parser();
@@ -383,15 +392,19 @@ py_syck_load( self, args )
 
     syck_parser_str_auto( parser, yamlstr, NULL );
     syck_parser_handler( parser, py_syck_load_handler );
-    syck_parser_error_handler( parser, NULL );
+    syck_parser_error_handler( parser, py_syck_error_handler);
     syck_parser_implicit_typing( parser, 1 );
     syck_parser_taguri_expansion( parser, 0 );
 
     v = syck_parse( parser );
-    syck_lookup_sym( parser, v, (char **)&obj );
-
+    if(v)
+         syck_lookup_sym( parser, v, (char **)&obj );
+    else
+        if(!PyErr_Occurred()) {
+            Py_INCREF(Py_None);
+            obj = Py_None;
+        }
     syck_free_parser( parser );
-
     return obj;
 }
 
@@ -445,7 +458,7 @@ py_syck_parse( self, args )
     PyObject *self;
     PyObject *args;
 {
-    PyObject *obj;
+    PyObject *obj = NULL;
     SYMID v;
     char *yamlstr;
     SyckParser *parser = syck_new_parser();
@@ -455,12 +468,18 @@ py_syck_parse( self, args )
 
     syck_parser_str_auto( parser, yamlstr, NULL );
     syck_parser_handler( parser, py_syck_parse_handler );
-    syck_parser_error_handler( parser, NULL );
+    syck_parser_error_handler( parser, py_syck_error_handler);
     syck_parser_implicit_typing( parser, 1 );
     syck_parser_taguri_expansion( parser, 1 );
 
     v = syck_parse( parser );
-    syck_lookup_sym( parser, v, (char **)&obj );
+    if(v)
+         syck_lookup_sym( parser, v, (char **)&obj );
+    else
+        if(!PyErr_Occurred()) {
+            Py_INCREF(Py_None);
+            obj = Py_None;
+        }
     syck_free_parser( parser );
     return obj;
 }
