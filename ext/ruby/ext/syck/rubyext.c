@@ -44,10 +44,10 @@ typedef struct RVALUE {
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_anchors;
+static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_anchors, s_default_set;
 static VALUE sym_model, sym_generic;
 static VALUE sym_scalar, sym_seq, sym_map;
-VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, cMergeKey, cEmitter;
+VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
 VALUE oDefaultLoader;
 
 /*
@@ -465,6 +465,10 @@ yaml_org_handler( n, ref )
 			{
 				obj = rb_funcall( cMergeKey, s_new, 0 );
 			}
+			else if ( strncmp( type_id, "default", 7 ) == 0 )
+			{
+				obj = rb_funcall( cDefaultKey, s_new, 0 );
+			}
             else
             {
                 transferred = 0;
@@ -490,7 +494,7 @@ yaml_org_handler( n, ref )
             {
 				VALUE k = syck_map_read( n, map_key, i );
 				VALUE v = syck_map_read( n, map_value, i );
-				int merge_key = 0;
+				int skip_aset = 0;
 
 				/*
 				 * Handle merge keys
@@ -502,7 +506,7 @@ yaml_org_handler( n, ref )
 						VALUE dup = rb_funcall( v, s_dup, 0 );
 						rb_funcall( dup, s_update, 1, obj );
 						obj = dup;
-						merge_key = 1;
+						skip_aset = 1;
 					}
 					else if ( rb_obj_is_kind_of( v, rb_cArray ) )
 					{
@@ -514,12 +518,17 @@ yaml_org_handler( n, ref )
 							rb_ary_push( v, obj );
 							rb_iterate( rb_each, v, syck_merge_i, dup );
 							obj = dup;
-							merge_key = 1;
+							skip_aset = 1;
 						}
 					}
 				}
+                else if ( rb_obj_is_kind_of( k, cDefaultKey ) )
+                {
+                    rb_funcall( obj, s_default_set, 1, v );
+                    skip_aset = 1;
+                }
 
-				if ( ! merge_key )
+				if ( ! skip_aset )
 				{
 					rb_hash_aset( obj, k, v );
 				}
@@ -1282,6 +1291,7 @@ Init_syck()
     s_call = rb_intern("call");
 	s_update = rb_intern("update");
 	s_dup = rb_intern("dup");
+    s_default_set = rb_intern("default=");
 	s_match = rb_intern("match");
 	s_keys = rb_intern("keys");
 	s_to_str = rb_intern("to_str");
@@ -1367,6 +1377,11 @@ Init_syck()
 	 * Define YAML::Syck::MergeKey class
 	 */
 	cMergeKey = rb_define_class_under( rb_syck, "MergeKey", rb_cObject );
+
+	/*
+	 * Define YAML::Syck::DefaultKey class
+	 */
+	cDefaultKey = rb_define_class_under( rb_syck, "DefaultKey", rb_cObject );
 
     /*
      * Define YAML::Syck::Emitter class

@@ -1729,9 +1729,9 @@ yaml: |
 ruby: | 
    y = Stream.new 
    y.add( { 'link with' => [ 'library1.dll', 'library2.dll' ] } ) 
-   obj_h = YAML::SpecialHash[ 'version' => 1.2 ] 
+   obj_h = Hash[ 'version' => 1.2 ] 
    obj_h.default = 'library1.dll' 
-   obj_h2 = YAML::SpecialHash[ 'version' => 2.3 ] 
+   obj_h2 = Hash[ 'version' => 2.3 ] 
    obj_h2.default = 'library2.dll' 
    y.add( { 'link with' => [ obj_h, obj_h2 ] } ) 
 documents: 2 
@@ -1749,3 +1749,8 @@ yaml: |
     = : value 
    # The proper way to serialize the above node is as follows: 
    node : !!type &12 value 
+ruby: |
+   { '!' => 'These three keys', '&' => 'had to be quoted',
+     '=' => 'and are normal strings.',
+     'encoded node' => PrivateType.new( 'type', 'value' ),
+     'node' => PrivateType.new( 'type', 'value' ) }
