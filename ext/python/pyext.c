@@ -181,7 +181,7 @@ py_syck_node_repr( SyckNode *self )
 }
 
 static PyTypeObject SyckNodeType = {
-    PyObject_HEAD_INIT(&PyType_Type)
+    PyObject_HEAD_INIT(NULL)
     0,
     "Node",
     sizeof(SyckNode),
@@ -497,6 +497,7 @@ void
 initsyck(void)
 {
     PyObject *syck;
+    SyckNodeType.ob_type = &PyType_Type;
     syck = Py_InitModule( "syck", SyckMethods );
 }
 
