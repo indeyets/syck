@@ -1,0 +1,484 @@
+#
+# Reflects Oren's comments, adds yamlbyte.h at the bottom
+#
+subject: Revision #4 of YAML Bytecodes
+summary: >
+    This proposal defines a 'preparsed' format where a YAML syntax
+    is converted into a series of events, as bytecodes.   Each bytecode
+    appears on its own line, starting with a single character and ending
+    with a line feed character, '\n'.
+codes:
+  #
+  # Primary Bytecodes  (Capital Letters)
+  #
+  # These bytecodes form the minimum needed to represent YAML information
+  # from the serial model (ie, without format and comments)
+  #
+    'D':
+        name: Document
+        desc: >
+          Indicates that a document has begun, either it is
+          the beginning of a YAML stream, or a --- has been
+          found.   Thus, an empty document is expressed
+          as "D\n"
+    'V':
+        name: Directive
+        desc: >
+          This represents any YAML directives immediately following
+          a 'D' bytecode.  For example '--- %YAML:1.0' produces the
+          bytecode "D\nVYAML:1.0\n".
+    'P':
+        name: Pause Stream
+        desc: >
+          This is the instruction when a document is terminated, but
+          another document has not yet begun.  Thus, it is optional,
+          and typically used to pause parsing.  For example, 
+          a stream starting with an empty document, but then in a
+          hold state for the next document would be: "D\nP\n"
+    '\z':
+        name: Finish (end stream)
+        desc: >
+          YAML bytecodes are meant to be passable as a single "C"
+          string, and thus the null terminator can optionally be
+          used to signal the end of a stream.  When writing bytecodes
+          out to a flat file, the file need not contain a null
+          terminator; however, when read into memory it should
+          always have a null terminator.
+    'M':
+        name: Mapping
+        desc: >
+          Indicates the begin of a mapping, children of the 
+          mapping are provided as a series of K1,V1,K2,V2 
+          pairs as they are found in the input stream.  For 
+          example, the bytecodes for "{ a: b, c: d }" would 
+          be "M\nSa\nSb\nSc\nSd\nE\n" 
+    'Q': 
+        name: Sequence
+        desc: >
+          Indicates the begin of a sequence, children are provided
+          following till a '.' bytecode is encountered.  So, the
+          bytecodes for "[ one, two ]" would be "Q\nSone\nStwo\nE\n"
+    'E': 
+        name: End Collection
+        desc: >
+          This closes the outermost Collection (Mapping, Sequence),
+          note that the document has one and only one node following
+          it, therefore it is not a branch.
+    'S':
+        name: Scalar
+        desc: >
+          This indicates the start of a scalar value, which can
+          be continued by the 'N' and 'C' bytecodes.   This bytecode
+          is used for sequence entries, keys, values, etc.
+    'C': 
+        name: Scalar Continuation
+        desc: >
+          Since a scalar may not fit within a buffer, and since it 
+          may not contain a \n character, it may have to be broken
+          into several chunks.
+    'N':
+        name: Normalized New Line (in a scalar value)
+        desc: >
+          Scalar values must be chunked so that new lines and
+          null values do not occur within a 'S' or 'C' bytecode
+          (in the bytecodes, all other C0 need not be escaped).
+          This bytecode is then used to represent one or more
+          newlines, with the number of newlines optionally 
+          following.   For example,
+          "Hello\nWorld" would be "SHello\nN\nCWorld\n", and
+          "Hello\n\n\nWorld" is "SHello\nN3\nCWorld\n"          
+
+          If the new line is an LS or a PS, the N bytecode can
+          be followed with a L or P.   Thus, "Hello\PWorld\L" is
+          reported "SHello\nNP\nWorld\NL\n"
+
+    'Z':
+        name: Null Character (in a scalar value)
+        desc: >
+          As in normalized new lines above, since the null character
+          cannot be used in the bytecodes, is must be escaped, ie,
+          "Hello\zWorld" would be "SHello\nZ\nCWorld\n".  
+    'A':
+        name: Alias
+        desc: >
+          This is used when ever there is an alias node, for 
+          example, "[ &X one, *X ]" would be normalized
+          to "S\nAX\nSone\nRX\nE\n" -- in this example, the 
+          anchor bytecode applies to the very next content 
+          bytecode.
+    'R': 
+        name: Reference (Anchor)
+        desc: >
+          This bytecode associates an anchor with the very next
+          content node, see the 'A' alias bytecode.
+    'T':
+        name: Transfer
+        desc: >
+          This is the transfer method.  If the value begins with
+          a '!', then it is not normalized.  Otherwise, the value
+          is a fully qualified URL, with a semicolon.  The transfer
+          method applies only to the node immediately following, 
+          and thus it can be seen as a modifier like the anchor.
+          For example, "Ttaguri:yaml.org,2002:str\nSstring\n" is 
+          normalized, "T!str\nSstring\n" is not. 
+  #
+  # Formatting bytecodes (lower case)
+  #
+  # The following bytecodes are purely at the syntax level and
+  # useful for pretty printers and emitters.  Since the range of
+  # lower case letters is contiguous, it could be easy for a 
+  # processor to simply ignore all bytecodes in this range.
+  #
+    'c': 
+        name: Comment
+        desc: >
+          This is a single line comment.  It is terminated like all
+          of the other variable length items, with a '\n'.
+    'i':
+        name: Indent
+        desc: >
+          Specifies number of additional spaces to indent for
+          subsequent block style nodes, "i4\n" specifies 4 char indent.
+    's':
+        name: Scalar styling
+        desc: >
+          This bytecode, is followed with one of the following
+          items to indicate the style to be used for the very 
+          next content node.  It is an error to specify a style for 
+          a scalar other than double quoted when it must be escaped.  
+          Furthermore, there must be agreement between the style
+          and the very next content node, in other words, a scalar
+          style requires that the next content node be an S.
+
+          > flow scalar
+          " double quoted scalar
+          ' single quoted scalar
+          | literal scalar
+          p plain scalar
+          { inline mapping
+          [ inline sequence
+          b block style (for mappings and sequences'")
+
+   #
+   # Advanced bytecodes (not alphabetic)
+   #
+   # These are optional goodies which one could find useful.
+   #
+    '#': 
+        name: Line Number
+        desc: >
+          This bytecode allows the line number of the very next
+          node to be reported.   
+    '!':
+        name: Notice
+        desc: >
+          This is a message sent from the producer to the consumer
+          regarding the state of the stream or document.  It does
+          not necessarly end a stream, as the 'finish' bytecode can
+          be used for this purpose.  This signal has a packed format,
+          with the error number, a comma, and a textual message:
+              "#22\n!73,Indentation mismatch\n"
+              "#132\n!84,Tabs are illegal for indentation\n"
+    ',':
+        name: Span
+        desc: >
+          This bytecode gives the span of the very next 'S', 'M', 
+          or 'Q' bytecode -- including its subordinates.  For scalars,
+          it includes the span of all subordinate 'N' and 'C' codes.
+          For mappings or sequences, this gives the length all the
+          way to the corresponding 'E' bytecode so that the entire 
+          branch can be skipped.   The length is given starting at
+          the corresponding 'S', 'M' or 'Q' bytecode and extends
+          to the first character following subordinate nodes.
+          
+          Since this length instruction is meant to be used to 'speed'
+          things up, and since calculating the length via hand is not
+          really ideal, the length is expressed in Hex.  This will allow
+          programs to easily convert the length to an actual value
+          (converting from hex to integers is easier than decimal).
+          Furthermore, all leading x's are ignored (so that they can
+          be filled in later) and if the bytecode value is all x's, 
+          then the length is unknown.  Lastly, this length is expressed
+          in 8 bit units for UTF-8, and 16 bit units for UTF-16. 
+
+          For example,
+             --- [[one, two], three]
+          Is expressed as,
+             "?25\nD\n?x1E\nQ\n?xxE\nQ\nSone\nStwo\nE\nSthree\nE\n"
+
+          Thus it is seen that the address of D plus 37 is the null 
+          terminator for the string, the first 'Q' plus 30 also
+          gives the null teriminator, and the second 'Q' plus
+          14 jumps to the opening 'S' for the third scalar.
+    '@':
+        name: Allocate
+        desc: >
+          This is a hint telling the processor how many items
+          are in the following collection (mapping pairs, or
+          sequence values), or how many character units need
+          to be allocated to hold the next value.  Clearly this
+          is encoding specific value.   The length which 
+          follows is in hex (not decimal).
+
+          For example, "one", could be  "@x3\nSone"
+
+design:
+  - 
+    name: streaming support
+    problem: >
+      The interface should ideally allow for a YAML document to be
+      moved incrementally as a stream through a process.   In particular,
+      YAML is inheritently line oriented, thus the interface should
+      probably reflect this fundamental character.
+    solution: >
+      The bytecodes deliver scalars as chunks, each chunk limited to
+      at most one line.   While this is not ideal for passing large
+      binary objects, it is simple and easy to understand.
+  -  
+    name: push
+    problem: >
+      The most common 'parsers' out there for YAML are push style, where
+      the producer owns the 'C' program stack, and the consumer keeps 
+      its state as a heap object.  Ideal use of a push interface is an
+      emitter, since this allows the sender (the application program)
+      to use the program stack and thus keep its state on the call stack
+      in local, automatic variables.
+    solution: >
+      A push interface simply can call a single event handler with a 
+      (bytecode, payload) tuple.  Since the core complexity is in the 
+      bytecodes, the actual function signature is straight-forward 
+      allowing for relative language independence.  Since the bytecode
+      is always one character, the event handler could just receive
+      a string where the tuple is implicit.
+  - 
+    name: pull
+    problem: >
+      The other alternative for a streaming interface is a 'pull' mechanism,
+      or iterator model where the consumer owns the C stack and the producer
+      keeps any state needed as a heap object.  Ideal use of a pull
+      interface is a parser, since this allows the receiver (the application
+      program) to use the program stack, keeping its state on the call stack
+      in local variables.
+    solution: >
+      A pull interface would also be a simple function, that when called
+      filles a buffer with binary node(s).   Or, in a language with 
+      garbage collection, could be implemented as an iterator returning
+      a string containing the bytecode line (bytecode followed immediately
+      by the bytecode argument as a single string) or as a tuple.
+  - 
+    name: pull2push
+    problem: >
+      This is done easily via a small loop which pulls from the 
+      iterator and pushes to the event handler.
+    solution: >
+      For python, assuming the parser is implemented as an iterator
+      where one can 'pull' bytecode, args tuples, and assuming the
+      emitter has a event callback taking a bytecode, args tuple, 
+      we have:
+
+        def push2pull(parser, emitter): 
+           for (bytecode, args) in parser:
+               emitter.push(bytecode, args)
+
+  - 
+    name: push2pull
+    problem: >
+      This requires the entire YAML stream be cashed in memory, or
+      each of the two stages in a thread or different continuation
+      with shared memory or pipe between them.
+    solution: >
+      This use case seems much easier with a binary stream; that is,
+      one need not convert the style of functions between the push
+      vs pull pattern.   And, for languages supporting continuations,
+      (ruby) perhaps push vs pull is not even an issue...   for a
+      language like python, one would use the threaded Queue object,
+      one thread pushes (bytecode, args) tuples into the Queue, while
+      the other thread pulls the tuples out.  Simple.
+  -
+    name: neutrality
+    problem: >
+      It would be ideal of the C Program interface was simple enough
+      to be independent of programming language.   In an ideal case,
+      imagine a flow of YAML structured data through various processing
+      stages on a server; where each processing stage is written in
+      a different programming language.
+    solution: >
+      While it may be hard for each language to write a syntax parser
+      filled with all of the little details, it would be much much
+      easier to write a parser for these bytecodes; as it involves
+      simple string handling, dispatching on the first character in
+      each string.  
+  - 
+    name: tools
+    problem: > 
+      A goal of mine is to have a YPATH expression language, a schema
+      language, and a transformation language.   I would like these items
+      to be reusable by a great number of platforms/languages, and in
+      particular as its own callable processing stage.
+    solution: >
+      If such an expression language was written on top of a bytecode
+      format like this, via a simple pull function (/w adapters for
+      push2pull and pull2push) quite a bit of reusability could emerge.
+      Imagine a schema validator which is injected into the bytecode stream
+      and it is an identity operation unless an exception occurs, in 
+      which case, it terminates the document and makes the next document
+      be a description of the validation error.
+  - 
+    name: encoding
+    problem: >
+      Text within the bytecode format must be given an encoding.  There are
+      several considerations at hand listed below.
+    solution: >
+      The YAML bytecode format uses the same encodings as YAML itself,
+      and thus is independent of actual encoding.  A parser library should
+      have several functions to convert between the encodings. 
+examples:
+  - 
+    yaml: |
+      ---
+      - plain
+      - >
+        this is a flow scalar
+      - > 
+        another flow scalar which is continued
+        on a second line and indented 2 spaces
+      - &001 !str |
+        This is a block scalar, both typed
+        and anchored
+      - *001 # this was an alias
+      - "This is a \"double quoted\" scalar"
+    bytecode: |
+      D
+      Q
+      Splain
+      f
+      Sthis is a flow scalar
+      Sanother flow scalar which is continued
+      Con a second line and indented 2 spaces
+      b
+      a001
+      t!str
+      SThis is a block scalar, both typed
+      N
+      Cand anchored
+      R001
+      cthis was an alias
+      d
+      SThis is a "double quoted" scalar
+      E
+cheader: |
+    /*  yamlbyte.h
+     *
+     *  The YAML bytecode "C" interface header file.   See the YAML bytecode
+     *  reference for bytecode sequence rules and for the meaning of each
+     *  bytecode.
+     */
+    
+    #ifndef YAMLBYTE_H
+    #define YAMLBYTE_H
+    #include <stddef.h>
+    /* list out the various YAML bytecodes */
+    typedef enum {
+        /* content bytecodes */
+        YAML_FINISH    = 0,
+        YAML_DOCUMENT  = 'D',
+        YAML_DIRECTIVE = 'V',
+        YAML_PAUSE     = 'P',
+        YAML_MAPPING   = 'M',
+        YAML_SEQUENCE  = 'S',
+        YAML_ENDMAPSEQ = 'E',
+        YAML_SCALAR    = 'S',
+        YAML_CONTINUE  = 'C',
+        YAML_NEWLINE   = 'N',
+        YAML_NULLCHAR  = 'Z',
+        YAML_ALIAS     = 'A',
+        YAML_ANCHOR    = 'R',
+        YAML_TRANSFER  = 'T',
+        /* formatting bytecodes */
+        YAML_COMMENT = 'c',
+        YAML_INDENT  = 'i',
+        YAML_STYLE   = 's',
+        /* other bytecodes */
+        YAML_LINENUMBER = '#',
+        YAML_NOTICE = '!',
+        YAML_SPAN   = ',',
+        YAML_ALLOC  = '@'
+    } yaml_code_t;
+    
+    /* additional modifiers for the YAML_STYLE bytecode */
+    typedef enum {
+       YAML_FLOW = '>',
+       YAML_LITERAL = '|',
+       YAML_BLOCK = 'b',
+       YAML_PLAIN = 'p',
+       YAML_INLINE_MAPPING = '{',
+       YAML_INLINE_SEQUENCE = '}',
+       YAML_SINGLE_QUOTED = 39,
+       YAML_DOUBLE_QUOTED = '"'
+    } yaml_style_t;
+    
+    typedef unsigned char yaml_utf8_t;
+    typedef unsigned short yaml_utf16_t;
+    #ifdef YAML_UTF8
+      #ifdef YAML_UTF16
+        #error Must only define YAML_UTF8 or YAML_UTF16
+      #endif
+      typedef yaml_utf8_t yaml_char_t;
+    #else
+      #ifdef YAML_UTF16
+        typedef yaml_utf16_t yaml_char_t;
+      #else
+        #error Must define YAML_UTF8 or YAML_UTF16
+      #endif
+    #endif
+    
+    /* return value for push function, tell parser if you want to stop */
+    typedef enum {  
+        YAML_MORE = 1, /* producer should continue to fire events */
+        YAML_STOP = 0  /* producer should stop firing events      */
+    } yaml_more_t;
+    
+    /* push bytecodes from a producer to a consumer
+     * where arg is null terminated /w a length */
+    typedef void * yaml_consumer_t;
+    typedef 
+      yaml_more_t
+       (*yaml_push_t)(
+         yaml_consumer_t self,
+         yaml_code_t code,
+         const yaml_char_t *arg,
+         size_t arglen
+       );
+    
+    /* pull bytecodes by the producer from the consumer, where 
+     * producer must null terminate buff and return the number
+     * of sizeof(yaml_char_t) bytes used */
+    typedef void * yaml_producer_t;
+    typedef 
+      size_t  
+        (*yaml_pull_t)(
+          yaml_producer_t self,
+          yaml_code_t *code, 
+          yaml_char_t *buff,     /* at least 1K buffer */
+          size_t buffsize
+        );  /* returns number of bytes used in the buffer */
+    
+    /* canonical helper to show how to hook up a parser (as a push
+     * producer) to an emitter (as a push consumer)  */
+    #define YAML_PULL2PUSH(pull, producer, push, consumer)      \
+      do {                                                      \
+          yaml_code_t code = YAML_NOTICE;                       \
+          yaml_more_t more = YAML_CONTINUE;                     \
+          yaml_char_t buff[1024];                               \
+          size_t      size = 0;                                 \
+          memset(buff, 0, 1024 * sizeof(yaml_char_t));          \
+          while( code && more) {                                \
+              size = (pull)((producer),&code, buff, 1024);      \
+              assert(size < 1024 && !buff[size]);               \
+              more = (push)((consumer),code, buff, size);       \
+          }                                                     \
+          buff[0] = 0;                                          \
+          (push)((consumer),YAML_FINISH, buff, 0);              \
+      } while(1)
+    
+    #endif
