@@ -206,7 +206,6 @@ int syck_add_sym( SyckParser *, char * );
 int syck_lookup_sym( SyckParser *, SYMID, char ** );
 int syck_try_implicit( SyckNode * );
 char *syck_type_id_to_uri( char * );
-void syck_fold_format( struct SyckStr *, int, int, int );
 void try_tag_implicit( SyckNode *, int );
 char *syck_match_implicit( char *, size_t );
 

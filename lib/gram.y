@@ -31,7 +31,7 @@
 %token              DOCSEP IOPEN INDENT IEND
 
 %type <nodeId>      doc basic_seq
-%type <nodeData>    atom word_rep struct_rep atom_or_empty
+%type <nodeData>    atom word_rep ind_rep struct_rep atom_or_empty
 %type <nodeData>    implicit_seq inline_seq implicit_map inline_map
 %type <nodeData>    in_implicit_seq in_inline_seq basic_mapping basic_mapping2
 %type <nodeData>    in_implicit_map in_inline_map complex_mapping
@@ -56,8 +56,11 @@ doc     : struct_rep
         ;
 
 atom	: word_rep
-        | struct_rep
-        | ANCHOR atom								
+        | ind_rep
+        ;
+
+ind_rep : struct_rep
+        | ANCHOR ind_rep
         { 
            /*
             * _Anchors_: The language binding must keep a separate symbol table
@@ -66,15 +69,11 @@ atom	: word_rep
             */
            $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $2 );
         }
-		| ALIAS										
+        | indent_open word_rep indent_flex_end
         {
-           /*
-            * _Aliases_: The anchor symbol table is scanned for the anchor name.
-            * The anchor's ID in the language's symbol table is returned.
-            */
-           $$ = syck_hdlr_add_alias( (SyckParser *)parser, $1 );
+           $$ = $2;
         }
-        | indent_open atom indent_flex_end
+        | indent_open ind_rep indent_flex_end
         {
            $$ = $2;
         }
@@ -130,6 +129,18 @@ word_rep	: TRANSFER word_rep
                   try_tag_implicit( $2, ((SyckParser *)parser)->taguri_expansion );
                }
                $$ = $2;
+            }
+            | ANCHOR word_rep
+            { 
+               $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $2 );
+            }
+            | ALIAS										
+            {
+               /*
+                * _Aliases_: The anchor symbol table is scanned for the anchor name.
+                * The anchor's ID in the language's symbol table is returned.
+                */
+               $$ = syck_hdlr_add_alias( (SyckParser *)parser, $1 );
             }
 			| WORD
             { 

@@ -381,7 +381,7 @@ alias : *A001
 
     def testSpecBuiltinSeq(self):
         self.parseOnly(
-			 {'nested': ['First item in top sequence', ['Subordinate sequence entry'], 'A multi-line sequence entry \n', 'Sixth item in top sequence'], 'empty': [], 'in-line': ['one', 'two', 'three', 'four', 'five']}, """
+			 {'nested': ['First item in top sequence', ['Subordinate sequence entry'], 'A multi-line sequence entry\n', 'Sixth item in top sequence'], 'empty': [], 'in-line': ['one', 'two', 'three', 'four', 'five']}, """
 empty: []
 in-line: [ one, two, three # May span lines,
          , four,           # indentation is
@@ -409,7 +409,7 @@ nested:
 					{ 'A key': 'value pair in a sequence.', 'A second': 'key:value pair.' } ],
 				  12.0: 'This key is a float.', "?\n": 'This key had to be protected.',
 				  "\a": 'This key had to be escaped.',
-				  "This is a multi-line folded key \n": "Whose value is also multi-line.\n" } }, """
+				  "This is a multi-line folded key\n": "Whose value is also multi-line.\n" } }, """
 empty: {}
 in-line: { one: 1, two: 2 }
 spanning: { one: 1,

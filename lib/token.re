@@ -97,23 +97,64 @@
             s[i] = '\0'; \
         }
 
+#define QUOTECATS(s, c, i, cs, cl) \
+        { \
+            while ( i + cl >= c ) \
+            { \
+                c += QUOTELEN; \
+                S_REALLOC_N( s, char, c ); \
+            } \
+            S_MEMCPY( s + i, cs, char, cl ); \
+            i += cl; \
+            s[i] = '\0'; \
+        }
+
 /*
  * Tags a plain scalar with a transfer method
  * * Use only in "Plain" section *
  */
-#define RETURN_IMPLICIT(fold) \
+#define RETURN_IMPLICIT() \
     { \
         SyckLevel *i_lvl = CURRENT_LEVEL(); \
+        SyckNode *n = syck_alloc_str(); \
         YYCURSOR = YYTOKTMP; \
-        yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN ); \
-        if ( fold ) { \
-            syck_fold_format( yylval->nodeData->data.str, BLOCK_PLAIN, i_lvl->spaces, NL_CHOMP ); \
-        } \
+        n->data.str->ptr = qstr; \
+        n->data.str->len = qidx; \
+        yylval->nodeData = n; \
         if ( parser->implicit_typing == 1 ) \
         { \
             try_tag_implicit( yylval->nodeData, parser->taguri_expansion ); \
         } \
         return PLAIN; \
+    }
+
+/*
+ * Keep or chomp block?
+ * * Use only in "ScalarBlock" section *
+ */
+#define RETURN_BLOCK() \
+    { \
+        SyckNode *n = syck_alloc_str(); \
+        n->data.str->ptr = qstr; \
+        n->data.str->len = qidx; \
+        if ( qidx > 0 ) \
+        { \
+            if ( nlDoWhat != NL_KEEP ) \
+            { \
+                char *fc = n->data.str->ptr + n->data.str->len - 1; \
+                while ( *fc == '\n' ) fc--; \
+                if ( nlDoWhat != NL_CHOMP ) \
+                    fc += 1; \
+                n->data.str->len = fc - n->data.str->ptr + 1; \
+            } \
+            else \
+            { \
+                n->data.str->ptr[n->data.str->len] = '\n'; \
+                n->data.str->len++; \
+            } \
+        } \
+        yylval->nodeData = n; \
+        return BLOCK; \
     }
 
 /*
@@ -190,7 +231,7 @@ yylex( YYSTYPE *yylval, SyckParser *parser )
 
 /*!re2c
 
-WORDC = [A-Za-z0-9_-\.] ;
+WORDC = [A-Za-z0-9_-] ;
 LF = [\n]+ ;
 ENDSPC = ( [ ]+ | LF );
 INDENT = LF [ \n]* ;
@@ -293,19 +334,25 @@ CDELIMS             {   POP_LEVEL();
 
 [-?] ENDSPC         {   ENSURE_IOPEN(lvl, YYTOKEN - YYLINEPTR, 1);
                         FORCE_NEXT_TOKEN(IOPEN);
-                        if ( *( YYCURSOR - 1 ) == '\n' )
+                        if ( *YYCURSOR == '\n' || *( YYCURSOR - 1 ) == '\n' )
                         {
                             YYCURSOR--; 
+                            ADD_LEVEL((YYTOKEN + 1) - YYLINEPTR, syck_lvl_doc);
                         }
-                        ADD_LEVEL(YYCURSOR - YYLINEPTR, syck_lvl_doc);
+                        else
+                        {
+                            ADD_LEVEL(YYCURSOR - YYLINEPTR, syck_lvl_doc);
+                        }
                         return YYTOKEN[0]; 
                     }
 
-"&" WORDC+          {   yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
+"&" WORDC+          {   ENSURE_IOPEN(lvl, 0, 1);
+                        yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
                         return ANCHOR;
                     }
 
-"*" WORDC+          {   yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
+"*" WORDC+          {   ENSURE_IOPEN(lvl, 0, 1);
+                        yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
                         return ALIAS;
                     }
 
@@ -361,9 +408,12 @@ ANY                 {   YYCURSOR = YYTOKTMP;
 
 Plain:
     {
+        int qidx = 0;
+        int qcapa = 100;
+        char *qstr = S_ALLOC_N( char, qcapa );
         SyckLevel *plvl;
         int parentIndent;
-        int multiLine = 0;
+
         YYCURSOR = YYTOKEN;
         plvl = CURRENT_LEVEL();
         GET_TRUE_INDENT(parentIndent);
@@ -375,7 +425,7 @@ Plain3:
 
 /*!re2c
 
-INDENT              {   int indt_len;
+INDENT              {   int indt_len, nl_count = 0;
                         SyckLevel *lvl;
                         char *tok = YYTOKTMP;
                         GOBBLE_UP_INDENT( indt_len, tok );
@@ -383,28 +433,52 @@ INDENT              {   int indt_len;
 
                         if ( indt_len <= parentIndent )
                         {
-                            RETURN_IMPLICIT(multiLine);
+                            RETURN_IMPLICIT();
                         }
 
-                        multiLine = 1;
+                        while ( YYTOKTMP < YYCURSOR )
+                        {
+                            if ( *YYTOKTMP++ == '\n' )
+                                nl_count++;
+                        }
+                        if ( nl_count <= 1 )
+                        {
+                            QUOTECAT(qstr, qcapa, qidx, ' ');
+                        }
+                        else
+                        {
+                            int i;
+                            for ( i = 0; i < nl_count - 1; i++ )
+                            {
+                                QUOTECAT(qstr, qcapa, qidx, '\n');
+                            }
+                        }
+
                         goto Plain2; 
                     }
 
-ALLX                {   RETURN_IMPLICIT(multiLine); }
+ALLX                {   RETURN_IMPLICIT(); }
 
-INLINEX             {   if ( plvl->status != syck_lvl_inline ) goto Plain2;
-                        RETURN_IMPLICIT(multiLine);
+INLINEX             {   if ( plvl->status != syck_lvl_inline )
+                        {
+                            YYCURSOR--;
+                            QUOTECATS(qstr, qcapa, qidx, YYTOKTMP, YYCURSOR - YYTOKTMP);
+                            goto Plain2;
+                        }
+                        RETURN_IMPLICIT();
                     }
-
-NULL                {   RETURN_IMPLICIT(multiLine); }
 
 " #"                {   eat_comments( parser ); 
-                        RETURN_IMPLICIT(multiLine);
+                        RETURN_IMPLICIT();
                     }
+
+NULL                {   RETURN_IMPLICIT(); }
 
 [ ]                 {   goto Plain3; }
 
-ANY                 {   goto Plain2; }
+ANY                 {   QUOTECATS(qstr, qcapa, qidx, YYTOKTMP, YYCURSOR - YYTOKTMP);
+                        goto Plain2;
+                    }
 
 */
     }
@@ -536,7 +610,7 @@ INDENT              {   int indt_len;
                         goto DoubleQuote2; 
                     }
 
-"\\" ["\\abefnrtv]   {   char ch = *( YYCURSOR - 1 );
+"\\" ["\\abefnrtv]   {  char ch = *( YYCURSOR - 1 );
                         switch ( ch )
                         {
                             case 'a': ch = 7; break;
@@ -637,8 +711,13 @@ ANY                 {   goto TransferMethod; }
 
 ScalarBlock:
     {
+        int keep_nl = 1;
+        int qidx = 0;
+        int qcapa = 100;
+        char *qstr = S_ALLOC_N( char, qcapa );
         int blockType = 0;
         int nlDoWhat = 0;
+        int lastIndent = 0;
         int forceIndent = -1;
         char *yyt = YYTOKEN;
         SyckLevel *lvl = CURRENT_LEVEL();
@@ -667,6 +746,7 @@ ScalarBlock:
             }
         }
 
+        qstr[0] = '\0';
         YYTOKEN = YYCURSOR;
 
 ScalarBlock2:
@@ -674,56 +754,81 @@ ScalarBlock2:
 
 /*!re2c
 
-INDENT              {   int indt_len;
-                        GOBBLE_UP_INDENT( indt_len, YYTOKTMP );
+INDENT              {   char *pacer;
+                        char *tok = YYTOKTMP;
+                        int indt_len = 0, nl_count = 0, fold_nl = 0;
+                        GOBBLE_UP_INDENT( indt_len, tok );
                         lvl = CURRENT_LEVEL();
 
                         if ( indt_len > parentIndent && lvl->status != syck_lvl_block )
                         {
                             ADD_LEVEL( forceIndent > 0 ? forceIndent : indt_len, syck_lvl_block );
+                            goto ScalarBlock2;
                         }
 
                         lvl = CURRENT_LEVEL();
                         if ( lvl->status != syck_lvl_block )
                         {
-                            yylval->nodeData = syck_new_str2( YYTOKEN, 0 );  
                             YYCURSOR = YYTOKTMP;
-                            return BLOCK;
+                            RETURN_BLOCK();
                         }
-                        else if ( indt_len < lvl->spaces )
+
+                        //
+                        // Fold only in the event of two lines being on the leftmost
+                        // indentation.
+                        //
+                        if ( blockType == BLOCK_FOLD && lastIndent == 0 && ( indt_len - lvl->spaces ) == 0 )
                         {
-                            YYCURSOR--;
-                            yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );  
-                            syck_fold_format( yylval->nodeData->data.str, blockType, lvl->spaces, nlDoWhat );
-                            if ( lvl->status == syck_lvl_block )
+                            fold_nl = 1;
+                        }
+
+                        pacer = YYTOKTMP;
+                        while ( pacer < YYCURSOR )
+                        {
+                            if ( *pacer++ == '\n' )
+                                nl_count++;
+                        }
+
+                        if ( fold_nl == 1 )
+                        {
+                            nl_count--;
+                        }
+
+                        if ( nl_count < 1 )
+                        {
+                            QUOTECAT(qstr, qcapa, qidx, ' ');
+                        }
+                        else
+                        {
+                            int i;
+                            for ( i = 0; i < nl_count; i++ )
                             {
-                                POP_LEVEL();
+                                QUOTECAT(qstr, qcapa, qidx, '\n');
                             }
-                            YYCURSOR = YYTOKTMP;
-                            return BLOCK;
                         }
-                        goto ScalarBlock2;
-                    }
 
+                        lastIndent = indt_len - lvl->spaces;
+                        YYCURSOR -= lastIndent;
 
-NULL                {   lvl = CURRENT_LEVEL();
-                        YYCURSOR--;
-                        yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );  
-                        syck_fold_format( yylval->nodeData->data.str, blockType, lvl->spaces, nlDoWhat );
-                        POP_LEVEL();
-                        return BLOCK; 
-                    }
-
-"#"                 {   lvl = CURRENT_LEVEL();
-                        if ( lvl->status != syck_lvl_block )
+                        if ( indt_len < lvl->spaces )
                         {
-                            eat_comments( parser );
-                            YYTOKEN = YYCURSOR;
+                            POP_LEVEL();
+                            YYCURSOR = YYTOKTMP;
+                            RETURN_BLOCK();
                         }
                         goto ScalarBlock2;
                     }
 
-ANY                 {   goto ScalarBlock2; }
+
+NULL                {   YYCURSOR--;
+                        POP_LEVEL();
+                        RETURN_BLOCK(); 
+                    }
+
+ANY                 {   QUOTECAT(qstr, qcapa, qidx, *YYTOKTMP);
+                        goto ScalarBlock2;
+                    }
+
 
 */
     }
