@@ -291,7 +291,7 @@ class String
         ( self.count( "^ -~", "^\r\n" ) / self.size > 0.3 || self.count( "\x00" ) > 0 )
     end
     def to_yaml_type
-        "!ruby/string#{ ":#{ self.class }" if self.class != ::String }"
+        "!ruby/string#{ ":#{ self.class }" if self.class != ::String
     end
     def to_yaml_fold
         nil

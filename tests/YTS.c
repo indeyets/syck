@@ -210,13 +210,14 @@ test_emitter_handler( SyckEmitter *emitter, char *data ) {
     struct test_node *node = (struct test_node *)data;
     switch ( node->type ) {
         case T_STR:
-            syck_emit_scalar( emitter, node->tag, node->key, strlen( node->key ) );
+            syck_emit_scalar( emitter, node->tag, block_arbitrary, 0, 0, node->key, strlen( node->key ) );
         break;
         case T_SEQ:
         {
             int i = 0;
             syck_emit_seq( emitter, node->tag );
             while ( node->value[i].type != T_END ) {
+                syck_emit_item( emitter );
                 syck_emit( emitter, (char *)&node->value[i] );
                 i++;
             }        
@@ -228,6 +229,7 @@ test_emitter_handler( SyckEmitter *emitter, char *data ) {
             int i = 0;
             syck_emit_map( emitter, node->tag );
             while ( node->value[i].type != T_END ) {
+                syck_emit_item( emitter );
                 syck_emit( emitter, (char *)&node->value[i] );
                 i++;
             }        
@@ -337,6 +339,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.3: Mapping of scalars to sequences
@@ -384,6 +388,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.4: Sequence of mappings
@@ -435,6 +441,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example legacy_A5: Legacy A5
@@ -494,6 +502,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.5: Sequence of sequences
@@ -541,6 +551,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.6: Mapping of mappings
@@ -587,6 +599,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.7: Two documents in a stream each with a leading comment
@@ -629,6 +643,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.8: Play by play feed from a game
@@ -678,6 +694,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.9: Single document with two comments
@@ -722,6 +740,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.1: Node for Sammy Sosa appears twice in this document
@@ -767,6 +787,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.11: Mapping between sequences
@@ -824,6 +846,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.12: Sequence key shortcut
@@ -879,6 +903,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.13: Literal perserves newlines
@@ -903,6 +929,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.14: Folded treats newlines as a space
@@ -927,6 +955,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.15: Newlines preserved for indented and blank lines
@@ -955,6 +985,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.16: Indentation determines scope
@@ -991,6 +1023,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.18: Multiline flow scalars
@@ -1024,6 +1058,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.19: Integers
@@ -1062,6 +1098,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.2: Floating point
@@ -1103,6 +1141,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.21: Miscellaneous
@@ -1138,6 +1178,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.22: Timestamps
@@ -1173,6 +1215,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example legacy D4: legacy Timestamps test
@@ -1208,6 +1252,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.23: Various explicit families
@@ -1248,6 +1294,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.24: Application specific family
@@ -1325,6 +1373,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.26: Ordered mappings
@@ -1373,6 +1423,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 /*
  * Example 2.27: Invoice
@@ -1488,6 +1540,8 @@ struct test_node stream[] = {
         /* C structure of validations */
         stream
     );
+
+    CuRoundTrip( tc, stream );
 }
 
 CuSuite *

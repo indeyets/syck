@@ -126,6 +126,10 @@ syck_new_emitter()
     e->bufpos = 0;
     e->emitter_handler = NULL;
     e->output_handler = NULL;
+    e->lvl_idx = 0;
+    e->lvl_capa = ALLOC_CT;
+    e->levels = S_ALLOC_N( SyckLevel, e->lvl_capa ); 
+    syck_emitter_reset_levels( e );
     e->bonus = NULL;
     return e;
 }
@@ -160,6 +164,60 @@ syck_emitter_st_free( SyckEmitter *e )
     }
 }
 
+SyckLevel *
+syck_emitter_current_level( SyckEmitter *e )
+{
+    return &e->levels[e->lvl_idx-1];
+}
+
+void
+syck_emitter_pop_level( SyckEmitter *e )
+{
+    ASSERT( e != NULL );
+
+    /* The root level should never be popped */
+    if ( e->lvl_idx <= 1 ) return;
+
+    e->lvl_idx -= 1;
+    free( e->levels[e->lvl_idx].domain );
+}
+
+void 
+syck_emitter_add_level( SyckEmitter *e, int len, enum syck_level_status status )
+{
+    ASSERT( e != NULL );
+    if ( e->lvl_idx + 1 > e->lvl_capa )
+    {
+        e->lvl_capa += ALLOC_CT;
+        S_REALLOC_N( e->levels, SyckLevel, e->lvl_capa );
+    }
+
+    ASSERT( len > e->levels[e->lvl_idx-1].spaces );
+    e->levels[e->lvl_idx].spaces = len;
+    e->levels[e->lvl_idx].ncount = 0;
+    e->levels[e->lvl_idx].domain = syck_strndup( e->levels[e->lvl_idx-1].domain, strlen( e->levels[e->lvl_idx-1].domain ) );
+    e->levels[e->lvl_idx].status = status;
+    e->lvl_idx += 1;
+}
+
+void
+syck_emitter_reset_levels( SyckEmitter *e )
+{
+    while ( e->lvl_idx > 1 )
+    {
+        syck_emitter_pop_level( e );
+    }
+
+    if ( e->lvl_idx < 1 )
+    {
+        e->lvl_idx = 1;
+        e->levels[0].spaces = -1;
+        e->levels[0].ncount = 0;
+        e->levels[0].domain = syck_strndup( "", 0 );
+    }
+    e->levels[0].status = syck_lvl_header;
+}
+
 void
 syck_emitter_handler( SyckEmitter *e, SyckEmitterHandler hdlr )
 {
@@ -179,6 +237,9 @@ syck_free_emitter( SyckEmitter *e )
      * Free tables
      */
     syck_emitter_st_free( e );
+    syck_emitter_reset_levels( e );
+    S_FREE( e->levels[0].domain );
+    S_FREE( e->levels );
     if ( e->buffer != NULL )
     {
         S_FREE( e->buffer );
@@ -299,37 +360,102 @@ syck_emit( SyckEmitter *e, char *n )
 {
     SYMID oid;
     char *anchor_name = NULL;
+    int indent = 0;
+    SyckLevel *lvl = syck_emitter_current_level( e );
     
+    /* Add new level */
+    if ( lvl->spaces >= 0 ) {
+        indent = lvl->spaces + e->indent;
+    }
+    syck_emitter_add_level( e, indent, syck_lvl_open );
+
     /* Look for anchor */
     if ( e->anchors != NULL &&
         st_lookup( e->markers, (st_data_t)n, (st_data_t *)&oid ) &&
         st_lookup( e->anchors, (st_data_t)oid, (st_data_t *)&anchor_name ) )
     {
-        char *an = S_ALLOC_N( char, strlen( anchor_name ) + 2 );
+        char *an = S_ALLOC_N( char, strlen( anchor_name ) + 3 );
         sprintf( an, "&%s ", anchor_name );
-        syck_emitter_write( e, an, strlen( an ) );
+        syck_emitter_write( e, an, strlen( anchor_name ) + 2 );
+        free( an );
     }
     (e->emitter_handler)( e, n );
+
+    /* Pop the level */
+    syck_emitter_pop_level( e );
 }
 
-void syck_emit_scalar( SyckEmitter *e, char *tag, char *str, long len )
+void syck_emit_indent( SyckEmitter *e )
 {
+    int i;
+    SyckLevel *lvl = syck_emitter_current_level( e );
+    syck_emitter_write( e, "\n", 1 );
+    for ( i = 0; i < lvl->spaces; i++ ) {
+        syck_emitter_write( e, " ", 1 );
+    }
+}
+
+void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style, int force_indent,
+                       char keep_nl, char *str, long len )
+{
+    int mark = 0, end = 0;
+    SyckLevel *lvl = syck_emitter_current_level( e );
+
     e->seq_map = 0;
+
+    /* Determine block style */
+    if ( force_style == block_arbitrary ) {
+        force_style = e->block_style;
+    }
+    /* TODO: if arbitrary, sniff a good block style. */
+    if ( force_style == block_arbitrary ) {
+        force_style = block_literal;
+    }
+
+    if ( force_indent == 0 ) {
+        force_indent = e->indent;
+    }
+
+    /* Write the text node */
     syck_emitter_write( e, str, len );
 }
 
 void syck_emit_seq( SyckEmitter *e, char *tag )
 {
-    syck_emitter_write( e, "SEQ", 3 );
+    SyckLevel *lvl = syck_emitter_current_level( e );
+    lvl->status = syck_lvl_seq;
 }
 
 void syck_emit_map( SyckEmitter *e, char *tag )
 {
-    syck_emitter_write( e, "MAP!!!", 6 );
+    SyckLevel *lvl = syck_emitter_current_level( e );
+    lvl->status = syck_lvl_map;
+}
+
+void syck_emit_item( SyckEmitter *e )
+{
+    SyckLevel *lvl = syck_emitter_current_level( e );
+    switch ( lvl->status )
+    {
+        case syck_lvl_seq:
+            syck_emit_indent( e );
+            syck_emitter_write( e, "- ", 2 );
+        break;
+
+        case syck_lvl_map:
+            if ( lvl->ncount % 2 == 0 ) {
+                syck_emit_indent( e );
+            } else {
+                syck_emitter_write( e, ": ", 2 );
+            }
+        break;
+    }
+    lvl->ncount++;
 }
 
 void syck_emit_end( SyckEmitter *e )
 {
+    syck_emitter_write( e, "\n", 1 );
 }
 
 /*

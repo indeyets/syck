@@ -190,9 +190,14 @@ struct _syck_str {
 };
 
 struct _syck_level {
+    /* Indent */
     int spaces;
+    /* Counts nodes emitted at this level, useful for parsing 
+     * keys and pairs in bytecode */
     int ncount;
+    /* Domain prefixing at the given level */
     char *domain;
+    /* Keeps a node status */
     enum syck_level_status status;
 };
 
@@ -235,6 +240,7 @@ struct _syck_parser {
     SyckLevel *levels;
     int lvl_idx;
     int lvl_capa;
+    /* Pointer for extension's use */
     void *bonus;
 };
 
@@ -255,6 +261,7 @@ enum doc_stage {
 
 enum block_styles {
     block_arbitrary,
+    block_quote,
     block_fold,
     block_literal
 };
@@ -301,6 +308,10 @@ struct _syck_emitter {
     SyckEmitterHandler emitter_handler;
     /* Handler for output */
     SyckOutputHandler output_handler;
+    /* Levels of indentation */
+    SyckLevel *levels;
+    int lvl_idx;
+    int lvl_capa;
     /* Pointer for extension's use */
     void *bonus;
 };
@@ -352,10 +363,16 @@ void syck_emitter_simple( SyckEmitter *, char *, long );
 void syck_emitter_write( SyckEmitter *, char *, long );
 void syck_emitter_flush( SyckEmitter *, long );
 void syck_emit( SyckEmitter *, char * );
-void syck_emit_scalar( SyckEmitter *, char *, char *, long );
+void syck_emit_scalar( SyckEmitter *, char *, enum block_styles, int, char, char *, long );
 void syck_emit_seq( SyckEmitter *, char * );
+void syck_emit_item( SyckEmitter * );
 void syck_emit_map( SyckEmitter *, char * );
 void syck_emit_end( SyckEmitter * );
+void syck_emit_indent( SyckEmitter * );
+SyckLevel *syck_emitter_current_level( SyckEmitter * );
+void syck_emitter_pop_level( SyckEmitter * );
+void syck_emitter_add_level( SyckEmitter *, int, enum syck_level_status );
+void syck_emitter_reset_levels( SyckEmitter * );
 SyckParser *syck_new_parser();
 void syck_free_parser( SyckParser * );
 void syck_parser_set_root_on_error( SyckParser *, SYMID );
