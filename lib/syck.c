@@ -125,6 +125,7 @@ syck_parser_reset_cursor( SyckParser *p )
     p->linect = 0;
     p->eof = 0;
     p->last_token = 0;
+    p->force_token = 0;
 }
 
 //
@@ -299,7 +300,7 @@ syck_parser_pop_level( SyckParser *p )
 }
 
 void 
-syck_parser_add_level( SyckParser *p, int len )
+syck_parser_add_level( SyckParser *p, int len, enum syck_level_status status )
 {
     ASSERT( p != NULL );
     if ( p->lvl_idx + 1 > p->lvl_capa )
@@ -311,7 +312,7 @@ syck_parser_add_level( SyckParser *p, int len )
     ASSERT( len > p->levels[p->lvl_idx-1].spaces );
     p->levels[p->lvl_idx].spaces = len;
     p->levels[p->lvl_idx].domain = p->levels[p->lvl_idx-1].domain;
-    p->levels[p->lvl_idx].status = p->levels[p->lvl_idx-1].status;
+    p->levels[p->lvl_idx].status = status;
     p->lvl_idx += 1;
 }
 

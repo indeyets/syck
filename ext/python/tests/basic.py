@@ -144,6 +144,50 @@ rbi:
 """
         )
 
+    def testSpecSequenceKeyShortcut(self):
+        self.parseOnly(
+		  { 'invoice': 34843, 'date': '2001-01-23',
+		    'bill-to': 'Chris Dumars', 'product':
+			[ { 'item': 'Super Hoop', 'quantity': 1 },
+			  { 'item': 'Basketball', 'quantity': 4 },
+			  { 'item': 'Big Shoes', 'quantity': 1 } ] }, """
+invoice: 34843
+date   : 2001-01-23
+bill-to: Chris Dumars
+product:
+  - item    : Super Hoop
+    quantity: 1
+  - item    : Basketball
+    quantity: 4
+  - item    : Big Shoes
+    quantity: 1
+"""
+        )
+
+    def testSpecSequenceKeyEmpties(self):
+        self.parseOnly(
+            [
+              [ 
+                [ [ 'one' ] ],
+                [ 'two', 'three' ],
+                { 'four': None },
+                [ { 'five': None }, 'six' ],
+                [ 'seven' ]
+              ],
+              [ 'eight', 'nine' ]
+            ], """
+- - - - one
+  - - two
+    - three
+  - four:
+  - - five:
+    - six
+  - - seven
+- - eight
+  - nine
+"""
+        )
+
     def testSeqInSeqShortcut(self):
         self.parseOnly(
             [ [ [ 'one', 'two', 'three' ] ] ], """
@@ -172,6 +216,49 @@ rbi:
 """
         )
 
+    def testIndentationScope(self):
+        self.parseOnly(
+			{ 'name': 'Mark McGwire', 'accomplishment': "Mark set a major league home run record in 1998.\n",
+			  'stats': "65 Home Runs\n0.278 Batting Average\n" }, """
+name: Mark McGwire
+accomplishment: >
+   Mark set a major league
+   home run record in 1998.
+stats: |
+   65 Home Runs
+   0.278 Batting Average
+"""
+        )
+
+    def testTypeInt(self):
+        self.parseOnly(
+			{ 'canonical': 12345, 'decimal': 12345, 'octal': 12, 'hexadecimal': 12 }, """
+canonical: 12345
+decimal: +12,345
+octal: 014
+hexadecimal: 0xC
+"""
+        )
+
+    def testTypeFloat(self):
+        self.parseOnly(
+			{ 'canonical': 1230.15, 'exponential': 1230.15, 'fixed': 1230.15 }, """
+canonical: 1.23015e+3
+exponential: 12.3015e+02
+fixed: 1,230.15
+"""
+        )
+
+    def testTypeMisc(self):
+        self.parseOnly(
+			{ None: None, 'true': 'yes', 'false':'no', 'string': '12345' }, """
+null: ~
+true: yes
+false: no
+string: '12345'
+"""
+        )
+
 class SyckTestSuite(unittest.TestSuite):
     def __init__(self):
         unittest.TestSuite.__init__(self,map(BasicTests,     
@@ -185,8 +272,11 @@ class SyckTestSuite(unittest.TestSuite):
              "testMappingOfMappings",
              "testAnchorsAndAliases",
              "testSeqInSeqShortcut",
+             "testSpecSequenceKeyShortcut",
+             "testSpecSequenceKeyEmpties",
              "testSingleLiteral",
-             "testSingleFolded"
+             "testSingleFolded",
+             "testIndentationScope"
              )))
 
 if __name__ == '__main__':

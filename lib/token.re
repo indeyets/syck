@@ -42,9 +42,14 @@
 //
 // I like seeing the level operations as macros...
 //
-#define ADD_LEVEL(len)  syck_parser_add_level( parser, len )
+#define ADD_LEVEL(len, status)  syck_parser_add_level( parser, len, status )
 #define POP_LEVEL()     syck_parser_pop_level( parser )
 #define CURRENT_LEVEL() syck_parser_current_level( parser )
+
+//
+// Force a token next time around yylex()
+//
+#define FORCE_NEXT_TOKEN(tok)    parser->force_token = tok;
 
 //
 // Nice little macro to ensure we're IOPENed to the current level.
@@ -59,7 +64,7 @@
             } \
             else \
             { \
-                ADD_LEVEL( to_len ); \
+                ADD_LEVEL( to_len, syck_lvl_doc ); \
                 if ( reset == 1 ) YYPOS(0); \
                 return IOPEN; \
             } \
@@ -150,12 +155,19 @@ yylex( YYSTYPE *yylval, SyckParser *parser )
         syck_parser_read( parser );
     }
 
+    if ( parser->force_token != 0 )
+    {
+        int t = parser->force_token;
+        parser->force_token = 0;
+        return t;
+    }
+
 /*!re2c
 
 WORDC = [A-Za-z0-9_-\.] ;
 LF = [\n]+ ;
-ENDSPC = [ \n] ;
-INDENT = LF ENDSPC* ;
+ENDSPC = ( [ ]+ | LF );
+INDENT = LF [ \n]* ;
 NULL = [\000] ;
 ANY = [\001-\377] ;
 ODELIMS = [\{\[] ;
@@ -163,7 +175,7 @@ CDELIMS = [\}\]] ;
 INLINEX = ( CDELIMS | "," ENDSPC ) ;
 ALLX = ( ":" ENDSPC ) ;
 DIR = "%" WORDC+ ":" WORDC+ ;
-BLOCK = [>|] [-+0-9]* [ ]* LF ; 
+BLOCK = [>|] [-+0-9]* ENDSPC ; 
 
 */
 
@@ -212,7 +224,7 @@ Document:
         SyckLevel *lvl = CURRENT_LEVEL();
         if ( lvl->status == syck_lvl_header )
         {
-            lvl->status = syck_lvl_implicit;
+            lvl->status = syck_lvl_doc;
         }
 
         YYTOKEN = YYCURSOR;
@@ -232,11 +244,11 @@ INDENT              {   // Isolate spaces
 
 ODELIMS             {   ENSURE_IOPEN(lvl, 0, 1);
                         lvl = CURRENT_LEVEL();
-                        lvl->status = syck_lvl_inline;
+                        ADD_LEVEL(lvl->spaces + 1, syck_lvl_inline);
                         return YYTOKEN[0]; 
                     }
 
-CDELIMS             {   lvl->status = syck_lvl_implicit;
+CDELIMS             {   POP_LEVEL();
                         return YYTOKEN[0]; 
                     }
 
@@ -245,7 +257,9 @@ CDELIMS             {   lvl->status = syck_lvl_implicit;
                     }
 
 [-?] ENDSPC         {   ENSURE_IOPEN(lvl, YYTOKEN - YYLINEPTR, 1);
-                        YYPOS(1); 
+                        FORCE_NEXT_TOKEN(IOPEN);
+                        ADD_LEVEL(YYCURSOR - YYLINEPTR, syck_lvl_doc);
+                        YYCURSOR--; 
                         return YYTOKEN[0]; 
                     }
 
@@ -499,9 +513,7 @@ INDENT              {   int indt_len;
 
                         if ( indt_len > lvl->spaces && lvl->status != syck_lvl_block )
                         {
-                            ADD_LEVEL( forceIndent > 0 ? forceIndent : indt_len );
-                            lvl = CURRENT_LEVEL();
-                            lvl->status = syck_lvl_block;
+                            ADD_LEVEL( forceIndent > 0 ? forceIndent : indt_len, syck_lvl_block );
                         }
                         else if ( indt_len < lvl->spaces )
                         {
@@ -542,6 +554,7 @@ yyerror( char *msg )
     if ( syck_parser_ptr->error_handler == NULL )
         syck_parser_ptr->error_handler = syck_default_error_handler;
 
+    syck_parser_ptr->root = NULL;
     (syck_parser_ptr->error_handler)(syck_parser_ptr, msg);
 }
 

@@ -129,9 +129,10 @@ enum syck_io_type {
 
 enum syck_level_status {
     syck_lvl_header,
+    syck_lvl_doc,
+    syck_lvl_seq,
     syck_lvl_block,
     syck_lvl_inline,
-    syck_lvl_implicit,
     syck_lvl_end,
     syck_lvl_pause
 };
@@ -153,6 +154,8 @@ struct _syck_parser {
     int linect;
     // Last token from yylex()
     int last_token;
+    // Force a token upon next call to yylex()
+    int force_token;
     // EOF flag
     int eof;
     union {
@@ -211,7 +214,7 @@ void syck_parser_file( SyckParser *, FILE *, SyckIoFileRead );
 void syck_parser_str( SyckParser *, char *, long, SyckIoStrRead );
 void syck_parser_str_auto( SyckParser *, char *, SyckIoStrRead );
 SyckLevel *syck_parser_current_level( SyckParser * );
-void syck_parser_add_level( SyckParser *, int );
+void syck_parser_add_level( SyckParser *, int, enum syck_level_status );
 void free_any_io( SyckParser * );
 long syck_parser_read( SyckParser * );
 long syck_parser_readlen( SyckParser *, long );
