@@ -51,6 +51,8 @@ extern "C" {
 //
 // Node definitions
 //
+#define SYMID unsigned long
+
 enum syck_kind_tag {
     map_kind,
     seq_kind,
@@ -70,14 +72,14 @@ struct SyckNode {
     union {
         // Storage for map data
         struct SyckMap {
-            struct SyckNode **keys;
-            struct SyckNode **values;
+            SYMID *keys;
+            SYMID *values;
             long capa;
             long idx;
         } *pairs;
         // Storage for sequence data
         struct SyckSeq {
-            struct SyckNode **items;
+            SYMID *items;
             long capa;
             long idx;
         } *list;
@@ -101,13 +103,13 @@ struct SyckNode {
 //
 struct SyckNode *new_str_node( char * );
 char *read_str_node( struct SyckNode * );
-struct SyckNode *new_map_node( struct SyckNode *, struct SyckNode * );
-void add_map_pair( struct SyckNode *, struct SyckNode *, struct SyckNode * );
-struct SyckNode *read_map_node( struct SyckNode *, enum map_part, long );
+struct SyckNode *new_map_node( SYMID, SYMID );
+void add_map_pair( struct SyckNode *, SYMID, SYMID );
+SYMID read_map_node( struct SyckNode *, enum map_part, long );
 long read_map_count( struct SyckNode * );
-struct SyckNode *new_seq_node( struct SyckNode * );
-void add_seq_item( struct SyckNode *, struct SyckNode * );
-struct SyckNode *read_seq_node( struct SyckNode *, long );
+struct SyckNode *new_seq_node( SYMID );
+void add_seq_item( struct SyckNode *, SYMID );
+SYMID read_seq_node( struct SyckNode *, long );
 long read_seq_count( struct SyckNode * );
 
 #if defined(__cplusplus)
