@@ -13,6 +13,7 @@
 #include <time.h>
 
 static ID time_s_mkutc, s_read, s_binmode;
+static VALUE sym_model, sym_generic;
 VALUE cNode;
 
 static double zero()    { return 0.0; }
@@ -21,9 +22,7 @@ static double inf() { return one() / zero(); }
 static double nan() { return zero() / zero(); }
 
 //
-// Read from String or IO classes
-// If str->end == 0; then IO; else String; end
-// Borrowed from Marshal.c
+// Read from IO classes
 // 
 long
 rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
@@ -53,6 +52,34 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
     return len;
 }
 
+//
+// Determine if IO is String class or IO subclass
+//
+void
+syck_parser_assign_io(parser, port)
+	SyckParser *parser;
+	VALUE port;
+{
+    if (rb_respond_to(port, rb_intern("to_str"))) {
+	    //arg.taint = OBJ_TAINTED(port); /* original taintedness */
+	    //StringValue(port);	       /* possible conversion */
+	    syck_parser_str( parser, RSTRING(port)->ptr, RSTRING(port)->len, NULL );
+    }
+    else if (rb_respond_to(port, s_read)) {
+        if (rb_respond_to(port, s_binmode)) {
+            rb_funcall2(port, s_binmode, 0, 0);
+        }
+        //arg.taint = Qfalse;
+	    syck_parser_str( parser, (char *)port, 0, rb_syck_io_str_read );
+    }
+    else {
+        rb_raise(rb_eTypeError, "instance of IO needed");
+    }
+}
+
+//
+// Function for creating timestamps
+//
 SYMID
 rb_syck_mktime(str)
     char *str;
@@ -94,6 +121,10 @@ rb_syck_mktime(str)
     return time;
 }
 
+//
+// Node handler
+// - Loads data into Node classes
+//
 SYMID
 rb_syck_parse_handler(p, n)
     SyckParser *p;
@@ -135,10 +166,19 @@ rb_syck_parse_handler(p, n)
         break;
     }
 
+	if ( p->bonus != 0 )
+	{
+		VALUE proc = (VALUE)p->bonus;
+		rb_funcall(proc, rb_intern("call"), 1, v);
+	}
     rb_iv_set(obj, "@value", v);
     return obj;
 }
 
+//
+// Node handler
+// - Converts data into native Ruby types
+//
 SYMID
 rb_syck_load_handler(p, n)
     SyckParser *p;
@@ -214,7 +254,7 @@ rb_syck_load_handler(p, n)
             else if ( strcmp( n->type_id, "timestamp#ymd" ) == 0 )
             {
                 S_REALLOC_N( n->data.str->ptr, char, 22 );
-                strcat( n->data.str->ptr, "T12:00:00Z" );
+                strcat( n->data.str->ptr, "t12:00:00Z" );
                 obj = rb_syck_mktime( n->data.str->ptr );
             }
             else
@@ -239,9 +279,17 @@ rb_syck_load_handler(p, n)
             }
         break;
     }
+	if ( p->bonus != 0 )
+	{
+		VALUE proc = (VALUE)p->bonus;
+		rb_funcall(proc, rb_intern("call"), 1, obj);
+	}
     return obj;
 }
 
+//
+// Display friendly errors
+//
 void
 rb_syck_err_handler(p, msg)
     SyckParser *p;
@@ -253,6 +301,30 @@ rb_syck_err_handler(p, msg)
            p->linect,
            p->cursor - p->lineptr, 
            p->lineptr); 
+}
+
+//
+// Load data based on the model requested
+//
+void
+syck_set_model( parser, model )
+	SyckParser *parser;
+	VALUE model;
+{
+	if ( model == sym_generic )
+	{
+		syck_parser_handler( parser, rb_syck_parse_handler );
+		syck_parser_error_handler( parser, rb_syck_err_handler );
+		syck_parser_implicit_typing( parser, 1 );
+		syck_parser_taguri_expansion( parser, 1 );
+	}
+	else
+	{
+		syck_parser_handler( parser, rb_syck_load_handler );
+		syck_parser_error_handler( parser, rb_syck_err_handler );
+		syck_parser_implicit_typing( parser, 1 );
+		syck_parser_taguri_expansion( parser, 0 );
+	}
 }
 
 static VALUE
@@ -270,71 +342,97 @@ rb_syck_ensure(parser)
     return 0;
 }
 
+//
+// YAML::Syck::Parser.new
+//
+VALUE 
+syck_parser_new( class, options )
+	VALUE class, options;
+{
+	VALUE argv[1];
+    SyckParser *parser = syck_new_parser();
+	VALUE pobj = Data_Wrap_Struct( class, 0, syck_free_parser, parser );
+
+	argv[0] = options;
+	rb_obj_call_init(pobj, 1, argv);
+	return pobj;
+}
+
+//
+// YAML::Syck::Parser.initialize( options )
+//
+static VALUE
+syck_parser_initialize( self, options )
+    VALUE self, options;
+{
+	rb_iv_set(self, "@options", options);
+	return self;
+}
+
+//
+// YAML::Syck::Parser.load( IO or String )
+//
 VALUE
-rb_syck_load(argc, argv)
+syck_parser_load(argc, argv, self)
     int argc;
     VALUE *argv;
+	VALUE self;
 {
-    VALUE port, proc;
-    VALUE v;
-    SyckParser *parser = syck_new_parser();
+    VALUE port, proc, v, model;
+	SyckParser *parser;
 
     rb_scan_args(argc, argv, "11", &port, &proc);
-    if (rb_respond_to(port, rb_intern("to_str"))) {
-	    //arg.taint = OBJ_TAINTED(port); /* original taintedness */
-	    //StringValue(port);	       /* possible conversion */
-	    syck_parser_str( parser, RSTRING(port)->ptr, RSTRING(port)->len, NULL );
-    }
-    else if (rb_respond_to(port, s_read)) {
-        if (rb_respond_to(port, s_binmode)) {
-            rb_funcall2(port, s_binmode, 0, 0);
-        }
-        //arg.taint = Qfalse;
-	    syck_parser_str( parser, (char *)port, 0, rb_syck_io_str_read );
-    }
-    else {
-        rb_raise(rb_eTypeError, "instance of IO needed");
-    }
+	Data_Get_Struct(self, SyckParser, parser);
+	syck_parser_assign_io(parser, port);
 
-    syck_parser_handler( parser, rb_syck_load_handler );
-    syck_parser_error_handler( parser, rb_syck_err_handler );
-    syck_parser_implicit_typing( parser, 1 );
-    syck_parser_taguri_expansion( parser, 0 );
+	model = rb_hash_aref( rb_iv_get( self, "@options" ), sym_model );
+	syck_set_model( parser, model );
+
+	parser->bonus = 0;
+	if ( !NIL_P( proc ) ) parser->bonus = (void *)proc;
+
     v = syck_parse( parser );
     if ( v == NULL )
         return Qnil;
+
     //v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
 
     return v;
 }
 
+//
+// YAML::Syck::Parser.load_documents( IO or String ) { |doc| }
+//
 VALUE
-rb_syck_parse(argc, argv)
+syck_parser_load_documents(argc, argv, self)
     int argc;
     VALUE *argv;
+	VALUE self;
 {
-    VALUE port, proc;
-    VALUE v;
-    //OpenFile *fptr;
-    SyckParser *parser = syck_new_parser();
+    VALUE port, proc, v, model;
+	SyckParser *parser;
 
-    rb_scan_args(argc, argv, "11", &port, &proc);
-    if (rb_respond_to(port, rb_intern("to_str"))) {
-	    //arg.taint = OBJ_TAINTED(port); /* original taintedness */
-	    //StringValue(port);	       /* possible conversion */
-	    syck_parser_str( parser, RSTRING(port)->ptr, RSTRING(port)->len, NULL );
-    }
+    rb_scan_args(argc, argv, "1&", &port, &proc);
+	Data_Get_Struct(self, SyckParser, parser);
+	syck_parser_assign_io(parser, port);
 
-    syck_parser_handler( parser, rb_syck_parse_handler );
-    syck_parser_error_handler( parser, rb_syck_err_handler );
-    syck_parser_implicit_typing( parser, 1 );
-    syck_parser_taguri_expansion( parser, 1 );
-    v = syck_parse( parser );
-    syck_free_parser( parser );
+	model = rb_hash_aref( rb_iv_get( self, "@options" ), sym_model );
+	syck_set_model( parser, model );
+
+    while ( v != NULL )
+	{
+    	v = syck_parse( parser );
+		rb_funcall( proc, rb_intern("call"), 1, v );
+	}
+
+    //v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
 
     return v;
 }
 
+//
+// YAML::Syck::Node.initialize
+//
 static VALUE
 syck_node_initialize( self, type_id, val )
     VALUE self, type_id, val;
@@ -351,17 +449,30 @@ Init_syck()
 {
     VALUE rb_yaml = rb_define_module( "YAML" );
     VALUE rb_syck = rb_define_module_under( rb_yaml, "Syck" );
+	VALUE cParser = rb_define_class_under( rb_syck, "Parser", rb_cObject );
 
+	//
+	// Global symbols
+	//
     time_s_mkutc = rb_intern("utc");
     s_read = rb_intern("read");
     s_binmode = rb_intern("binmode");
-    rb_define_module_function(rb_syck, "load", rb_syck_load, -1);
-    rb_define_module_function(rb_syck, "parse", rb_syck_parse, -1);
+	sym_model = ID2SYM(rb_intern("Model"));
+	sym_generic = ID2SYM(rb_intern("Generic"));
+
+	//
+	// Define YAML::Syck::Parser class
+	//
+    rb_define_attr( cParser, "options", 1, 1 );
+	rb_define_singleton_method(cParser, "new", syck_parser_new, 1);
+    rb_define_method(cParser, "initialize", syck_parser_initialize, 1);
+    rb_define_method(cParser, "load", syck_parser_load, -1);
+    rb_define_method(cParser, "load_documents", syck_parser_load_documents, -1);
 
     //
-    // Define Syck::Node class
+    // Define YAML::Syck::Node class
     //
-    cNode = rb_define_class( "Node", rb_cObject );
+    cNode = rb_define_class_under( rb_syck, "Node", rb_cObject );
     rb_define_attr( cNode, "kind", 1, 1 );
     rb_define_attr( cNode, "type_id", 1, 1 );
     rb_define_attr( cNode, "value", 1, 1 );

@@ -105,12 +105,24 @@ syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
 }
 
 void
-syck_reset_parser_levels( SyckParser *p )
+syck_parser_reset_levels( SyckParser *p )
 {
     p->lvl_idx = 1;
     p->levels[0].spaces = -1;
     p->levels[0].domain = "yaml.org,2002/";
     p->levels[0].status = syck_lvl_header;
+}
+
+void
+syck_parser_reset_cursor( SyckParser *p )
+{
+    p->cursor = NULL;
+    p->lineptr = NULL;
+    p->token = NULL;
+    p->toktmp = NULL;
+    p->marker = NULL;
+    p->limit = NULL;
+    p->linect = 0;
 }
 
 //
@@ -127,17 +139,11 @@ syck_new_parser()
     p->io.str = NULL;
     p->syms = NULL;
     p->anchors = st_init_strtable();
-    p->buffer = S_ALLOC_N( char, 16384 );
-    p->cursor = NULL;
-    p->lineptr = NULL;
-    p->token = NULL;
-    p->toktmp = NULL;
-    p->marker = NULL;
-    p->limit = NULL;
-    p->linect = 0;
     p->implicit_typing = 1;
     p->taguri_expansion = 0;
-    syck_reset_parser_levels( p );
+    p->buffer = S_ALLOC_N( char, 16384 );
+	syck_parser_reset_cursor( p );
+    syck_parser_reset_levels( p );
     return p;
 }
 
@@ -228,6 +234,7 @@ syck_parser_file( SyckParser *p, FILE *fp, SyckIoFileRead read )
 {
     ASSERT( p != NULL );
     free_any_io( p );
+	syck_parser_reset_cursor( p );
     p->io_type = syck_io_file;
     p->io.file = S_ALLOC( SyckIoFile );
     p->io.file->ptr = fp;
@@ -246,6 +253,7 @@ syck_parser_str( SyckParser *p, char *ptr, long len, SyckIoStrRead read )
 {
     ASSERT( p != NULL );
     free_any_io( p );
+	syck_parser_reset_cursor( p );
     p->io_type = syck_io_str;
     p->io.str = S_ALLOC( SyckIoStr );
     p->io.str->beg = ptr;
@@ -423,7 +431,7 @@ syck_parse( SyckParser *p )
     ASSERT( p != NULL );
 
     yyparse( p );
-    syck_reset_parser_levels( p );
+    syck_parser_reset_levels( p );
     return p->root;
 }
 
