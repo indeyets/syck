@@ -43,7 +43,7 @@ void apply_seq_in_map( SyckParser *parser, SyckNode *n );
 %token              YAML_DOCSEP YAML_IOPEN YAML_INDENT YAML_IEND
 
 %type <nodeId>      doc basic_seq
-%type <nodeData>    atom word_rep ind_rep struct_rep atom_or_empty
+%type <nodeData>    atom word_rep ind_rep struct_rep atom_or_empty empty
 %type <nodeData>    implicit_seq inline_seq implicit_map inline_map inline_seq_atom inline_map_atom
 %type <nodeData>    top_imp_seq in_implicit_seq in_inline_seq basic_mapping basic_mapping2
 %type <nodeData>    top_imp_map in_implicit_map in_inline_map complex_mapping
@@ -98,15 +98,44 @@ ind_rep : struct_rep
         ;
 
 atom_or_empty   : atom
-                | indent_open indent_end
+                | empty
+                ;
+
+empty           : indent_open empty indent_end
                 {
-                    NULL_NODE( parser, n );
-                    $$ = n;
+                    $$ = $2;
                 }
                 |
                 {
                     NULL_NODE( parser, n );
                     $$ = n;
+                }
+                | YAML_ITRANSFER empty
+                { 
+                   if ( ((SyckParser *)parser)->implicit_typing == 1 )
+                   {
+                      try_tag_implicit( $2, ((SyckParser *)parser)->taguri_expansion );
+                   }
+                   $$ = $2;
+                }
+                | YAML_TRANSFER empty
+                { 
+                    syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
+                    $$ = $2;
+                }
+                | YAML_TAGURI empty
+                {
+                    syck_add_transfer( $1, $2, 0 );
+                    $$ = $2;
+                }
+                | YAML_ANCHOR empty
+                { 
+                   /*
+                    * _Anchors_: The language binding must keep a separate symbol table
+                    * for anchors.  The actual ID in the symbol table is returned to the
+                    * higher nodes, though.
+                    */
+                   $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $2 );
                 }
                 ;
 
@@ -365,7 +394,7 @@ complex_mapping : basic_mapping
 
 in_implicit_map : complex_mapping
 				| in_implicit_map indent_sep basic_seq
-                { 
+                {
                     if ( $1->shortcut == NULL )
                     {
                         $1->shortcut = syck_new_seq( $3 );
@@ -377,7 +406,7 @@ in_implicit_map : complex_mapping
                     $$ = $1;
                 }
 				| in_implicit_map indent_sep complex_mapping
-                { 
+                {
                     apply_seq_in_map( (SyckParser *)parser, $1 );
                     syck_map_update( $1, $3 );
                     syck_free_node( $3 );
@@ -385,7 +414,7 @@ in_implicit_map : complex_mapping
                     $$ = $1;
                 }
 				| in_implicit_map indent_sep
-                { 
+                {
                     $$ = $1;
                 }
                 ;
