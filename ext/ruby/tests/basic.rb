@@ -71,7 +71,7 @@ class YAML_Unit_Tests < RUNIT::TestCase
 	def test_basic_map
 		# Simple map
         map = { 'one' => 'foo', 'three' => 'baz', 'two' => 'bar' }
-		assert_parse_only(
+		assert_to_yaml(
 			map, <<EOY
 one: foo
 two: bar
@@ -86,7 +86,7 @@ EOY
 		basic = { 1 => 'simple string', 2 => 42, 3 => '1 Single Quoted String',
 			  4 => 'YAML\'s Double "Quoted" String', 5 => "A block\n  with several\n    lines.\n",
 			  6 => "A \"chomped\" block", 7 => "A folded\n string\n" }
-		assert_parse_only(
+		assert_to_yaml(
 			basic, <<EOY
 1: simple string
 2: 42
@@ -192,7 +192,7 @@ EOY
 			[ 'Mark McGwire', 65, 0.278 ],
 			[ 'Sammy Sosa', 63, 0.288 ]
 		]
-		assert_parse_only(
+		assert_to_yaml(
 		  seq, <<EOY
 - [ name         , hr , avg   ]
 - [ Mark McGwire , 65 , 0.278 ]
@@ -210,7 +210,7 @@ EOY
 			'Sammy Sosa' =>
 		    { 'hr' => 63, 'avg' => 0.288 }
 		}
-		assert_parse_only(
+		assert_to_yaml(
 		  map, <<EOY
 Mark McGwire: {hr: 65, avg: 0.278}
 Sammy Sosa:   {hr: 63,
@@ -231,7 +231,7 @@ EOY
 		# Map and sequences with comments
         nest = { 'hr' => [ 'Mark McGwire', 'Sammy Sosa' ],
 		    'rbi' => [ 'Sammy Sosa', 'Ken Griffey' ] }
-		assert_parse_only(
+		assert_to_yaml(
 		  nest, <<EOY
 hr: # 1998 hr ranking
   - Mark McGwire
@@ -252,7 +252,7 @@ EOY
 			  [ 'Mark McGwire', 'Sammy Sosa' ],
 			  'rbi' =>
 			  [ 'Sammy Sosa', 'Ken Griffey' ] }
-		assert_parse_only( anc1, <<EOY )
+		assert_to_yaml( anc1, <<EOY )
 hr:
    - Mark McGwire
    # Name "Sammy Sosa" scalar SS
@@ -320,7 +320,7 @@ EOY
 		dj = Date.new( 2001, 7, 23 )
         complex = { [ 'Detroit Tigers', 'Chicago Cubs' ] => [ Date.new( 2001, 7, 23 ) ],
 			  [ 'New York Yankees', 'Atlanta Braves' ] => [ Date.new( 2001, 7, 2 ), Date.new( 2001, 8, 12 ), Date.new( 2001, 8, 14 ) ] }
-		assert_parse_only(
+		assert_to_yaml(
 			complex, <<EOY
 ? # PLAY SCHEDULE
   - Detroit Tigers
@@ -336,7 +336,7 @@ EOY
 		)
 
 		# Complex key #2
-		assert_parse_only(
+		assert_to_yaml(
 		  { [ 'New York Yankees', 'Atlanta Braves' ] =>
 		    [ Date.new( 2001, 7, 2 ), Date.new( 2001, 8, 12 ),
 			  Date.new( 2001, 8, 14 ) ],
@@ -366,7 +366,7 @@ EOY
 			[ { 'item' => 'Super Hoop', 'quantity' => 1 },
 			  { 'item' => 'Basketball', 'quantity' => 4 },
 			  { 'item' => 'Big Shoes', 'quantity' => 1 } ] }
-		assert_parse_only(
+		assert_to_yaml(
 		  seq, <<EOY
 invoice: 34843
 date   : 2001-01-23
@@ -389,7 +389,7 @@ EOY
     def test_spec_sequence_in_sequence_shortcut
         # Seq-in-seq
         seq = [ [ [ 'one', 'two', 'three' ] ] ]
-        assert_parse_only( seq, <<EOY )
+        assert_to_yaml( seq, <<EOY )
 - - - one
     - two
     - three
@@ -410,7 +410,7 @@ EOY
           ],
           [ 'eight', 'nine' ]
         ]
-        assert_parse_only( seq, <<EOY )
+        assert_to_yaml( seq, <<EOY )
 - - - - one
   - - two
     - three
@@ -430,7 +430,7 @@ EOY
 	def test_spec_single_literal
 		# Literal scalar block
         lit = [ "\\/|\\/|\n/ |  |_\n" ]
-		assert_parse_only( lit, <<EOY )
+		assert_to_yaml( lit, <<EOY )
 - |
     \\/|\\/|
     / |  |_
@@ -441,7 +441,7 @@ EOY
 	def test_spec_single_folded
 		# Folded scalar block
         fold = [ "Mark McGwire's year was crippled by a knee injury.\n" ]
-		assert_parse_only( fold, <<EOY )
+		assert_to_yaml( fold, <<EOY )
 - >
     Mark McGwire's
     year was crippled
@@ -449,7 +449,7 @@ EOY
 EOY
 
         # Force a few elaborate folded blocks
-		assert_parse_only( [ <<STR1, <<STR2, <<STR3 ], <<EOY )
+		assert_to_yaml( [ <<STR1, <<STR2, <<STR3 ], <<EOY )
 Here's what you're going to need:
 
 
@@ -750,7 +750,7 @@ EOY
 	def test_spec_preserve_indent
 		# Preserve indented spaces
         fold = "Sammy Sosa completed another fine season with great stats.\n\n  63 Home Runs\n  0.288 Batting Average\n\nWhat a year!\n"
-		assert_parse_only( fold, <<EOY )
+		assert_to_yaml( fold, <<EOY )
 --- >
  Sammy Sosa completed another
  fine season with great stats.
@@ -767,7 +767,7 @@ EOY
 	def test_spec_indentation_determines_scope
         map = { 'name' => 'Mark McGwire', 'accomplishment' => "Mark set a major league home run record in 1998.\n",
 			  'stats' => "65 Home Runs\n0.278 Batting Average\n" }
-		assert_parse_only( map, <<EOY )
+		assert_to_yaml( map, <<EOY )
 name: Mark McGwire
 accomplishment: >
    Mark set a major league
@@ -780,7 +780,7 @@ EOY
 	end
 
 	def test_spec_quoted_scalars
-		assert_parse_only(
+		assert_to_yaml(
 			{"tie-fighter"=>"|\\-*-/|", "control"=>"\0101998\t1999\t2000\n", "unicode"=>"Sosa did fine." + ["263A".hex].pack('U*'), "quoted"=>" # not a 'comment'.", "single"=>"\"Howdy!\" he cried.", "hexesc"=>"\r\n is \r\n"}, <<EOY
 unicode: "Sosa did fine.\\u263A"
 control: "\\b1998\\t1999\\t2000\\n"
@@ -797,7 +797,7 @@ EOY
 		# Multiline flow scalars
         map = { 'plain' => 'This unquoted scalar spans many lines.',
 	 		  'quoted' => "So does this quoted scalar.\n" } 
-	 	assert_parse_only( map, <<EOY )
+	 	assert_to_yaml( map, <<EOY )
 plain: This unquoted
        scalar spans
        many lines.
@@ -810,7 +810,7 @@ EOY
 
 	def test_spec_type_int
         map = { 'canonical' => 12345, 'decimal' => 12345, 'octal' => '014'.oct, 'hexadecimal' => '0xC'.hex }
-		assert_parse_only( map, <<EOY )
+		assert_to_yaml( map, <<EOY )
 canonical: 12345
 decimal: +12,345
 octal: 014
@@ -819,7 +819,7 @@ EOY
         assert_bytecode( map, "D\nM\nScanonical\nS12345\nSdecimal\nS+12,345\nSoctal\nS014\nShexadecimal\nS0xC\nE\n" )
 
         map = { 'canonical' => 685230, 'decimal' => 685230, 'octal' => '02472256'.oct, 'hexadecimal' => '0x0A74AE'.hex, 'sexagesimal' => 685230 }
-		assert_parse_only( map, <<EOY )
+		assert_to_yaml( map, <<EOY )
 canonical: 685230
 decimal: +685,230
 octal: 02472256
@@ -833,7 +833,7 @@ EOY
 	def test_spec_type_float
         map = { 'canonical' => 1230.15, 'exponential' => 1230.15, 'fixed' => 1230.15,
 			  'sexagecimal' => 1230.15, 'negative infinity' => -1.0/0.0 }
-		assert_parse_only( map, <<EOY )
+		assert_to_yaml( map, <<EOY )
 canonical: 1.23015e+3
 exponential: 12.3015e+02
 fixed: 1,230.15
@@ -851,7 +851,7 @@ EOY
 
 	def test_spec_type_misc
         map = { nil => nil, true => true, false => false, 'string' => '12345' }
-		assert_parse_only( map, <<EOY )
+		assert_to_yaml( map, <<EOY )
 null: ~
 true: yes
 false: no
@@ -873,7 +873,7 @@ EOY
 				  'description' => 'Super Hoop', 'price' => 2392.00 } ],
 			  'tax' => 251.42, 'total' => 4443.52,
 			  'comments' => "Late afternoon is best. Backup contact is Nancy Billsmer @ 338-4338.\n" }
-		assert_parse_only( invoice, <<EOY )
+		assert_to_yaml( invoice, <<EOY )
 invoice: 34843
 date   : 2001-01-23
 bill-to: &id001
@@ -1048,7 +1048,7 @@ EOY
 			end
 		}
         map = { "invoice"=> { "customers"=> [ { "given"=>"Chris", "type"=>"domain customer", "family"=>"Dumars" } ], "type"=>"domain invoice" } }
-		assert_parse_only( map, <<EOY )
+		assert_to_yaml( map, <<EOY )
 # 'http://domain.tld,2002/invoice' is some type family.
 invoice: !domain.tld,2002/^invoice
   # 'seq' is shorthand for 'http://yaml.org/seq'.
@@ -1070,7 +1070,7 @@ EOY
 
 	def test_spec_throwaway
         map = {"this"=>"contains three lines of text.\nThe third one starts with a\n# character. This isn't a comment.\n"}
-		assert_parse_only( map, <<EOY )
+		assert_to_yaml( map, <<EOY )
 ### These are four throwaway comment  ###
 
 ### lines (the second line is empty). ###
@@ -1091,7 +1091,7 @@ EOY
 	def test_spec_force_implicit
 		# Force implicit
         map = { 'integer' => 12, 'also int' => 12, 'string' => '12' }
-		assert_parse_only( map, <<EOY )
+		assert_to_yaml( map, <<EOY )
 integer: 12
 also int: ! "12"
 string: !str 12
@@ -1150,7 +1150,7 @@ EOY
 			"TWO: #{val}"
 		}
         map = { 'same' => [ 'ONE: value', 'ONE: value' ], 'different' => [ 'TWO: value' ] }
-		assert_parse_only( map, <<EOY )
+		assert_to_yaml( map, <<EOY )
 same:
   - !domain.tld,2002/type\\x30 value
   - !domain.tld,2002/type0 value
@@ -1165,7 +1165,7 @@ EOY
 		# Override anchor
 		a001 = "The alias node below is a repeated use of this value.\n"
         anc = { 'anchor' => 'This scalar has an anchor.', 'override' => a001, 'alias' => a001 }
-		assert_parse_only( anc, <<EOY )
+		assert_to_yaml( anc, <<EOY )
 anchor : &A001 This scalar has an anchor.
 override : &A001 >
  The alias node below is a
@@ -1181,7 +1181,7 @@ EOY
 			"SOMEWHERE: #{val}"
 		}
         map = { 'not-date' => '2002-04-28', 'picture' => "GIF89a\f\000\f\000\204\000\000\377\377\367\365\365\356\351\351\345fff\000\000\000\347\347\347^^^\363\363\355\216\216\216\340\340\340\237\237\237\223\223\223\247\247\247\236\236\236i^\020' \202\n\001\000;", 'hmm' => "SOMEWHERE: family above is short for\nhttp://somewhere.com/type\n" }
-		assert_parse_only( map, <<EOY )
+		assert_to_yaml( map, <<EOY )
 not-date: !str 2002-04-28
 picture: !binary |
  R0lGODlhDAAMAIQAAP//9/X
@@ -1222,7 +1222,7 @@ EOY
 		YAML.add_domain_type( "clarkevans.com,2002", 'graph/line', &one_shape_proc )
 		YAML.add_domain_type( "clarkevans.com,2002", 'graph/text', &one_shape_proc )
         seq = [[{"radius"=>7, "center"=>{"x"=>73, "y"=>129}, "TYPE"=>"Shape: graph/circle"}, {"finish"=>{"x"=>89, "y"=>102}, "TYPE"=>"Shape: graph/line", "start"=>{"x"=>73, "y"=>129}}, {"TYPE"=>"Shape: graph/text", "value"=>"Pretty vector drawing.", "start"=>{"x"=>73, "y"=>129}, "color"=>16772795}, "Shape Container"]]
-		assert_parse_only( seq, <<EOY )
+		assert_to_yaml( seq, <<EOY )
 - !clarkevans.com,2002/graph/^shape
   - !^circle
     center: &ORIGIN {'x': 73, 'y': 129}
@@ -1243,7 +1243,7 @@ EOY
 
 	def test_spec_float_explicit
         seq = [ 10.0, 10.0, 10.0, 10.0 ]
-		assert_parse_only( seq, <<EOY )
+		assert_to_yaml( seq, <<EOY )
 # All entries in the sequence
 # have the same type and value.
 - 10.0
@@ -1259,7 +1259,7 @@ EOY
 
 	def test_spec_builtin_seq
 		# Assortment of sequences
-		assert_parse_only(
+		assert_to_yaml(
 			{ 'empty' => [], 'in-line' => [ 'one', 'two', 'three', 'four', 'five' ],
 			  'nested' => [ 'First item in top sequence', [ 'Subordinate sequence entry' ],
 			  	"A multi-line sequence entry\n", 'Sixth item in top sequence' ] }, <<EOY
@@ -1281,7 +1281,7 @@ EOY
 
 	def test_spec_builtin_map
 		# Assortment of mappings
-		assert_parse_only( 
+		assert_to_yaml( 
 			{ 'empty' => {}, 'in-line' => { 'one' => 1, 'two' => 2 },
 			  'spanning' => { 'one' => 1, 'two' => 2 },
 			  'nested' => { 'first' => 'First entry', 'second' =>
@@ -1343,7 +1343,7 @@ EOY
 
 	def test_spec_builtin_literal_blocks
 		# Assortment of literal scalar blocks
-		assert_parse_only(
+		assert_to_yaml(
 			{"both are equal to"=>"  This has no newline.", "is equal to"=>"The \\ ' \" characters may be\nfreely used. Leading white\n   space is significant.\n\nLine breaks are significant.\nThus this value contains one\nempty line and ends with a\nsingle line break, but does\nnot start with one.\n", "also written as"=>"  This has no newline.", "indented and chomped"=>"  This has no newline.", "empty"=>"", "literal"=>"The \\ ' \" characters may be\nfreely used. Leading white\n   space is significant.\n\nLine breaks are significant.\nThus this value contains one\nempty line and ends with a\nsingle line break, but does\nnot start with one.\n"}, <<EOY
 empty: |
 
@@ -1383,7 +1383,7 @@ EOY
 		str1 = "This has one newline.\n"
 		str2 = "This has no newline."
 		str3 = "This has two newlines.\n\n"
-		assert_parse_only( 
+		assert_to_yaml( 
 			{ 'clipped' => str1, 'same as "clipped" above' => str1, 
 			  'stripped' => str2, 'same as "stripped" above' => str2, 
 			  'kept' => str3, 'same as "kept" above' => str3 }, <<EOY
@@ -1407,7 +1407,7 @@ EOY
 	end
 	
 	def test_spec_span_single_quote
-		assert_parse_only( {"third"=>"a single quote ' must be escaped.", "second"=>"! : \\ etc. can be used freely.", "is same as"=>"this contains six spaces\nand one line break", "empty"=>"", "span"=>"this contains six spaces\nand one line break"}, <<EOY
+		assert_to_yaml( {"third"=>"a single quote ' must be escaped.", "second"=>"! : \\ etc. can be used freely.", "is same as"=>"this contains six spaces\nand one line break", "empty"=>"", "span"=>"this contains six spaces\nand one line break"}, <<EOY
 empty: ''
 second: '! : \\ etc. can be used freely.'
 third: 'a single quote '' must be escaped.'
@@ -1422,7 +1422,7 @@ EOY
 	end
 
 	def test_spec_span_double_quote
-		assert_parse_only( {"is equal to"=>"this contains four  spaces", "third"=>"a \" or a \\ must be escaped.", "second"=>"! : etc. can be used freely.", "empty"=>"", "fourth"=>"this value ends with an LF.\n", "span"=>"this contains four  spaces"}, <<EOY
+		assert_to_yaml( {"is equal to"=>"this contains four  spaces", "third"=>"a \" or a \\ must be escaped.", "second"=>"! : etc. can be used freely.", "empty"=>"", "fourth"=>"this value ends with an LF.\n", "span"=>"this contains four  spaces"}, <<EOY
 empty: ""
 second: "! : etc. can be used freely."
 third: "a \\\" or a \\\\ must be escaped."
@@ -1437,7 +1437,7 @@ EOY
 
 	def test_spec_builtin_time
 		# Time
-		assert_parse_only(
+		assert_to_yaml(
 			{ "space separated" => mktime( 2001, 12, 14, 21, 59, 43, ".10", "-05:00" ), 
 			  "canonical" => mktime( 2001, 12, 15, 2, 59, 43, ".10" ), 
 			  "date (noon UTC)" => Date.new( 2002, 12, 14), 
@@ -1452,7 +1452,7 @@ EOY
 
 	def test_spec_builtin_binary
 		arrow_gif = "GIF89a\f\000\f\000\204\000\000\377\377\367\365\365\356\351\351\345fff\000\000\000\347\347\347^^^\363\363\355\216\216\216\340\340\340\237\237\237\223\223\223\247\247\247\236\236\236iiiccc\243\243\243\204\204\204\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371!\376\016Made with GIMP\000,\000\000\000\000\f\000\f\000\000\005,  \216\2010\236\343@\024\350i\020\304\321\212\010\034\317\200M$z\357\3770\205p\270\2601f\r\e\316\001\303\001\036\020' \202\n\001\000;"
-		assert_parse_only(
+		assert_to_yaml(
 			{ 'canonical' => arrow_gif, 'base64' => arrow_gif, 
 			  'description' => "The binary value above is a tiny arrow encoded as a gif image.\n" }, <<EOY
 canonical: !binary "\\

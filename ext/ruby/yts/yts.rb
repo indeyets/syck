@@ -52,10 +52,9 @@ class SpecialHash
 end
 
 header = " %YAML:1.0"
-YAML::load( File.open( "index.yml" ) ).each { |yst|
+YAML::load( File.read( "index.yml" ) ).each do |yst|
 
-	YAML.load_documents( File.open( yst + ".yml" ) ) { |ydoc|
-
+	YAML.load_documents( File.read( yst + ".yml" ) ) do |ydoc|
 		#
 		# Test the document
 		#
@@ -146,8 +145,8 @@ reason: |
 EOY
 		end
 		header = ""
-	}
-}
+    end
+end
 
 # YPath Test is a bit different
 %w(

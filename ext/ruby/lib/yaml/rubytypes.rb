@@ -18,7 +18,7 @@ class Object
     def to_yaml_properties; instance_variables.sort; end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
-            out.map( tag_as ) do |map|
+            out.map( taguri ) do |map|
 				to_yaml_properties.each do |m|
                     map.add( m[1..-1], instance_variable_get( m ) )
                 end
@@ -104,7 +104,7 @@ class Struct
 			#
 			# Basic struct is passed as a YAML map
 			#
-            out.map( tag_as ) do |map|
+            out.map( taguri ) do |map|
 				self.members.each do |m|
                     map.add( m, self[m] )
                 end
@@ -154,7 +154,7 @@ class Exception
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
-            out.map( tag_as ) do |map|
+            out.map( taguri ) do |map|
                 map.add( 'message', message )
 				to_yaml_properties.each do |m|
                     map.add( m[1..-1], instance_variable_get( m ) )
@@ -169,8 +169,8 @@ end
 # String#to_yaml
 #
 class String
-    tag_as "tag:yaml.org,2002:str"
     tag_as "tag:ruby.yaml.org,2002:string"
+    tag_as "tag:yaml.org,2002:str"
     def is_binary_data?
         ( self.count( "^ -~", "^\r\n" ) / self.size > 0.3 || self.count( "\x00" ) > 0 )
     end
@@ -193,9 +193,9 @@ class String
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
             if to_yaml_properties.empty?
-                out.scalar( tag_as, self, to_yaml_fold )
+                out.scalar( taguri, self, to_yaml_fold )
             else
-                out.map( tag_as ) do |map|
+                out.map( taguri ) do |map|
                     map.add( 'str', "#{self}" )
                     to_yaml_properties.each do |m|
                         map.add( m, instance_variable_get( m ) )
@@ -221,7 +221,7 @@ class Symbol
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
-            out.scalar( tag_as, ":#{ self.id2name }", :plain )
+            out.scalar( taguri, ":#{ self.id2name }", :plain )
         end
 	end
 end
@@ -263,10 +263,10 @@ class Range
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
-            if self.begin.is_complex_yaml? or self.begin.respond_to? :to_str or
-              self.end.is_complex_yaml? or self.end.respond_to? :to_str or
-              not to_yaml_properties.empty?
-                out.map( tag_as ) do |map|
+            # if self.begin.is_complex_yaml? or self.begin.respond_to? :to_str or
+            #   self.end.is_complex_yaml? or self.end.respond_to? :to_str or
+            #   not to_yaml_properties.empty?
+                out.map( taguri ) do |map|
                     map.add( 'begin', self.begin )
                     map.add( 'end', self.end )
                     map.add( 'excl', self.exclude_end? )
@@ -274,13 +274,13 @@ class Range
                         map.add( m, instance_variable_get( m ) )
                     end
                 end
-            else
-                out.scalar( tag_as ) do |sc|
-                    sc.embed( self.begin )
-                    sc.concat( self.exclude_end? ? "..." : ".." )
-                    sc.embed( self.end )
-                end
-            end
+            # else
+            #     out.scalar( taguri ) do |sc|
+            #         sc.embed( self.begin )
+            #         sc.concat( self.exclude_end? ? "..." : ".." )
+            #         sc.embed( self.end )
+            #     end
+            # end
         end
 	end
 end
@@ -317,9 +317,9 @@ class Regexp
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
             if to_yaml_properties.empty?
-                out.scalar( tag_as, self.inspect, :plain )
+                out.scalar( taguri, self.inspect, :plain )
             else
-                out.map( tag_as ) do |map|
+                out.map( taguri ) do |map|
                     src = self.inspect
                     if src =~ /\A\/(.*)\/([a-z]*)\Z/
                         map.add( 'regexp', $1 )
@@ -374,9 +374,9 @@ class Time
             standard += ".%06d" % [usec] if usec.nonzero?
             standard += " %s" % [tz]
             if to_yaml_properties.empty?
-                out.scalar( tag_as, standard, :plain )
+                out.scalar( taguri, standard, :plain )
             else
-                out.map( tag_as ) do |map|
+                out.map( taguri ) do |map|
                     map.add( 'at', standard )
                     to_yaml_properties.each do |m|
                         map.add( m, instance_variable_get( m ) )
@@ -414,7 +414,7 @@ class Numeric
             elsif str == "NaN"
                 str = ".NaN"
             end
-            out.scalar( tag_as, str, :plain )
+            out.scalar( taguri, str, :plain )
         end
 	end
 end
@@ -422,21 +422,27 @@ end
 class TrueClass
     tag_as "tag:yaml.org,2002:bool#yes"
 	def to_yaml( opts = {} )
-		out.scalar( tag_as, "true", :plain )
+		YAML::quick_emit( nil, opts ) do |out|
+            out.scalar( taguri, "true", :plain )
+        end
 	end
 end
 
 class FalseClass
     tag_as "tag:yaml.org,2002:bool#no"
 	def to_yaml( opts = {} )
-		out.scalar( tag_as, "false", :plain )
+		YAML::quick_emit( nil, opts ) do |out|
+            out.scalar( taguri, "false", :plain )
+        end
 	end
 end
 
 class NilClass 
     tag_as "tag:yaml.org,2002:null"
 	def to_yaml( opts = {} )
-		out.scalar( tag_as, "", :plain )
+		YAML::quick_emit( nil, opts ) do |out|
+            out.scalar( taguri, "", :plain )
+        end
 	end
 end
 

@@ -55,25 +55,16 @@ class Object # :nodoc: all
         # Adds a taguri _tag_ to a class, used when dumping or loading the class
         # in YAML.  See YAML::tag_class for detailed information on typing and
         # taguris.
-        def tag_as( tag )
-            @@tag_as = tag
-            @@tag_subclasses ||= true
-            define_method( :tag_as ) do
-                if @@tag_subclasses and self.class != YAML::tagged_classes[@@tag_as]
-                    "#{ @@tag_as }:#{ self.class.tag_class_name }"
-                else
-                    @@tag_as
-                end
-            end
-            define_method( :tag_subclasses? ) do
-                @@tag_subclasses
-            end
+        def tag_as( tag, sc = true )
+            @taguri, @tag_subclasses = tag, sc
             YAML::tag_class tag, self
         end
+        # Returns the taguri for this class.
+        def taguri; @taguri; end
         # Flags a class so that all subclasses fall under the same type
         # if _bool_ is true.
-        def tag_subclasses?( bool )
-            @@tag_subclasses = bool
+        def tag_subclasses?
+            @tag_subclasses
         end
         # Transforms the subclass name into a name suitable for display
         # in a subclassed tag.
@@ -85,5 +76,15 @@ class Object # :nodoc: all
         def tag_read_class( name )
             name
         end
+    end
+    def taguri
+        if self.class.tag_subclasses? and self.class != YAML::tagged_classes[self.class.taguri]
+            "#{ self.class.taguri }:#{ self.class.tag_class_name }"
+        else
+            self.class.taguri
+        end
+    end
+    def tag_subclasses?
+        self.class.tag_subclasses?
     end
 end

@@ -766,7 +766,7 @@ void syck_emit_2quoted( SyckEmitter *e, int width, char *str, long len )
             case '\n':
                 end = mark + 1;
                 if ( *start != ' ' && *start != '\n' && *end != '\n' && *end != ' ' ) {
-                    syck_emitter_write( e, "\\n", 2 );
+                    syck_emitter_write( e, "\\n\\", 3 );
                 }
                 do_indent = 1;
                 start = mark + 1;

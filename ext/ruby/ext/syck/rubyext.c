@@ -934,13 +934,13 @@ syck_parser_load_documents(argc, argv, self)
     
 	bonus->taint = syck_parser_assign_io(parser, port);
     bonus->resolver = rb_attr_get( self, s_resolver );
+    bonus->proc = 0;
     parser->bonus = (void *)bonus;
 
     while ( 1 )
 	{
         /* Reset hash for tracking nodes */
         bonus->data = hash = rb_hash_new();
-        bonus->proc = 0;
 
         /* Parse a document */
     	v = syck_parse( parser );
@@ -1086,7 +1086,12 @@ syck_resolver_node_import( self, node )
             }
         break;
     }
-    return rb_funcall( self, s_transfer, 2, rb_str_new2( n->type_id ), obj );
+
+    if ( n->type_id != NULL )
+    {
+        obj = rb_funcall( self, s_transfer, 2, rb_str_new2( n->type_id ), obj );
+    }
+    return obj;
 }
 
 /*
@@ -1338,11 +1343,16 @@ rb_syck_emitter_handler(e, data)
 {
     VALUE n = (VALUE)data;
     VALUE tag = rb_ivar_get( n, s_type_id ); 
+    char *type_id = NULL;
+    if ( !NIL_P( tag ) ) {
+        StringValue(tag);
+        type_id = RSTRING(tag)->ptr;
+    }
 
 	if ( rb_obj_is_kind_of( n, cOutMap ) )
     {
         int i;
-        syck_emit_map( e, NULL ); // RSTRING(tag)->ptr );
+        syck_emit_map( e, type_id );
         for ( i = 0; i < RARRAY(n)->len; i++ )
         {
             syck_emit_item( e, (st_data_t)rb_ary_entry(n, i) );
@@ -1352,7 +1362,7 @@ rb_syck_emitter_handler(e, data)
     else if ( rb_obj_is_kind_of( n, cOutSeq ) )
     {
         int i;
-        syck_emit_seq( e, NULL ); // RSTRING(tag)->ptr );
+        syck_emit_seq( e, type_id );
         for ( i = 0; i < RARRAY(n)->len; i++ )
         {
             syck_emit_item( e, (st_data_t)rb_ary_entry(n, i) );
@@ -1361,7 +1371,7 @@ rb_syck_emitter_handler(e, data)
     }
     else if ( rb_obj_is_kind_of( n, cOutScalar ) )
     {
-        syck_emit_scalar( e, NULL, block_arbitrary, 0, 0, 40, RSTRING(n)->ptr, RSTRING(n)->len );
+        syck_emit_scalar( e, type_id, block_arbitrary, 0, 0, 40, RSTRING(n)->ptr, RSTRING(n)->len );
     }
     else
     {
