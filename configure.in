@@ -1,9 +1,9 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(syck, 0.32)
+AC_INIT(syck, 0.33)
 AC_CONFIG_AUX_DIR(config)
 AC_PREREQ(2.50)
 
-AM_INIT_AUTOMAKE(syck, 0.32)
+AM_INIT_AUTOMAKE(syck, 0.33)
 AM_CONFIG_HEADER(config.h)
 
 # Checks for programs.

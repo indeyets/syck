@@ -1,4 +1,4 @@
-released: { name: Syck, version: 0.32 }
+released: { name: Syck, version: 0.33 }
 for: [ Ruby, PHP, Python ]
 by: why the lucky stiff
 about: >
@@ -54,8 +54,8 @@ installation: >
 
   To compile libsyck, first download libsyck.
 
-    tar xzvf syck-0.32.tar.gz
-    cd syck-0.32
+    tar xzvf syck-0.33.tar.gz
+    cd syck-0.33
     ./configure
     make
     sudo make install
@@ -88,7 +88,7 @@ examples:
      => true
      >> yp = YAML::Syck::Parser.new( {} )
      => #<YAML::Syck::Parser:0x8058530>
-     >> yp.load( File.open( 'syck-0.32.yml' ) )
+     >> yp.load( File.open( 'syck-0.33.yml' ) )
      => {"status"=>"Syck is about 60% compliant ..."}
 
   To load this document in PHP: |
@@ -96,7 +96,7 @@ examples:
      ($:~)$ php -a
      Interactive mode enabled
 
-     <? dl( 'syck.so' ); print_r( syck_load( implode( '', file( 'syck-0.32.yml' ) ) ) ); ?>
+     <? dl( 'syck.so' ); print_r( syck_load( implode( '', file( 'syck-0.33.yml' ) ) ) ); ?>
   
      .. php then outputs ..
 
@@ -108,7 +108,7 @@ examples:
          [released] => Array
              (   
                  [name] => Syck
-                 [version] => 0.32
+                 [version] => 0.33
              )
 
      .. and so on ..
@@ -120,7 +120,7 @@ examples:
      [GCC 2.95.3 20010315 (release) [FreeBSD]] on freebsd4
      Type "copyright", "credits" or "license" for more information.
      >>> import syck
-     >>> f = open( 'syck-0.32.yml' )
+     >>> f = open( 'syck-0.33.yml' )
      >>> syck.load( f.read() )
      {'by': 'why the lucky stiff', ... }
 

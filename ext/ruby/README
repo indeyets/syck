@@ -4,7 +4,7 @@
 #            .              .
 #            .              .
 #            .              .
-#            ....... v0.49 ..
+#            ....... v0.60 ..
 #
 #
 #            
@@ -19,7 +19,7 @@
 #
 --- %YAML:1.0
 title: YAML.rb
-version: 0.49
+version: 0.60
 author: [Why the Lucky Stiff, yaml-core@whytheluckystiff.net]
 websites: [http://www.yaml.org, http://yaml4r.sf.net, http://sf.net/projects/yaml4r/]
 installation: >
