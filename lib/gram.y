@@ -166,6 +166,11 @@ implicit_seq	: indent_open in_implicit_seq indent_end
                 { 
                     $$ = $2;
                 }
+                | indent_open TRANSFER indent_sep in_implicit_seq indent_end
+                { 
+                    syck_add_transfer( $2, $4, ((SyckParser *)parser)->taguri_expansion );
+                    $$ = $4;
+                }
                 ;
 
 basic_seq       : '-' atom_or_empty             
