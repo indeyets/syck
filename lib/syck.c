@@ -101,8 +101,8 @@ syck_new_parser()
     p->lvl_idx = 1;
     p->levels = S_ALLOC_N( SyckLevel, p->lvl_capa ); 
     p->levels[0].spaces = -1;
-    p->levels[0].domain = "yaml.org";
-    p->levels[0].status = syck_lvl_implicit;
+    p->levels[0].domain = "yaml.org,2002/";
+    p->levels[0].status = syck_lvl_header;
     p->io_type = syck_io_str;
     p->io.str = NULL;
     p->syms = NULL;
@@ -116,6 +116,7 @@ syck_new_parser()
     p->limit = NULL;
     p->linect = 0;
     p->implicit_typing = 1;
+    p->taguri_expansion = 0;
     return p;
 }
 
@@ -189,6 +190,12 @@ syck_parser_implicit_typing( SyckParser *p, int flag )
 }
 
 void
+syck_parser_taguri_expansion( SyckParser *p, int flag )
+{
+    p->taguri_expansion = ( flag == 0 ? 0 : 1 );
+}
+
+void
 syck_parser_error_handler( SyckParser *p, SyckErrorHandler hdlr )
 {
     ASSERT( p != NULL );
@@ -245,14 +252,19 @@ syck_parser_current_level( SyckParser *p )
     return &p->levels[p->lvl_idx-1];
 }
 
-SyckLevel *
+void
 syck_parser_pop_level( SyckParser *p )
 {
     ASSERT( p != NULL );
-    if ( p->lvl_idx < 1 ) return NULL;
+
+    // The root level should never be popped
+    if ( p->lvl_idx <= 1 ) return;
 
     p->lvl_idx -= 1;
-    return &p->levels[p->lvl_idx];
+    if ( p->levels[p->lvl_idx - 1].domain != p->levels[p->lvl_idx].domain )
+    {
+        free( p->levels[p->lvl_idx].domain );
+    }
 }
 
 void 

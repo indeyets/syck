@@ -42,15 +42,22 @@ syck_hdlr_add_alias( SyckParser *p, char *a )
 }
 
 void
-syck_add_transfer( char *uri, SyckNode *n )
+syck_add_transfer( char *uri, SyckNode *n, int taguri )
 {
     char *comma = NULL;
     char *slash = uri;
     char *domain = NULL;
 
+    if ( taguri == 0 )
+    {
+        n->type_id = uri;
+        return;
+    }
+
     if ( uri[0] == '!' )
     {
         syck_xprivate( n, uri + 1, strlen( uri ) - 1 );
+        S_FREE( uri );
         return;
     }
 
@@ -84,6 +91,7 @@ syck_add_transfer( char *uri, SyckNode *n )
         syck_taguri( n, domain, slash + 1, strlen( uri ) - ( slash - uri + 1 ) );
         S_FREE( domain );
     }
+    S_FREE( uri );
 }
 
 void

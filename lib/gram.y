@@ -79,7 +79,14 @@ atom_or_empty   : atom
                 |
                 {
                    SyckNode *n = syck_new_str( "" ); 
-                   syck_taguri( n, "yaml.org,2002", "null", 4 );
+                   if ( ((SyckParser *)parser)->taguri_expansion == 1 )
+                   {
+                       syck_taguri( n, "yaml.org,2002", "null", 4 );
+                   }
+                   else
+                   {
+                       n->type_id = syck_strndup( "null", 4 );
+                   }
                    $$ = n;
                 }
                 ;
@@ -91,22 +98,28 @@ atom_or_empty   : atom
 //
 word_rep	: TRANSFER word_rep						
             { 
-               syck_add_transfer( $1, $2 );
-               S_FREE( $1 );
+               syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
                $$ = $2;
             } 
             | ITRANSFER word_rep						
             { 
                if ( ((SyckParser *)parser)->implicit_typing == 1 )
                {
-                  try_tag_implicit( $2 );
+                  try_tag_implicit( $2, ((SyckParser *)parser)->taguri_expansion );
                }
                $$ = $2;
             }
 			| WORD
             { 
                SyckNode *n = $1;
-               syck_taguri( n, "yaml.org,2002", "str", 3 );
+               if ( ((SyckParser *)parser)->taguri_expansion == 1 )
+               {
+                   syck_taguri( n, "yaml.org,2002", "str", 3 );
+               }
+               else
+               {
+                   n->type_id = syck_strndup( "str", 3 );
+               }
                $$ = n;
             }
             | PLAIN
@@ -121,8 +134,7 @@ word_rep	: TRANSFER word_rep
 //
 struct_rep	: TRANSFER struct_rep
             { 
-                syck_add_transfer( $1, $2 );
-                S_FREE( $1 );
+                syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
                 $$ = $2;
             }
 			| BLOCK

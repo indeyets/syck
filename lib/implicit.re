@@ -15,10 +15,17 @@
 #define YYLIMIT     limit
 #define YYFILL(n)
 
-#define TAG_IMPLICIT( tid )     syck_taguri( n, "yaml.org,2002", tid, strlen( tid ) ); return;
+#define TAG_IMPLICIT( tid ) \
+    if ( taguri == 1 ) \
+    { \
+        syck_taguri( n, "yaml.org,2002", tid, strlen( tid ) ); \
+    } else { \
+        n->type_id = syck_strndup( tid, strlen( tid ) ); \
+    } \
+    return;
 
 void
-try_tag_implicit( SyckNode *n )
+try_tag_implicit( SyckNode *n, int taguri )
 {
     char *cursor, *limit, *marker;
     if ( n->kind != syck_str_kind )

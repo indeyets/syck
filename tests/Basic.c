@@ -60,11 +60,29 @@ TestSyckMapAlloc( CuTest *tc )
 
     n = syck_new_map( 24556, 24557 );
     syck_map_add( n, 24558, 24559 );
+    syck_map_add( n, 24658, 24659 );
+    syck_map_add( n, 24758, 24759 );
+    syck_map_add( n, 24858, 24859 );
+    syck_map_add( n, 24958, 24959 );
+    syck_map_add( n, 24058, 24059 );
+    syck_map_add( n, 24158, 24159 );
 
     CuAssert( tc, "Invalid key at '0'.", 24556 == syck_map_read( n, map_key, 0 ) );
     CuAssert( tc, "Invalid key at '1'.", 24558 == syck_map_read( n, map_key, 1 ) );
+    CuAssert( tc, "Invalid key at '2'.", 24658 == syck_map_read( n, map_key, 2 ) );
+    CuAssert( tc, "Invalid key at '3'.", 24758 == syck_map_read( n, map_key, 3 ) );
+    CuAssert( tc, "Invalid key at '4'.", 24858 == syck_map_read( n, map_key, 4 ) );
+    CuAssert( tc, "Invalid key at '5'.", 24958 == syck_map_read( n, map_key, 5 ) );
+    CuAssert( tc, "Invalid key at '6'.", 24058 == syck_map_read( n, map_key, 6 ) );
+    CuAssert( tc, "Invalid key at '7'.", 24158 == syck_map_read( n, map_key, 7 ) );
     CuAssert( tc, "Invalid value at '0'", 24557 == syck_map_read( n, map_value, 0 ) );
     CuAssert( tc, "Invalid value at '1'", 24559 == syck_map_read( n, map_value, 1 ) );
+    CuAssert( tc, "Invalid value at '2'", 24659 == syck_map_read( n, map_value, 2 ) );
+    CuAssert( tc, "Invalid value at '3'", 24759 == syck_map_read( n, map_value, 3 ) );
+    CuAssert( tc, "Invalid value at '4'", 24859 == syck_map_read( n, map_value, 4 ) );
+    CuAssert( tc, "Invalid value at '5'", 24959 == syck_map_read( n, map_value, 5 ) );
+    CuAssert( tc, "Invalid value at '6'", 24059 == syck_map_read( n, map_value, 6 ) );
+    CuAssert( tc, "Invalid value at '7'", 24159 == syck_map_read( n, map_value, 7 ) );
 
     free( n );
 }
@@ -83,6 +101,8 @@ TestSyckMapUpdate( CuTest *tc )
     syck_map_add( n2, 51128, 51129 );
 
     syck_map_update( n1, n2 );
+    CuAssert( tc, "Invalid key at '2'", 51126 == syck_map_read( n1, map_key, 2 ) );
+    CuAssert( tc, "Invalid key at '3'", 51128 == syck_map_read( n1, map_key, 3 ) );
     CuAssert( tc, "Invalid value at '2'", 51127 == syck_map_read( n1, map_value, 2 ) );
     CuAssert( tc, "Invalid value at '3'", 51129 == syck_map_read( n1, map_value, 3 ) );
 

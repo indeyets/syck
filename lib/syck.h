@@ -135,7 +135,7 @@ struct _syck_parser {
     // Root node
     SYMID root;
     // Implicit typing flag
-    int implicit_typing;
+    int implicit_typing, taguri_expansion;
     // Scripting language function to handle nodes
     SyckNodeHandler handler;
     // Error handler
@@ -176,14 +176,14 @@ struct _syck_parser {
 SYMID syck_hdlr_add_node( SyckParser *, SyckNode * );
 SyckNode *syck_hdlr_add_anchor( SyckParser *, char *, SyckNode * );
 SyckNode *syck_hdlr_add_alias( SyckParser *, char * );
-void syck_add_transfer( char *, SyckNode * );
+void syck_add_transfer( char *, SyckNode *, int );
 void syck_xprivate( SyckNode *, char *, int );
 void syck_taguri( SyckNode *, char *, char *, int );
 int syck_add_sym( SyckParser *, char * );
 int syck_lookup_sym( SyckParser *, SYMID, char ** );
 int syck_try_implicit( SyckNode * );
 void syck_fold_format( char *, SyckNode * );
-void try_tag_implicit( SyckNode * );
+void try_tag_implicit( SyckNode *, int );
 
 //
 // API prototypes
@@ -193,6 +193,8 @@ int syck_io_file_read( char *, SyckIoFile *, int, int );
 int syck_io_str_read( char *, SyckIoStr *, int, int );
 SyckParser *syck_new_parser();
 void syck_free_parser( SyckParser * );
+void syck_parser_implicit_typing( SyckParser *, int );
+void syck_parser_taguri_expansion( SyckParser *, int );
 void syck_parser_handler( SyckParser *, SyckNodeHandler );
 void syck_parser_error_handler( SyckParser *, SyckErrorHandler );
 void syck_parser_file( SyckParser *, FILE *, SyckIoFileRead );

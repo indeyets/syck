@@ -89,7 +89,10 @@
     { \
         YYCURSOR = YYTOKTMP; \
         yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN ); \
-        if ( parser->implicit_typing == 1 ) try_tag_implicit( yylval->nodeData ); \
+        if ( parser->implicit_typing == 1 ) \
+        { \
+            try_tag_implicit( yylval->nodeData, parser->taguri_expansion ); \
+        } \
         return PLAIN; \
     }
 
@@ -134,8 +137,8 @@ yylex( YYSTYPE *yylval, SyckParser *parser )
 
 WORDC = [A-Za-z0-9_-\.] ;
 LF = [\n]+ ;
-INDENT = LF [ \n]* ;
 ENDSPC = [ \n] ;
+INDENT = LF ENDSPC* ;
 NULL = [\000] ;
 ANY = [\001-\377] ;
 ODELIMS = [\{\[] ;
@@ -148,7 +151,9 @@ BLOCK = [>|] [-+0-9]* LF ;
 */
 
     if ( YYLINEPTR != YYCURSOR )
+    {
         goto Document;
+    }
 
 Header:
 
@@ -156,9 +161,23 @@ Header:
 
 /*!re2c
 
-"---" ENDSPC        {   goto Directive; }
+"---" ENDSPC        {   SyckLevel *lvl = CURRENT_LEVEL();
+                        if ( lvl->status == syck_lvl_header )
+                        {
+                            YYPOS(3);
+                            goto Directive; 
+                        }
+                        else
+                        {
+                            ENSURE_IEND(lvl, -1);
+                            YYPOS(0);
+                            return 0; 
+                        }
+                    }
 
-INDENT              {   goto Header; }
+INDENT              {   int indt_len;
+                        GOBBLE_UP_INDENT( indt_len, YYTOKEN );
+                        goto Header; }
 
 ANY                 {   YYPOS(0);
                         goto Document; 
@@ -167,14 +186,19 @@ ANY                 {   YYPOS(0);
 */
 
 Document:
+    {
+        SyckLevel *lvl = CURRENT_LEVEL();
+        if ( lvl->status == syck_lvl_header )
+        {
+            lvl->status = syck_lvl_implicit;
+        }
 
-    YYTOKEN = YYCURSOR;
+        YYTOKEN = YYCURSOR;
 
 /*!re2c
 
 INDENT              {   // Isolate spaces
                         int indt_len;
-                        SyckLevel *lvl;
                         GOBBLE_UP_INDENT( indt_len, YYTOKEN );
                         lvl = CURRENT_LEVEL();
 
@@ -184,15 +208,13 @@ INDENT              {   // Isolate spaces
                         return INDENT;
                     }
 
-ODELIMS             {   SyckLevel *lvl = CURRENT_LEVEL();
-                        ENSURE_IOPEN(lvl, 0, 1);
+ODELIMS             {   ENSURE_IOPEN(lvl, 0, 1);
                         lvl = CURRENT_LEVEL();
                         lvl->status = syck_lvl_inline;
                         return YYTOKEN[0]; 
                     }
 
-CDELIMS             {   SyckLevel *lvl = CURRENT_LEVEL();
-                        lvl->status = syck_lvl_implicit;
+CDELIMS             {   lvl->status = syck_lvl_implicit;
                         return YYTOKEN[0]; 
                     }
 
@@ -200,8 +222,7 @@ CDELIMS             {   SyckLevel *lvl = CURRENT_LEVEL();
                         return YYTOKEN[0]; 
                     }
 
-[-?] ENDSPC         {   SyckLevel *lvl = CURRENT_LEVEL();
-                        ENSURE_IOPEN(lvl, YYTOKEN - YYLINEPTR, 1);
+[-?] ENDSPC         {   ENSURE_IOPEN(lvl, YYTOKEN - YYLINEPTR, 1);
                         YYPOS(1); 
                         return YYTOKEN[0]; 
                     }
@@ -228,17 +249,16 @@ BLOCK               {   YYCURSOR--;
 
 [ ]+                {   goto Document; }
 
-NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
-                        ENSURE_IEND(lvl, -1);
+NULL                {   ENSURE_IEND(lvl, -1);
                         return 0; 
                     }
 
-ANY                 {   SyckLevel *lvl = CURRENT_LEVEL();
-                        ENSURE_IOPEN(lvl, 0, 1);
+ANY                 {   ENSURE_IOPEN(lvl, 0, 1);
                         goto Plain; 
                     }
 
 */
+    }
 
 Directive:
     {
@@ -246,7 +266,9 @@ Directive:
 
 /*!re2c
 
-DIR ENDSPC          {   goto Directive; }
+DIR                 {   goto Directive; }
+
+[ ]+                {   goto Directive; }
 
 ANY                 {   YYCURSOR = YYTOKTMP;
                         return DOCSEP;
@@ -348,16 +370,44 @@ TransferMethod:
 
 /*!re2c
 
-ENDSPC              {   YYCURSOR = YYTOKTMP;
+ENDSPC              {   SyckLevel *lvl;
+                        YYCURSOR = YYTOKTMP;
                         if ( YYCURSOR == YYTOKEN + 1 )
                         {
                             return ITRANSFER;
                         }
+
+                        lvl = CURRENT_LEVEL();
+                        if ( *(YYTOKEN + 1) == '^' )
+                        {
+                            yylval->name = S_ALLOC_N( char, YYCURSOR - YYTOKEN + strlen( lvl->domain ) );
+                            yylval->name[0] = '\0';
+                            strcat( yylval->name, lvl->domain );
+                            strncat( yylval->name, YYTOKEN + 2, YYCURSOR - YYTOKEN - 2 );
+                        }
                         else
                         {
-                            yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
-                            return TRANSFER; 
+                            char *carat = YYTOKEN + 1;
+                            while ( (++carat) < YYCURSOR )
+                            {
+                                if ( *carat == '^' )
+                                    break;
+                            }
+
+                            if ( carat < YYCURSOR )
+                            {
+                                lvl->domain = syck_strndup( YYTOKEN + 1, carat - YYTOKEN - 1 );
+                                yylval->name = S_ALLOC_N( char, YYCURSOR - carat + strlen( lvl->domain ) );
+                                yylval->name[0] = '\0';
+                                strcat( yylval->name, lvl->domain );
+                                strncat( yylval->name, carat + 1, YYCURSOR - carat - 1 );
+                            }
+                            else
+                            {
+                                yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
+                            }
                         }
+                        return TRANSFER; 
                     }
 
 ANY                 {   goto TransferMethod; }

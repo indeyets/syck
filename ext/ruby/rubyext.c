@@ -89,7 +89,7 @@ rb_syck_parse_handler(p, n)
 
         case syck_map_kind:
             rb_iv_set(obj, "@kind", ID2SYM(rb_intern("map")));
-            obj = rb_hash_new();
+            v = rb_hash_new();
             for ( i = 0; i < n->data.pairs->idx; i++ )
             {
                 rb_hash_aset( v, syck_map_read( n, map_key, i ), syck_map_read( n, map_value, i ) );
@@ -113,66 +113,53 @@ rb_syck_load_handler(p, n)
     switch (n->kind)
     {
         case syck_str_kind:
-            if ( n->type_id == NULL )
+            if ( n->type_id == NULL || strcmp( n->type_id, "str" ) == 0 )
             {
-                str = 1;
+                obj = rb_str_new( n->data.str->ptr, n->data.str->len );
             }
-            else if ( strncmp( n->type_id, "taguri:yaml.org,2002:", 21 ) == 0 )
+            else if ( strcmp( n->type_id, "null" ) == 0 )
             {
-                char *type_id = n->type_id + 21;
-                if ( strcmp( type_id, "null" ) == 0 )
-                {
-                    obj = Qnil;
-                }
-                else if ( strcmp( type_id, "bool#yes" ) == 0 )
-                {
-                    obj = Qtrue;
-                }
-                else if ( strcmp( type_id, "bool#no" ) == 0 )
-                {
-                    obj = Qfalse;
-                }
-                else if ( strcmp( type_id, "int#hex" ) == 0 )
-                {
-                    obj = rb_cstr2inum( n->data.str->ptr, 16 );
-                }
-                else if ( strcmp( type_id, "int#oct" ) == 0 )
-                {
-                    obj = rb_cstr2inum( n->data.str->ptr, -8 );
-                }
-                else if ( strcmp( type_id, "int" ) == 0 )
-                {
-                    obj = rb_cstr2inum( n->data.str->ptr, 10 );
-                }
-                else if ( strcmp( type_id, "timestamp" ) == 0 )
-                {
-                    obj = rb_syck_mktime( n->data.str->ptr );
-                }
-                else if ( strcmp( type_id, "timestamp#iso8601" ) == 0 )
-                {
-                    obj = rb_syck_mktime( n->data.str->ptr );
-                }
-                else if ( strcmp( type_id, "timestamp#spaced" ) == 0 )
-                {
-                    obj = rb_syck_mktime( n->data.str->ptr );
-                }
-                else if ( strcmp( type_id, "timestamp#ymd" ) == 0 )
-                {
-                    S_REALLOC_N( n->data.str->ptr, char, 22 );
-                    strcat( n->data.str->ptr, "T12:00:00Z" );
-                    obj = rb_syck_mktime( n->data.str->ptr );
-                }
-                else
-                {
-                    str = 1;
-                }
+                obj = Qnil;
+            }
+            else if ( strcmp( n->type_id, "bool#yes" ) == 0 )
+            {
+                obj = Qtrue;
+            }
+            else if ( strcmp( n->type_id, "bool#no" ) == 0 )
+            {
+                obj = Qfalse;
+            }
+            else if ( strcmp( n->type_id, "int#hex" ) == 0 )
+            {
+                obj = rb_cstr2inum( n->data.str->ptr, 16 );
+            }
+            else if ( strcmp( n->type_id, "int#oct" ) == 0 )
+            {
+                obj = rb_cstr2inum( n->data.str->ptr, -8 );
+            }
+            else if ( strcmp( n->type_id, "int" ) == 0 )
+            {
+                obj = rb_cstr2inum( n->data.str->ptr, 10 );
+            }
+            else if ( strcmp( n->type_id, "timestamp" ) == 0 )
+            {
+                obj = rb_syck_mktime( n->data.str->ptr );
+            }
+            else if ( strcmp( n->type_id, "timestamp#iso8601" ) == 0 )
+            {
+                obj = rb_syck_mktime( n->data.str->ptr );
+            }
+            else if ( strcmp( n->type_id, "timestamp#spaced" ) == 0 )
+            {
+                obj = rb_syck_mktime( n->data.str->ptr );
+            }
+            else if ( strcmp( n->type_id, "timestamp#ymd" ) == 0 )
+            {
+                S_REALLOC_N( n->data.str->ptr, char, 22 );
+                strcat( n->data.str->ptr, "T12:00:00Z" );
+                obj = rb_syck_mktime( n->data.str->ptr );
             }
             else
-            {
-                str = 1;
-            }
-
-            if ( str == 1 )
             {
                 obj = rb_str_new( n->data.str->ptr, n->data.str->len );
             }
@@ -229,6 +216,8 @@ rb_syck_load(argc, argv)
 
     syck_parser_handler( parser, rb_syck_load_handler );
     syck_parser_error_handler( parser, rb_syck_err_handler );
+    syck_parser_implicit_typing( parser, 1 );
+    syck_parser_taguri_expansion( parser, 0 );
     v = syck_parse( parser );
     syck_free_parser( parser );
 
@@ -254,6 +243,8 @@ rb_syck_parse(argc, argv)
 
     syck_parser_handler( parser, rb_syck_parse_handler );
     syck_parser_error_handler( parser, rb_syck_err_handler );
+    syck_parser_implicit_typing( parser, 1 );
+    syck_parser_taguri_expansion( parser, 1 );
     v = syck_parse( parser );
     syck_free_parser( parser );
 
