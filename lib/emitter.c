@@ -453,7 +453,7 @@ void syck_emit_tag( SyckEmitter *e, char *tag, char *ignore )
             if ( *subd == ':' ) {
                 if ( subd - tag > ( strlen( YAML_DOMAIN ) + 5 ) &&
                      strncmp( subd - strlen( YAML_DOMAIN ), YAML_DOMAIN, strlen( YAML_DOMAIN ) ) == 0 ) {
-                    syck_emitter_write( e, tag + 4, ( subd - strlen( YAML_DOMAIN ) - ( tag + 4 ) ) );
+                    syck_emitter_write( e, tag + 4, subd - strlen( YAML_DOMAIN ) - ( tag + 4 ) - 1 );
                     syck_emitter_write( e, "/", 1 );
                     syck_emitter_write( e, subd + 1, ( tag + taglen ) - ( subd + 1 ) );
                 } else {

@@ -261,7 +261,7 @@ void CuRoundTrip( CuTest* tc, struct test_node *stream ) {
     }
 
     /* Reload the stream and compare */
-    printf( "-- output for %s --\n%s\n--- end of output --\n", tc->name, cs->buffer );
+    /* printf( "-- output for %s --\n%s\n--- end of output --\n", tc->name, cs->buffer ); */
     CuStreamCompare( tc, cs->buffer, stream );
     CuStringFree( cs );
 
@@ -1495,7 +1495,7 @@ struct test_node map[] = {
     end_node
 };
 struct test_node stream[] = {
-    { T_MAP, 0, 0, map },
+    { T_MAP, "tag:clarkevans.com,2002:invoice", 0, map },
     end_node
 };
 
@@ -1531,6 +1531,605 @@ struct test_node stream[] = {
 "  Late afternoon is best.\n"
 "  Backup contact is Nancy\n"
 "  Billsmer @ 338-4338.\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example 2.28: Log file
+ */
+void
+YtsSpecificationExamples_28( CuTest *tc )
+{
+struct test_node map1[] = {
+    { T_STR, 0, "Time" }, 
+        { T_STR, 0, "2001-11-23 15:01:42 -05:00" },
+    { T_STR, 0, "User" }, 
+        { T_STR, 0, "ed" },
+    { T_STR, 0, "Warning" }, 
+        { T_STR, 0, "This is an error message for the log file\n" },
+    end_node
+};
+struct test_node map2[] = {
+    { T_STR, 0, "Time" }, 
+        { T_STR, 0, "2001-11-23 15:02:31 -05:00" },
+    { T_STR, 0, "User" }, 
+        { T_STR, 0, "ed" },
+    { T_STR, 0, "Warning" }, 
+        { T_STR, 0, "A slightly different error message.\n" },
+    end_node
+};
+struct test_node file1[] = {
+    { T_STR, 0, "file" }, 
+        { T_STR, 0, "TopClass.py" },
+    { T_STR, 0, "line" }, 
+        { T_STR, 0, "23" },
+    { T_STR, 0, "code" }, 
+        { T_STR, 0, "x = MoreObject(\"345\\n\")\n" },
+    end_node
+};
+struct test_node file2[] = {
+    { T_STR, 0, "file" }, 
+        { T_STR, 0, "MoreClass.py" },
+    { T_STR, 0, "line" }, 
+        { T_STR, 0, "58" },
+    { T_STR, 0, "code" }, 
+        { T_STR, 0, "foo = bar" },
+    end_node
+};
+struct test_node stack[] = {
+    { T_MAP, 0, 0, file1 },
+    { T_MAP, 0, 0, file2 },
+    end_node
+};
+struct test_node map3[] = {
+    { T_STR, 0, "Date" }, 
+        { T_STR, 0, "2001-11-23 15:03:17 -05:00" },
+    { T_STR, 0, "User" }, 
+        { T_STR, 0, "ed" },
+    { T_STR, 0, "Fatal" }, 
+        { T_STR, 0, "Unknown variable \"bar\"\n" },
+    { T_STR, 0, "Stack" }, 
+        { T_SEQ, 0, 0, stack },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map1 },
+    { T_MAP, 0, 0, map2 },
+    { T_MAP, 0, 0, map3 },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"---\n"
+"Time: 2001-11-23 15:01:42 -05:00\n"
+"User: ed\n"
+"Warning: >\n"
+"  This is an error message\n"
+"  for the log file\n"
+"---\n"
+"Time: 2001-11-23 15:02:31 -05:00\n"
+"User: ed\n"
+"Warning: >\n"
+"  A slightly different error\n"
+"  message.\n"
+"---\n"
+"Date: 2001-11-23 15:03:17 -05:00\n"
+"User: ed\n"
+"Fatal: >\n"
+"  Unknown variable \"bar\"\n"
+"Stack:\n"
+"  - file: TopClass.py\n"
+"    line: 23\n"
+"    code: |\n"
+"      x = MoreObject(\"345\\n\")\n"
+"  - file: MoreClass.py\n"
+"    line: 58\n"
+"    code: |-\n"
+"      foo = bar\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Throwaway comments
+ */
+void
+YtsSpecificationExamples_29( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "this" },
+        { T_STR, 0, "contains three lines of text.\nThe third one starts with a\n# character. This isn't a comment.\n" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"### These are four throwaway comment  ### \n"
+"\n"
+"### lines (the second line is empty). ### \n"
+"this: |   # Comments may trail lines.\n"
+"   contains three lines of text.\n"
+"   The third one starts with a\n"
+"   # character. This isn't a comment.\n"
+"\n"
+"# These are three throwaway comment\n"
+"# lines (the first line is empty).\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Document with a single value
+ */
+void
+YtsSpecificationExamples_30( CuTest *tc )
+{
+struct test_node stream[] = {
+    { T_STR, 0, "This YAML stream contains a single text value. The next stream is a log file - a sequence of log entries. Adding an entry to the log is a simple matter of appending it at the end.\n" },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"--- > \n"
+"This YAML stream contains a single text value.\n"
+"The next stream is a log file - a sequence of\n"
+"log entries. Adding an entry to the log is a\n"
+"simple matter of appending it at the end.\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Document stream
+ */
+void
+YtsSpecificationExamples_31( CuTest *tc )
+{
+struct test_node map1[] = {
+    { T_STR, 0, "at" }, 
+        { T_STR, 0, "2001-08-12 09:25:00.00 Z" },
+    { T_STR, 0, "type" }, 
+        { T_STR, 0, "GET" },
+    { T_STR, 0, "HTTP" }, 
+        { T_STR, 0, "1.0" },
+    { T_STR, 0, "url" }, 
+        { T_STR, 0, "/index.html" },
+    end_node
+};
+struct test_node map2[] = {
+    { T_STR, 0, "at" }, 
+        { T_STR, 0, "2001-08-12 09:25:10.00 Z" },
+    { T_STR, 0, "type" }, 
+        { T_STR, 0, "GET" },
+    { T_STR, 0, "HTTP" }, 
+        { T_STR, 0, "1.0" },
+    { T_STR, 0, "url" }, 
+        { T_STR, 0, "/toc.html" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map1 },
+    { T_MAP, 0, 0, map2 },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"--- \n"
+"at: 2001-08-12 09:25:00.00 Z \n"
+"type: GET \n"
+"HTTP: '1.0' \n"
+"url: '/index.html' \n"
+"--- \n"
+"at: 2001-08-12 09:25:10.00 Z \n"
+"type: GET \n"
+"HTTP: '1.0' \n"
+"url: '/toc.html' \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Top level mapping
+ */
+void
+YtsSpecificationExamples_32( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "invoice" }, 
+        { T_STR, 0, "34843" },
+    { T_STR, 0, "date" }, 
+        { T_STR, 0, "2001-01-23" },
+    { T_STR, 0, "total" }, 
+        { T_STR, 0, "4443.52" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"# This stream is an example of a top-level mapping. \n"
+"invoice : 34843 \n"
+"date    : 2001-01-23 \n"
+"total   : 4443.52 \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Single-line documents
+ */
+void
+YtsSpecificationExamples_33( CuTest *tc )
+{
+struct test_node map[] = {
+    end_node
+};
+struct test_node seq[] = {
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    { T_SEQ, 0, 0, seq },
+    { T_STR, 0, "" },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"# The following is a sequence of three documents. \n"
+"# The first contains an empty mapping, the second \n"
+"# an empty sequence, and the last an empty string. \n"
+"--- {} \n"
+"--- [ ] \n"
+"--- '' \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Document with pause
+ */
+void
+YtsSpecificationExamples_34( CuTest *tc )
+{
+struct test_node map1[] = {
+    { T_STR, 0, "sent at" },
+        { T_STR, 0, "2002-06-06 11:46:25.10 Z" },
+    { T_STR, 0, "payload" },
+        { T_STR, 0, "Whatever" },
+    end_node
+};
+struct test_node map2[] = {
+    { T_STR, 0, "sent at" },
+        { T_STR, 0, "2002-06-06 12:05:53.47 Z" },
+    { T_STR, 0, "payload" },
+        { T_STR, 0, "Whatever" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map1 },
+    { T_MAP, 0, 0, map2 },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"# A communication channel based on a YAML stream. \n"
+"--- \n"
+"sent at: 2002-06-06 11:46:25.10 Z \n"
+"payload: Whatever \n"
+"# Receiver can process this as soon as the following is sent: \n"
+"... \n"
+"# Even if the next message is sent long after: \n"
+"--- \n"
+"sent at: 2002-06-06 12:05:53.47 Z \n"
+"payload: Whatever \n"
+"... \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Explicit typing
+ */
+void
+YtsSpecificationExamples_35( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "integer" },
+        { T_STR, "tag:yaml.org,2002:int", "12" },
+    { T_STR, 0, "also int" },
+        { T_STR, "tag:yaml.org,2002:int", "12" },
+    { T_STR, 0, "string" },
+        { T_STR, "tag:yaml.org,2002:str", "12" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"integer: 12 \n"
+"also int: ! \"12\" \n"
+"string: !str 12 \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Private types
+ */
+void
+YtsSpecificationExamples_36( CuTest *tc )
+{
+struct test_node pool[] = {
+    { T_STR, 0, "number" },
+        { T_STR, 0, "8" },
+    { T_STR, 0, "color" },
+        { T_STR, 0, "black" },
+    end_node
+};
+struct test_node map1[] = {
+    { T_STR, 0, "pool" },
+        { T_MAP, "x-private:ball", 0, pool },
+    end_node
+};
+struct test_node bearing[] = {
+    { T_STR, 0, "material" },
+        { T_STR, 0, "steel" },
+    end_node
+};
+struct test_node map2[] = {
+    { T_STR, 0, "bearing" },
+        { T_MAP, "x-private:ball", 0, bearing },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map1 },
+    { T_MAP, 0, 0, map2 },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"# Both examples below make use of the 'x-private:ball' \n"
+"# type family URI, but with different semantics. \n"
+"--- \n"
+"pool: !!ball \n"
+"  number: 8 \n"
+"  color: black \n"
+"--- \n"
+"bearing: !!ball \n"
+"  material: steel \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Type family under yaml.org
+ */
+void
+YtsSpecificationExamples_37( CuTest *tc )
+{
+struct test_node seq[] = {
+    { T_STR, "tag:yaml.org,2002:str", "a Unicode string" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_SEQ, 0, 0, seq },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"# The URI is 'tag:yaml.org,2002:str' \n"
+"- !str a Unicode string \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Type family under perl.yaml.org
+ */
+void
+YtsSpecificationExamples_38( CuTest *tc )
+{
+struct test_node map[] = {
+    end_node
+};
+struct test_node seq[] = {
+    { T_MAP, "tag:perl.yaml.org,2002:Text::Tabs", 0, map },
+    end_node
+};
+struct test_node stream[] = {
+    { T_SEQ, 0, 0, seq },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"# The URI is 'tag:perl.yaml.org,2002:Text::Tabs' \n"
+"- !perl/Text::Tabs {} \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Type family under clarkevans.com
+ */
+void
+YtsSpecificationExamples_39( CuTest *tc )
+{
+struct test_node map[] = {
+    end_node
+};
+struct test_node seq[] = {
+    { T_MAP, "tag:clarkevans.com,2003-02:timesheet", 0, map },
+    end_node
+};
+struct test_node stream[] = {
+    { T_SEQ, 0, 0, seq },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"# The URI is 'tag:clarkevans.com,2003-02:timesheet' \n"
+"- !clarkevans.com,2003-02/timesheet {}\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : URI Escaping
+ */
+void
+YtsSpecificationExamples_40( CuTest *tc )
+{
+struct test_node same[] = {
+    { T_STR, "tag:domain.tld,2002:type0", "value" },
+    { T_STR, "tag:domain.tld,2002:type0", "value" },
+    end_node
+};
+struct test_node diff[] = {
+    { T_STR, "tag:domain.tld,2002:type%30", "value" },
+    { T_STR, "tag:domain.tld,2002:type0", "value" },
+    end_node
+};
+struct test_node map[] = {
+    { T_STR, 0, "same" },
+        { T_SEQ, 0, 0, same },
+    { T_STR, 0, "different" },
+        { T_SEQ, 0, 0, diff },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"same: \n"
+"  - !domain.tld,2002/type\\x30 value\n"
+"  - !domain.tld,2002/type0 value\n"
+"different: # As far as the YAML parser is concerned \n"
+"  - !domain.tld,2002/type%30 value\n"
+"  - !domain.tld,2002/type0 value\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Overriding anchors
+ */
+void
+YtsSpecificationExamples_42( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "anchor" },
+        { T_STR, 0, "This scalar has an anchor." },
+    { T_STR, 0, "override" },
+        { T_STR, 0, "The alias node below is a repeated use of this value.\n" },
+    { T_STR, 0, "alias" },
+        { T_STR, 0, "The alias node below is a repeated use of this value.\n" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"anchor : &A001 This scalar has an anchor. \n"
+"override : &A001 >\n"
+" The alias node below is a\n"
+" repeated use of this value.\n"
+"alias : *A001\n"
         ,
 
         /* C structure of validations */
@@ -1608,6 +2207,20 @@ SyckGetSuite()
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_25 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_26 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_27 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_28 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_29 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_30 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_31 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_32 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_33 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_34 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_35 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_36 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_37 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_38 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_39 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_40 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_42 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_62 );
     return suite;
 }

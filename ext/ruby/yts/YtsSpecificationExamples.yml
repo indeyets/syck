@@ -1449,7 +1449,7 @@ syck: |
       end_node
   };
   struct test_node stream[] = {
-      { T_MAP, 0, 0, map },
+      { T_MAP, "tag:clarkevans.com,2002:invoice", 0, map },
       end_node
   };
 
@@ -1494,6 +1494,65 @@ ruby: |
            'Stack' => [ 
            { 'file' => 'TopClass.py', 'line' => 23, 'code' => "x = MoreObject(\"345\\n\")\n" }, 
            { 'file' => 'MoreClass.py', 'line' => 58, 'code' => "foo = bar" } ] } ) 
+syck: |
+  struct test_node map1[] = {
+      { T_STR, 0, "Time" }, 
+          { T_STR, 0, "2001-11-23 15:01:42 -05:00" },
+      { T_STR, 0, "User" }, 
+          { T_STR, 0, "ed" },
+      { T_STR, 0, "Warning" }, 
+          { T_STR, 0, "This is an error message for the log file\n" },
+      end_node
+  };
+  struct test_node map2[] = {
+      { T_STR, 0, "Time" }, 
+          { T_STR, 0, "2001-11-23 15:02:31 -05:00" },
+      { T_STR, 0, "User" }, 
+          { T_STR, 0, "ed" },
+      { T_STR, 0, "Warning" }, 
+          { T_STR, 0, "A slightly different error message.\n" },
+      end_node
+  };
+  struct test_node file1[] = {
+      { T_STR, 0, "file" }, 
+          { T_STR, 0, "TopClass.py" },
+      { T_STR, 0, "line" }, 
+          { T_STR, 0, "23" },
+      { T_STR, 0, "code" }, 
+          { T_STR, 0, "x = MoreObject(\"345\\n\")\n" },
+      end_node
+  };
+  struct test_node file2[] = {
+      { T_STR, 0, "file" }, 
+          { T_STR, 0, "MoreClass.py" },
+      { T_STR, 0, "line" }, 
+          { T_STR, 0, "58" },
+      { T_STR, 0, "code" }, 
+          { T_STR, 0, "foo = bar" },
+      end_node
+  };
+  struct test_node stack[] = {
+      { T_MAP, 0, 0, file1 },
+      { T_MAP, 0, 0, file2 },
+      end_node
+  };
+  struct test_node map3[] = {
+      { T_STR, 0, "Date" }, 
+          { T_STR, 0, "2001-11-23 15:03:17 -05:00" },
+      { T_STR, 0, "User" }, 
+          { T_STR, 0, "ed" },
+      { T_STR, 0, "Fatal" }, 
+          { T_STR, 0, "Unknown variable \"bar\"\n" },
+      { T_STR, 0, "Stack" }, 
+          { T_SEQ, 0, 0, stack },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map1 },
+      { T_MAP, 0, 0, map2 },
+      { T_MAP, 0, 0, map3 },
+      end_node
+  };
 documents: 3 
  
 --- 
@@ -1513,6 +1572,16 @@ ruby: |
    { 
      'this' => "contains three lines of text.\nThe third one starts with a\n# character. This isn't a comment.\n" 
    } 
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "this" },
+          { T_STR, 0, "contains three lines of text.\nThe third one starts with a\n# character. This isn't a comment.\n" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Document with a single value 
@@ -1524,6 +1593,11 @@ yaml: |
    simple matter of appending it at the end.
 ruby: | 
    "This YAML stream contains a single text value. The next stream is a log file - a sequence of log entries. Adding an entry to the log is a simple matter of appending it at the end.\n" 
+syck: |
+  struct test_node stream[] = {
+      { T_STR, 0, "This YAML stream contains a single text value. The next stream is a log file - a sequence of log entries. Adding an entry to the log is a simple matter of appending it at the end.\n" },
+      end_node
+  };
  
 --- 
 test: Document stream 
@@ -1552,6 +1626,34 @@ ruby: |
       'HTTP' => '1.0', 
       'url' => '/toc.html' 
    } ) 
+syck: |
+  struct test_node map1[] = {
+      { T_STR, 0, "at" }, 
+          { T_STR, 0, "2001-08-12 09:25:00.00 Z" },
+      { T_STR, 0, "type" }, 
+          { T_STR, 0, "GET" },
+      { T_STR, 0, "HTTP" }, 
+          { T_STR, 0, "1.0" },
+      { T_STR, 0, "url" }, 
+          { T_STR, 0, "/index.html" },
+      end_node
+  };
+  struct test_node map2[] = {
+      { T_STR, 0, "at" }, 
+          { T_STR, 0, "2001-08-12 09:25:10.00 Z" },
+      { T_STR, 0, "type" }, 
+          { T_STR, 0, "GET" },
+      { T_STR, 0, "HTTP" }, 
+          { T_STR, 0, "1.0" },
+      { T_STR, 0, "url" }, 
+          { T_STR, 0, "/toc.html" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map1 },
+      { T_MAP, 0, 0, map2 },
+      end_node
+  };
 documents: 2 
  
 --- 
@@ -1567,6 +1669,20 @@ ruby: |
       'date' => Date.new( 2001, 1, 23 ), 
       'total' => 4443.52 
    } 
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "invoice" }, 
+          { T_STR, 0, "34843" },
+      { T_STR, 0, "date" }, 
+          { T_STR, 0, "2001-01-23" },
+      { T_STR, 0, "total" }, 
+          { T_STR, 0, "4443.52" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Single-line documents 
@@ -1582,6 +1698,19 @@ ruby: |
   y.add( {} ) 
   y.add( [] ) 
   y.add( '' ) 
+syck: |
+  struct test_node map[] = {
+      end_node
+  };
+  struct test_node seq[] = {
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      { T_SEQ, 0, 0, seq },
+      { T_STR, 0, "" },
+      end_node
+  };
 documents: 3 
  
 --- 
@@ -1607,6 +1736,26 @@ ruby: |
   y.add(  
     { "payload" => "Whatever", "sent at" => YAML::mktime( 2002, 6, 6, 12, 5, 53, 0.47 ) } 
   ) 
+syck: |
+  struct test_node map1[] = {
+      { T_STR, 0, "sent at" },
+          { T_STR, 0, "2002-06-06 11:46:25.10 Z" },
+      { T_STR, 0, "payload" },
+          { T_STR, 0, "Whatever" },
+      end_node
+  };
+  struct test_node map2[] = {
+      { T_STR, 0, "sent at" },
+          { T_STR, 0, "2002-06-06 12:05:53.47 Z" },
+      { T_STR, 0, "payload" },
+          { T_STR, 0, "Whatever" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map1 },
+      { T_MAP, 0, 0, map2 },
+      end_node
+  };
 documents: 2 
  
 --- 
@@ -1617,6 +1766,20 @@ yaml: |
    string: !str 12 
 ruby: | 
    { 'integer' => 12, 'also int' => 12, 'string' => '12' } 
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "integer" },
+          { T_STR, "tag:yaml.org,2002:int", "12" },
+      { T_STR, 0, "also int" },
+          { T_STR, "tag:yaml.org,2002:int", "12" },
+      { T_STR, 0, "string" },
+          { T_STR, "tag:yaml.org,2002:str", "12" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Private types 
@@ -1640,6 +1803,34 @@ ruby: |
     PrivateType.new( 'ball', 
       { 'material' => 'steel' } ) } 
   ) 
+syck: |
+  struct test_node pool[] = {
+      { T_STR, 0, "number" },
+          { T_STR, 0, "8" },
+      { T_STR, 0, "color" },
+          { T_STR, 0, "black" },
+      end_node
+  };
+  struct test_node map1[] = {
+      { T_STR, 0, "pool" },
+          { T_MAP, "x-private:ball", 0, pool },
+      end_node
+  };
+  struct test_node bearing[] = {
+      { T_STR, 0, "material" },
+          { T_STR, 0, "steel" },
+      end_node
+  };
+  struct test_node map2[] = {
+      { T_STR, 0, "bearing" },
+          { T_MAP, "x-private:ball", 0, bearing },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map1 },
+      { T_MAP, 0, 0, map2 },
+      end_node
+  };
 documents: 2 
  
 --- 
@@ -1651,6 +1842,15 @@ python: |
   [ [ 'a Unicode string' ] ] 
 ruby: | 
   [ 'a Unicode string' ] 
+syck: |
+  struct test_node seq[] = {
+      { T_STR, "tag:yaml.org,2002:str", "a Unicode string" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_SEQ, 0, 0, seq },
+      end_node
+  };
  
 --- 
 test: Type family under perl.yaml.org 
@@ -1659,6 +1859,18 @@ yaml: |
   - !perl/Text::Tabs {} 
 ruby: | 
   [ DomainType.new( 'perl.yaml.org,2002', 'Text::Tabs', {} ) ]
+syck: |
+  struct test_node map[] = {
+      end_node
+  };
+  struct test_node seq[] = {
+      { T_MAP, "tag:perl.yaml.org,2002:Text::Tabs", 0, map },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_SEQ, 0, 0, seq },
+      end_node
+  };
  
 --- 
 test: Type family under clarkevans.com 
@@ -1667,6 +1879,18 @@ yaml: |
   - !clarkevans.com,2003-02/timesheet {}
 ruby: | 
   [ DomainType.new( 'clarkevans.com,2003-02', 'timesheet', {} ) ]
+syck: |
+  struct test_node map[] = {
+      end_node
+  };
+  struct test_node seq[] = {
+      { T_MAP, "tag:clarkevans.com,2003-02:timesheet", 0, map },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_SEQ, 0, 0, seq },
+      end_node
+  };
  
 --- 
 test: URI Escaping 
@@ -1686,6 +1910,28 @@ ruby-setup: |
   } 
 ruby: | 
   { 'same' => [ 'ONE: value', 'ONE: value' ], 'different' => [ 'TWO: value', 'ONE: value' ] } 
+syck: |
+  struct test_node same[] = {
+      { T_STR, "tag:domain.tld,2002:type0", "value" },
+      { T_STR, "tag:domain.tld,2002:type0", "value" },
+      end_node
+  };
+  struct test_node diff[] = {
+      { T_STR, "tag:domain.tld,2002:type%30", "value" },
+      { T_STR, "tag:domain.tld,2002:type0", "value" },
+      end_node
+  };
+  struct test_node map[] = {
+      { T_STR, 0, "same" },
+          { T_SEQ, 0, 0, same },
+      { T_STR, 0, "different" },
+          { T_SEQ, 0, 0, diff },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: URI Prefixing 
@@ -1726,6 +1972,20 @@ ruby: |
   { 'anchor' => 'This scalar has an anchor.',  
     'override' => "The alias node below is a repeated use of this value.\n",  
     'alias' => "The alias node below is a repeated use of this value.\n" } 
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "anchor" },
+          { T_STR, 0, "This scalar has an anchor." },
+      { T_STR, 0, "override" },
+          { T_STR, 0, "The alias node below is a repeated use of this value.\n" },
+      { T_STR, 0, "alias" },
+          { T_STR, 0, "The alias node below is a repeated use of this value.\n" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Flow and block formatting 
