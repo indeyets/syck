@@ -27,6 +27,14 @@ syck_assert( char *file_name, unsigned line_num )
     abort();
 }
 
+char *
+syck_strndup( char *buf, long len )
+{
+    char *new = S_ALLOC_N( char, len + 1 );
+    memset( new, 0, len + 1 );
+    memcpy( new, buf, len );
+}
+
 //
 // Default IO functions
 //
@@ -76,7 +84,16 @@ syck_new_parser()
 {
     SyckParser *p;
     p = S_ALLOC( SyckParser );
+    p->anchors = st_init_strtable();
     return p;
+}
+
+void
+syck_free_parser( SyckParser *p )
+{
+    st_free_table( p->anchors );
+    free_any_io( p );
+    free( p );
 }
 
 void

@@ -44,10 +44,17 @@ syck_parser_init(SyckParser *p, int debug)
 ","[ $]+    return ',';
 "?"[ $]+    return '?';
 
-[a-z0-9]+   {
-               yylval.nodeData = syck_new_str2( yytext, yyleng );
-               return PLAIN;
-            }
+"&"[[:alnum:]]+     {   yylval.name = syck_strndup( yytext + 1, yyleng - 1 );
+                        return ANCHOR;
+                    }
+
+"*"[[:alnum:]]+     {   yylval.name = syck_strndup( yytext + 1, yyleng - 1 );
+                        return ALIAS;
+                    }
+
+[[:alnum:]]+        {   yylval.nodeData = syck_new_str2( yytext, yyleng );
+                        return PLAIN;
+                    }
 
 .           printf( "Unrecognized character: %s\n", yytext );
 

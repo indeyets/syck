@@ -11,6 +11,7 @@
 #define SYCK_H
 
 #include <stdio.h>
+#include "st.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -72,6 +73,8 @@ enum map_part {
 };
 
 struct _syck_node {
+    // Symbol table ID
+    SYMID id;
     // Underlying kind
     enum syck_kind_tag kind;
     // Fully qualified tag-uri for type
@@ -127,14 +130,16 @@ struct _syck_parser {
             SyckIoStrRead read;
         } *str;
     } io;
+    // Symbol table
+    st_table *anchors;
 };
 
 //
 // Handler prototypes
 //
 SYMID syck_hdlr_add_node( SyckParser *, SyckNode * );
-SyckNode *syck_hdlr_add_anchor( SyckParser *, char *, SyckNode * );
-SyckNode *syck_hdlr_add_alias( SyckParser *, char * );
+SyckNode *syck_hdlr_add_anchor( SyckParser *, const char *, SyckNode * );
+SyckNode *syck_hdlr_add_alias( SyckParser *, const char * );
 SyckNode *syck_add_transfer( char *, SyckNode * );
 int syck_try_implicit( SyckNode * );
 void syck_fold_format( char *, SyckNode * );
@@ -142,6 +147,7 @@ void syck_fold_format( char *, SyckNode * );
 //
 // API prototypes
 //
+char *syck_strndup( char *, long );
 int syck_io_file_read( char *, SyckIoFile *, int );
 int syck_io_str_read( char *, SyckIoStr *, int );
 SyckParser *syck_new_parser();

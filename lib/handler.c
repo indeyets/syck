@@ -7,24 +7,35 @@
 // Copyright (C) 2003 why the lucky stiff
 //
 
+#include "st.h"
 #include "syck.h"
 
 SYMID 
 syck_hdlr_add_node( SyckParser *p, SyckNode *n )
 {
-    return (p->handler)( n );
+    if ( ! n->id ) n->id = (p->handler)( n );
+    return n->id;
 }
 
 SyckNode *
-syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
+syck_hdlr_add_anchor( SyckParser *p, const char *a, SyckNode *n )
 {
+    st_insert( p->anchors, a, n );
+    //st_add_direct( p->anchors, a, n );
     return n;
 }
 
 SyckNode *
-syck_hdlr_add_alias( SyckParser *p, char *a )
+syck_hdlr_add_alias( SyckParser *p, const char *a )
 {
-    return syck_new_str( "ALIAS" );
+    SyckNode *n;
+
+    if ( st_lookup( p->anchors, a, &n ) )
+    {
+        return n;
+    }
+
+    return syck_new_str( "..." );
 }
 
 SyckNode *

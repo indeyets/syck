@@ -19,6 +19,7 @@ syck_alloc_node( enum syck_kind_tag type )
 
     s = S_ALLOC( SyckNode );
     s->kind = type;
+    s->id = NULL;
 
     return s;
 }

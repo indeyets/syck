@@ -18,14 +18,14 @@ SYMID
 SyckParseStringHandler( SyckNode *n )
 {
     printf( "NODE: %s\n", n->type_id );
+    return 1112;
 }
 
-char *
-syck_strndup( char *buf, int len )
+enum st_retval 
+ListAnchors( char *key, SyckNode *n, char *arg )
 {
-    char *new = S_ALLOC_N( char, len + 1 );
-    memset( new, 0, len + 1 );
-    memcpy( new, buf, len );
+    printf( "KEY: %s, NODE: %s\n", key, syck_str_read( n ) );
+    return ST_CONTINUE;
 }
 
 void 
@@ -69,11 +69,11 @@ TestSyckParseString( CuTest *tc )
     SyckParser *parser;
     parser = syck_new_parser();
     syck_parser_handler( parser, SyckParseStringHandler );
-    syck_parser_str_auto( parser, "{test: 1, and: 2}", NULL );
+    syck_parser_str_auto( parser, "{test: 1, and: 2, or: &test 13, also: *test}", NULL );
     syck_parser_init( parser, 1 );
     yyparse( parser );
-    free_any_io( parser );
-    free( parser );
+    st_foreach( parser->anchors, ListAnchors, NULL );
+    syck_free_parser( parser );
 }
 
 CuSuite *

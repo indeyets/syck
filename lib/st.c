@@ -59,22 +59,10 @@ static struct st_hash_type type_strhash = {
     strhash,
 };
 
-#ifdef RUBY_PLATFORM
-#define xmalloc ruby_xmalloc
-#define xcalloc ruby_xcalloc
-#define xrealloc ruby_xrealloc
-#define xfree ruby_xfree
-
-void *xmalloc();
-void *xcalloc();
-void *xrealloc();
-void xfree();
-#endif
-
 static void rehash();
 
-#define alloc(type) (type*)xmalloc((unsigned)sizeof(type))
-#define Calloc(n,s) (char*)xcalloc((n),(s))
+#define alloc(type) (type*)malloc((unsigned)sizeof(type))
+#define Calloc(n,s) (char*)calloc((n),(s))
 
 #define EQUAL(table,x,y) ((x)==(y) || (*table->type->compare)((x),(y)) == 0)
 
