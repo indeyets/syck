@@ -130,8 +130,11 @@ void
 syck_fold_format( struct SyckStr *n, int blockType, int indt_len, int nlDisp )
 {
     char *spc;
+    char *eol = NULL;
+    char *first_nl = NULL;
     char *fc = n->ptr;
     int keep_nl = 0;
+    int nl_count = 0;
 
     //
     // Scan the sucker for newlines and strip indent
@@ -146,12 +149,50 @@ syck_fold_format( struct SyckStr *n, int blockType, int indt_len, int nlDisp )
                 if ( spc - fc > indt_len )
                     break;
             }
-            S_MEMMOVE( fc + keep_nl, spc, char, n->len - ( spc - n->ptr ) ); 
-            n->len -= spc - fc - keep_nl;
+
+            if ( blockType == BLOCK_FOLD && *spc != ' ' )
+            {
+                if ( eol != NULL ) fc = eol;
+                if ( first_nl == NULL && keep_nl == 1 )
+                {
+                    first_nl = fc;
+                    *first_nl = ' ';
+                }
+                if ( nl_count == 1 )
+                {
+                    *first_nl = '\n';
+                    keep_nl = 0;
+                }
+            }
+
+            fc += keep_nl;
+            S_MEMMOVE( fc, spc, char, n->len - ( spc - n->ptr ) ); 
+
+            n->len -= spc - fc;
             keep_nl = 1;
+            eol = NULL;
+            nl_count++;
         }
-        fc++;
+        else
+        {
+            //
+            // eol tracks the last space on a line
+            // 
+            if ( *fc == ' ' )
+            {
+                if ( eol == NULL ) eol = fc;
+            }
+            else
+            {
+                eol = NULL;
+            }
+            first_nl = NULL;
+            nl_count = 0;
+            fc++;
+        }
     }
+
+    n->ptr[n->len] = '\n';
 
     //
     // Chomp or keep?
