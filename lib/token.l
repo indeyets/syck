@@ -9,9 +9,29 @@
 //
 
 #include "syck.h"
-%}
+#include "gram.h"
 
-%option stack
+static SyckParser *syck_lex_parser = NULL;
+
+int yydebug;
+
+#define YY_INPUT(buf,result,max_size) result = syck_lex_read(buf, syck_lex_parser, max_size)
+
+int
+syck_lex_read( char *buf, SyckParser *p, int max_size )
+{
+    int len = syck_parser_read(buf, syck_lex_parser, max_size); 
+    printf( "READ: %s\n", buf );
+}
+
+void
+syck_parser_init(SyckParser *p, int debug)
+{
+    syck_lex_parser = p;
+    yydebug = debug;
+}
+
+%}
 
 COLON   :( |$)
 DASH    -( |$)
@@ -19,10 +39,21 @@ DASH    -( |$)
 %%
 
 [a-z0-9]+   {
+               yylval.nodeData = syck_new_str( yytext );
+               return PLAIN;
             }
 
 %%
 
-void syck_perror( char *msg )
+
+int 
+yywrap()
 {
+    return 1;
+}
+
+void 
+yyerror( char *msg )
+{
+    printf( "Parse error: %s\n", msg );
 }

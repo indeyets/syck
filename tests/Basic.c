@@ -16,7 +16,7 @@
 void 
 TestSyckNodeAlloc( CuTest *tc )
 {
-    struct SyckNode* n;
+    SyckNode* n;
 
     n = syck_new_str( "YAML" );
 
@@ -34,7 +34,7 @@ TestSyckNodeAlloc( CuTest *tc )
 void
 TestSyckSeqAlloc( CuTest *tc )
 {
-    struct SyckNode *n;
+    SyckNode *n;
     SYMID id;
 
     n = syck_new_seq( 1 );
@@ -56,7 +56,7 @@ TestSyckSeqAlloc( CuTest *tc )
 void
 TestSyckMapAlloc( CuTest *tc )
 {
-    struct SyckNode *n;
+    SyckNode *n;
 
     n = syck_new_map( 24556, 24557 );
     syck_map_add( n, 24558, 24559 );
@@ -69,6 +69,27 @@ TestSyckMapAlloc( CuTest *tc )
     free( n );
 }
 
+//
+// Test building a simple map
+//
+void
+TestSyckMapUpdate( CuTest *tc )
+{
+    SyckNode *n1, *n2;
+
+    n1 = syck_new_map( 51116, 51117 );
+    syck_map_add( n1, 51118, 51119 );
+    n2 = syck_new_map( 51126, 51127 );
+    syck_map_add( n2, 51128, 51129 );
+
+    syck_map_update( n1, n2 );
+    CuAssert( tc, "Invalid value at '2'", 51127 == syck_map_read( n1, map_value, 2 ) );
+    CuAssert( tc, "Invalid value at '3'", 51129 == syck_map_read( n1, map_value, 3 ) );
+
+    free( n2 );
+    free( n1 );
+}
+
 CuSuite *
 SyckGetSuite()
 {
@@ -76,6 +97,7 @@ SyckGetSuite()
     SUITE_ADD_TEST( suite, TestSyckNodeAlloc );
     SUITE_ADD_TEST( suite, TestSyckSeqAlloc );
     SUITE_ADD_TEST( suite, TestSyckMapAlloc );
+    SUITE_ADD_TEST( suite, TestSyckMapUpdate );
     return suite;
 }
 

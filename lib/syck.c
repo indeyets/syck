@@ -30,26 +30,42 @@ syck_assert( char *file_name, unsigned line_num )
 //
 // Default IO functions
 //
-char *
-syck_io_file_read( SyckFile *file )
+int
+syck_io_file_read( char *buf, SyckFile *file, int max_size )
 {
+    int len = 0;
+    return len;
 }
 
-char *
-syck_io_str_read( SyckStr *str )
+int
+syck_io_str_read( char *buf, SyckStr *str, int max_size )
 {
     char *beg;
+    int len = 0;
 
     ASSERT( str != NULL );
     beg = str->ptr;
-    while ( str->ptr < str->end ) {
-        if (*(str->ptr++) == '\n') break;
+    if ( max_size >= 0 )
+    {
+        str->ptr += max_size;
+        if ( str->ptr > str->end )
+        {
+            str->ptr = str->end;
+        }
+    }
+    else
+    {
+        // Use exact string length
+        while ( str->ptr < str->end ) {
+            if (*(str->ptr++) == '\n') break;
+        }
     }
     if ( beg < str->ptr )
     {
-        return strndup( beg, str->ptr - beg );
+        len = str->ptr - beg;
+        memcpy( buf, beg, len );
     }
-    return NULL;
+    return len;
 }
 
 //
@@ -129,17 +145,31 @@ free_any_io( SyckParser *p )
     }
 }
 
-char *
-syck_parser_readline( SyckParser *p )
+int
+syck_parser_readline( char *buf, SyckParser *p )
 {
     ASSERT( p != NULL );
     switch ( p->io_type )
     {
         case syck_io_str:
-        return (p->io.str->read)( p->io.str );
+        return (p->io.str->read)( buf, p->io.str, -1 );
 
         case syck_io_file:
-        return (p->io.file->read)( p->io.file );
+        return (p->io.file->read)( buf, p->io.file, -1 );
+    }
+}
+
+int
+syck_parser_read( char *buf, SyckParser *p, int len )
+{
+    ASSERT( p != NULL );
+    switch ( p->io_type )
+    {
+        case syck_io_str:
+        return (p->io.str->read)( buf, p->io.str, len );
+
+        case syck_io_file:
+        return (p->io.file->read)( buf, p->io.file, len );
     }
 }
 
@@ -149,15 +179,7 @@ syck_parse( SyckParser *p )
     char *line;
 
     ASSERT( p != NULL );
+    syck_parser_init( p, 0 );
+    yyparse( p );
 }
 
-//static char *
-//syckp_read( prsr, len )
-//    struct SyckParser *prsr;
-//    long len;
-//{
-//    char *str;
-//    
-//    if ( prsr->fp )
-//    {
-//        str = 

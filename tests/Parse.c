@@ -14,8 +14,43 @@
 // Test parsing tokens of a simple string.
 //
 SYMID
-SyckParseStringHandler( struct SyckNode *n )
+SyckParseStringHandler( SyckNode *n )
 {
+    printf( "NODE: %s\n", n->kind );
+}
+
+void 
+TestSyckReadString( CuTest *tc )
+{
+    SyckParser *parser;
+    char *buf = ALLOC_N( char, 4 );
+    int len = 0;
+
+    parser = syck_new_parser();
+    syck_parser_handler( parser, SyckParseStringHandler );
+    syck_parser_str_auto( parser, "test: 1\nand: 2\nalso: 3", NULL );
+
+    len = syck_parser_read( buf, parser, 4 );
+    CuAssert( tc, "Wrong length, line 1.", 4 == len );
+    CuAssertStrEquals( tc, "test", strndup( buf, len ) );
+    len = syck_parser_read( buf, parser, 4 );
+    CuAssert( tc, "Wrong length, line 2.", 4 == len );
+    CuAssertStrEquals( tc, ": 1\n", strndup( buf, len ) );
+    len = syck_parser_read( buf, parser, 4 );
+    CuAssert( tc, "Wrong length, line 3.", 4 == len );
+    CuAssertStrEquals( tc, "and:", strndup( buf, len ) );
+    len = syck_parser_read( buf, parser, 4 );
+    CuAssert( tc, "Wrong length, line 4.", 4 == len );
+    CuAssertStrEquals( tc, " 2\na", strndup( buf, len ) );
+    len = syck_parser_read( buf, parser, 4 );
+    CuAssert( tc, "Wrong length, line 5.", 4 == len );
+    CuAssertStrEquals( tc, "lso:", strndup( buf, len ) );
+    len = syck_parser_read( buf, parser, 4 );
+    CuAssert( tc, "Wrong length, line 6.", 2 == len );
+    CuAssertStrEquals( tc, " 3", strndup( buf, len ) );
+
+    free_any_io( parser );
+    free( parser );
 }
 
 void 
@@ -24,8 +59,9 @@ TestSyckParseString( CuTest *tc )
     SyckParser *parser;
     parser = syck_new_parser();
     syck_parser_handler( parser, SyckParseStringHandler );
-    syck_parser_str_auto( parser, "test: 1\nand: 2\nor: 3", NULL );
-    syck_parse( parser );
+    syck_parser_str_auto( parser, "test", NULL );
+    syck_parser_init( parser, 1 );
+    yyparse( parser );
     free_any_io( parser );
     free( parser );
 }
@@ -34,6 +70,7 @@ CuSuite *
 SyckGetSuite()
 {
     CuSuite *suite = CuSuiteNew();
+    SUITE_ADD_TEST( suite, TestSyckReadString );
     SUITE_ADD_TEST( suite, TestSyckParseString );
     return suite;
 }

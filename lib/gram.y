@@ -7,18 +7,19 @@
 // Copyright (C) 2003 why the lucky stiff
 //
 
-%pure-parser
+%start doc
+
 %{
 
 #include "syck.h"
 
-#define YYPARSE_PARAM yyparm
-#define YYLEX_PARAM yyparm
+#define YYPARSE_PARAM parser
+
 %}
 
 %union {
     SYMID nodeId;
-    struct SyckNode *nodeData;
+    SyckNode *nodeData;
     char *name;
 };
 
@@ -26,15 +27,20 @@
 %token <nodeData>   WORD PLAIN FSTART RAWTEXT
 %token              IOPEN INDENT IEND
 
-%type <nodeId>      atom word_rep struct_rep atom_or_empty
-%type <nodeId>      scalar_block implicit_seq inline_seq implicit_map inline_map
-%type <nodeId>      basic_seq
-%type <nodeData>    in_implicit_seq in_inline_seq simple_mapping basic_mapping
+%type <nodeId>      doc basic_seq
+%type <nodeData>    atom word_rep struct_rep atom_or_empty
+%type <nodeData>    scalar_block implicit_seq inline_seq implicit_map inline_map
+%type <nodeData>    in_implicit_seq in_inline_seq basic_mapping
 %type <nodeData>    in_implicit_map in_inline_map complex_mapping
 
-%left               "+" "-" "[" "]" "{" "}" ":" "," "?" "="
+%left               '+' '-' '[' ']' '{' '}' ':' ',' '?'
 
 %%
+
+doc     : atom
+        {
+           $$ = syck_hdlr_add_node( (SyckParser *)parser, $1 );
+        }
 
 atom	: word_rep
 	 	| struct_rep
@@ -45,7 +51,7 @@ atom	: word_rep
             * for anchors.  The actual ID in the symbol table is returned to the
             * higher nodes, though.
             */
-           $$ = hdlr_add_anchor( $1, $2 );
+           $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $2 );
         }
 		| ALIAS										
         {
@@ -53,13 +59,13 @@ atom	: word_rep
             * _Aliases_: The anchor symbol table is scanned for the anchor name.
             * The anchor's ID in the language's symbol table is returned.
             */
-           $$ = hdlr_add_alias( $1 );
+           $$ = syck_hdlr_add_alias( (SyckParser *)parser, $1 );
         }
 
 atom_or_empty   : atom
                 |
                 {
-                    $$ = hdlr_add_node( new_str_node( "" ) ); 
+                   $$ = syck_new_str( "" ); 
                 }
 
 //
@@ -69,27 +75,25 @@ atom_or_empty   : atom
 //
 word_rep	: TRANSFER word_rep						
             { 
-                $$ = hdlr_add_transfer( $1, $2 );
+               $$ = syck_add_transfer( $1, $2 );
             }
 			| WORD
             { 
-                struct SyckNode *n = $1;
-                n->type_id = "str";
-                $$ = hdlr_add_node( n );
+               SyckNode *n = $1;
+               n->type_id = "str";
+               $$ = n;
             }
             | PLAIN
             {
-                struct SyckNode *n = $1;
-                syck_try_implicit( n );
-                $$ = hdlr_add_node( n );
+                $$ = $1;
             }
-			| "+"									
+			| '+'									
             { 
-                $$ = hdlr_add_node( add_str_implicit( "+" ) );
+                $$ = syck_new_str( "+" );
             }
-			| "-"
+			| '-'
             { 
-                $$ = hdlr_add_node( add_str_implicit( "+" ) );
+                $$ = syck_new_str( "-" );
             }
 
 //
@@ -98,7 +102,7 @@ word_rep	: TRANSFER word_rep
 //
 struct_rep	: TRANSFER struct_rep
             { 
-                $$ = hdlr_add_transfer( $1, $2 );
+                $$ = syck_add_transfer( $1, $2 );
             }
 			| scalar_block
 			| implicit_seq
@@ -112,16 +116,16 @@ struct_rep	: TRANSFER struct_rep
 //
 scalar_block	: FOLD IOPEN RAWTEXT IEND			
 			 	{ 
-                    struct SyckNode *n = $3;
+                    SyckNode *n = $3;
                     syck_fold_format( $1, $3 );
                     n->type_id = "str";
-                    $$ = hdlr_add_node( n );
+                    $$ = n;
 				}
 			    | FOLD FSTART
                 { 
-                    struct SyckNode *n = $2;
+                    SyckNode *n = $2;
                     n->type_id = "str";
-                    $$ = hdlr_add_node( n );
+                    $$ = n;
                 }
 
 //
@@ -129,27 +133,27 @@ scalar_block	: FOLD IOPEN RAWTEXT IEND
 //
 implicit_seq	: IOPEN in_implicit_seq	IEND	
                 { 
-                    $$ = hdlr_add_node( $2 );
+                    $$ = $2;
                 }
 
 basic_seq       : '-' atom_or_empty             
                 { 
-                    $$ = $2
+                    $$ = syck_hdlr_add_node( (SyckParser *)parser, $2 );
                 }
 /* Still need to rethink this...
 				| '-' seq_map_short
                 { 
-                    $$ = $2
+                    $$ = syck_hdlr_add_node( (SyckParser *)parser, $2 );
                 }
 */
 
 in_implicit_seq : basic_seq
                 {
-                    $$ = new_seq_node( $1 );
+                    $$ = syck_new_seq( $1 );
                 }
 				| in_implicit_seq INDENT basic_seq
 				{ 
-                    add_seq_item( $1, $3 );
+                    syck_seq_add( $1, $3 );
                     $$ = $1;
 				}
 
@@ -159,12 +163,12 @@ in_implicit_seq : basic_seq
 /* This needs to be rethought based on the symbol table
 seq_map_short	: simple_mapping
 			  	{
-                    $$ = hdlr_add_node( $1 );
+                    $$ = syck_hdlr_add_node( (SyckParser *)parser, $1 );
 				}
 				| simple_mapping implicit_map	
                 { 
-                    map_update( $1, $2 );
-                    $$ = hdlr_add_node( $1 );
+                    syck_map_update( $1, $2 );
+                    $$ = syck_hdlr_add_node( (SyckParser *)parser, $1 );
                 }
 */
 
@@ -173,20 +177,20 @@ seq_map_short	: simple_mapping
 //
 inline_seq		: '[' in_inline_seq ']'
                 { 
-                    $$ = hdlr_add_node( $2 );
+                    $$ = $2;
                 }
 				| '[' ']'
                 { 
-                    $$ = hdlr_add_node( alloc_seq_node() );
+                    $$ = syck_alloc_seq();
                 }
 
 in_inline_seq   : atom
                 {
-                    $$ = new_seq_node( $1 );
+                    $$ = syck_new_seq( syck_hdlr_add_node( (SyckParser *)parser, $1 ) );
                 }
                 | in_inline_seq ',' atom
 				{ 
-                    add_seq_item( $1, $3 );
+                    syck_seq_add( $1, syck_hdlr_add_node( (SyckParser *)parser, $3 ) );
                     $$ = $1;
 				}
 
@@ -195,14 +199,16 @@ in_inline_seq   : atom
 //
 implicit_map	: IOPEN in_implicit_map IEND
                 { 
-                    $$ = hdlr_add_node( $2 );
+                    $$ = $2;
                 }
 
+/* Default needs to be added to SyckSeq i think...
 simple_mapping	: word_rep ':' atom
                 {
-                    $$ = new_map_node( $1, $3 );
+                    $$ = syck_new_map( 
+                        syck_hdlr_add_node( (SyckParser *)parser, $1 ), 
+                        syck_hdlr_add_node( (SyckParser *)parser, $3 ) );
                 }
-/* Default needs to be added to SyckSeq i think...
 				| '=' ':' atom
 				{
 					result = [ :DEFAULT, val[2] ]
@@ -211,7 +217,9 @@ simple_mapping	: word_rep ':' atom
 
 basic_mapping	: word_rep ':' atom_or_empty
                 {
-                    $$ = new_map_node( $1, $3 );
+                    $$ = syck_new_map( 
+                        syck_hdlr_add_node( (SyckParser *)parser, $1 ), 
+                        syck_hdlr_add_node( (SyckParser *)parser, $3 ) );
                 }
 /* Default needs to be added to SyckSeq i think...
 				| '=' ':' atom
@@ -223,7 +231,9 @@ basic_mapping	: word_rep ':' atom_or_empty
 complex_mapping : basic_mapping
 				| '?' atom INDENT ':' atom_or_empty
                 {
-                    $$ = new_map_node( $2, $5 );
+                    $$ = syck_new_map( 
+                        syck_hdlr_add_node( (SyckParser *)parser, $2 ), 
+                        syck_hdlr_add_node( (SyckParser *)parser, $5 ) );
                 }
 
 in_implicit_map : complex_mapping
@@ -232,7 +242,7 @@ in_implicit_map : complex_mapping
 				}
 				| in_implicit_map INDENT complex_mapping
                 { 
-                    map_update( $1, $3 );
+                    syck_map_update( $1, $3 );
                     $$ = $1;
                 }
 
@@ -241,11 +251,11 @@ in_implicit_map : complex_mapping
 //
 inline_map		: '{' in_inline_map '}'
                 {
-                    $$ = hdlr_add_node( $2 );
+                    $$ = $2;
                 }
           		| '{' '}'
                 {
-                    $$ = hdlr_add_node( alloc_map_node() );
+                    $$ = syck_alloc_map();
                 }
          
 in_inline_map	: basic_mapping 
@@ -254,27 +264,9 @@ in_inline_map	: basic_mapping
 				}
 				| in_inline_map ',' basic_mapping
 				{
-                    map_update( $1, $3 );
+                    syck_map_update( $1, $3 );
                     $$ = $1;
 				}
 
 %%
 
-SYMID
-hdlr_add_node( struct SyckNode *n )
-{
-    
-}
-                    /* goes in syck_fold_format
-					val[2].chomp! if val[0].include?( '|' )
-					result = if val[0].include?( '+' )
-						val[2] + "\n"
-					else
-						val[2].chomp!( '' )
-						if val[0].include?( '-' )
-			 				val[2].chomp
-						else
-							val[2] + "\n" 
-						end
-					end
-                    */

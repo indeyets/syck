@@ -58,6 +58,7 @@ extern "C" {
 typedef struct _syck_parser SyckParser;
 typedef struct _syck_file SyckFile;
 typedef struct _syck_str SyckStr;
+typedef struct _syck_node SyckNode;
 
 enum syck_kind_tag {
     syck_map_kind,
@@ -70,7 +71,7 @@ enum map_part {
     map_value
 };
 
-struct SyckNode {
+struct _syck_node {
     // Underlying kind
     enum syck_kind_tag kind;
     // Fully qualified tag-uri for type
@@ -97,9 +98,9 @@ struct SyckNode {
 //
 // Parser definitions
 //
-typedef SYMID (*SyckNodeHandler)(struct SyckNode *);
-typedef char *(*SyckFileRead)(SyckFile *); 
-typedef char *(*SyckStrRead)(SyckStr *);
+typedef SYMID (*SyckNodeHandler)(SyckNode *);
+typedef int (*SyckFileRead)(char *, SyckFile *, int); 
+typedef int (*SyckStrRead)(char *, SyckStr *, int);
 
 enum syck_io_type {
     syck_io_str,
@@ -124,31 +125,48 @@ struct _syck_parser {
 };
 
 //
+// Handler prototypes
+//
+SYMID syck_hdlr_add_node( SyckParser *, SyckNode * );
+SyckNode *syck_hdlr_add_anchor( SyckParser *, char *, SyckNode * );
+SyckNode *syck_hdlr_add_alias( SyckParser *, char * );
+SyckNode *syck_add_transfer( char *, SyckNode * );
+int syck_try_implicit( SyckNode * );
+void syck_fold_format( char *, SyckNode * );
+
+//
 // API prototypes
 //
-char *syck_io_file_read( SyckFile * );
-char *syck_io_str_read( SyckStr * );
+int syck_io_file_read( char *, SyckFile *, int );
+int syck_io_str_read( char *, SyckStr *, int );
 SyckParser *syck_new_parser();
 void syck_parser_handler( SyckParser *, SyckNodeHandler );
 void syck_parser_file( SyckParser *, FILE *, SyckFileRead );
 void syck_parser_str( SyckParser *, char *, long, SyckStrRead );
 void syck_parser_str_auto( SyckParser *, char *, SyckStrRead );
 void free_any_io( SyckParser * );
+int syck_parser_readline( char *, SyckParser * );
+int syck_parser_read( char *, SyckParser *, int );
+void syck_parser_init( SyckParser *, int );
 SYMID syck_parse( SyckParser * );
 
 //
 // Allocation prototypes
 //
-struct SyckNode *syck_new_str( char * );
-char *syck_str_read( struct SyckNode * );
-struct SyckNode *syck_new_map( SYMID, SYMID );
-void syck_map_add( struct SyckNode *, SYMID, SYMID );
-SYMID syck_map_read( struct SyckNode *, enum map_part, long );
-long syck_map_count( struct SyckNode * );
-struct SyckNode *syck_new_seq( SYMID );
-void syck_seq_add( struct SyckNode *, SYMID );
-SYMID syck_seq_read( struct SyckNode *, long );
-long syck_seq_count( struct SyckNode * );
+SyckNode *syck_alloc_map();
+SyckNode *syck_alloc_seq();
+SyckNode *syck_alloc_str();
+SyckNode *syck_new_str( char * );
+char *syck_str_read( SyckNode * );
+SyckNode *syck_new_map( SYMID, SYMID );
+void syck_map_add( SyckNode *, SYMID, SYMID );
+SYMID syck_map_read( SyckNode *, enum map_part, long );
+long syck_map_count( SyckNode * );
+void syck_map_update( SyckNode *, SyckNode * );
+SyckNode *syck_new_seq( SYMID );
+void syck_seq_add( SyckNode *, SYMID );
+SYMID syck_seq_read( SyckNode *, long );
+long syck_seq_count( SyckNode * );
 
 #if defined(__cplusplus)
 }  /* extern "C" { */
