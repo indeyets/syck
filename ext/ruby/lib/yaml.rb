@@ -5,23 +5,13 @@
 #
 #   Loads the parser/loader and emitter/writer.
 #
-class Object; def instance_variable_set(k, v); self.instance_eval "#{k} = v"; end; end \
-    unless Object.respond_to? :instance_variable_set
-
+require 'yaml/compat'
 module YAML
 
-    begin
-        require 'yaml/syck'
-        @@parser = YAML::Syck::Parser
-        @@loader = YAML::Syck::DefaultLoader
-        @@emitter = YAML::Syck::Emitter
-    rescue LoadError
-        require 'yaml/parser'
-        @@parser = YAML::Parser
-        @@loader = YAML::DefaultLoader
-        require 'yaml/emitter'
-        @@emitter = YAML::Emitter
-    end
+    require 'yaml/syck'
+    @@parser = YAML::Syck::Parser
+    @@loader = YAML::Syck::DefaultLoader
+    @@emitter = YAML::Syck::Emitter
     require 'yaml/loader'
     require 'yaml/stream'
 
@@ -162,24 +152,12 @@ module YAML
     #
     # Allocate blank object
     #
-    def YAML.object_maker( obj_class, val, is_attr = false )
+    def YAML.object_maker( obj_class, val )
         if Hash === val
-            name = obj_class.name
-            if Marshal::const_defined? :MAJOR_VERSION
-                ostr = sprintf( "%c%co:%c%s\000", Marshal::MAJOR_VERSION, Marshal::MINOR_VERSION,
-                                name.length + 5, name )
-            else
-                ostr = sprintf( "\004\006o:%c%s\000", name.length + 5, name )
-            end
-            if is_attr
-                ostr[ -1, 1 ] = Marshal.dump( val ).sub( /^[^{]+\{/, '' )
-            end
-            o = ::Marshal.load( ostr )
-            unless is_attr
-                val.each_pair { |k,v|
-                    o.instance_variable_set("@#{k}", v)
-                }
-            end
+            o = obj_class.allocate
+            val.each_pair { |k,v|
+                o.instance_variable_set("@#{k}", v)
+            }
             o
         else
             raise YAML::Error, "Invalid object explicitly tagged !ruby/Object: " + val.inspect

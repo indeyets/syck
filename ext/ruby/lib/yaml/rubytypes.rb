@@ -1,14 +1,13 @@
+# -*- mode: ruby; ruby-indent-level: 4; tab-width: 4 -*- vim: sw=4 ts=4
 require 'date'
+require 'yaml/compat'
 #
 # Type conversions
 #
 
-# Ruby 1.6.x Object#object_id
-class Object; alias_method :object_id, :id; end unless Object.respond_to? :object_id
-
 class Class
 	def to_yaml( opts = {} )
-		raise ArgumentError, "can't dump anonymous class %s" % self.class
+		raise TypeError, "can't dump anonymous class %s" % self.class
 	end
 end
 
@@ -26,7 +25,7 @@ class Object
 		YAML::quick_emit( self.object_id, opts ) { |out|
             out.map( self.to_yaml_type ) { |map|
 				to_yaml_properties.each { |m|
-                    map.add( m[1..-1], instance_eval( m ) )
+                    map.add( m[1..-1], instance_variable_get( m ) )
                 }
             }
 		}
@@ -163,6 +162,9 @@ class Struct
 				self.members.each { |m|
                     map.add( m, self[m] )
 				}
+				self.to_yaml_properties.each { |m|
+                    map.add( m, instance_variable_get( m ) )
+                }
 			}
 		}
 	end
@@ -175,6 +177,8 @@ YAML.add_ruby_type( /^struct/ ) { |type, val|
 		#
 		# Use existing Struct if it exists
 		#
+        props = {}
+        val.delete_if { |k,v| props[k] = v if k =~ /^@/ }
 		begin
 			struct_name, struct_type = YAML.read_type_class( type, Struct )
 		rescue NameError
@@ -187,10 +191,13 @@ YAML.add_ruby_type( /^struct/ ) { |type, val|
 		#
 		# Set the Struct properties
 		#
-		st = struct_type.new
+		st = YAML::object_maker( struct_type, {} )
 		st.members.each { |m|
 			st.send( "#{m}=", val[m] )
 		}
+        props.each { |k,v|
+            st.instance_variable_set(k, v)
+        }
 		st
 	else
 		raise YAML::Error, "Invalid Ruby Struct: " + val.inspect
@@ -256,7 +263,7 @@ class Exception
             out.map( self.to_yaml_type ) { |map|
                 map.add( 'message', self.message )
 				to_yaml_properties.each { |m|
-                    map.add( m[1..-1], instance_eval( m ) )
+                    map.add( m[1..-1], instance_variable_get( m ) )
                 }
             }
 		}
@@ -267,7 +274,7 @@ YAML.add_ruby_type( /^exception/ ) { |type, val|
     type, obj_class = YAML.read_type_class( type, Exception )
     o = YAML.object_maker( obj_class, { 'mesg' => val.delete( 'message' ) }, true )
     val.each_pair { |k,v|
-		o.instance_eval "@#{k} = v"
+		o.instance_variable_set("@#{k}", v)
 	}
 	o
 }
@@ -278,10 +285,16 @@ YAML.add_ruby_type( /^exception/ ) { |type, val|
 #
 class String
     def is_complex_yaml?
-        ( self =~ /\n.+/ ? true : false )
+        to_yaml_fold or not to_yaml_properties.empty? or self =~ /\n.+/
     end
     def is_binary_data?
         ( self.count( "^ -~", "^\r\n" ) / self.size > 0.3 || self.count( "\x00" ) > 0 )
+    end
+    def to_yaml_type
+        "!ruby/string#{ ":#{ self.class }" if self.class != ::String }"
+    end
+    def to_yaml_fold
+        nil
     end
 	def to_yaml( opts = {} )
         complex = false
@@ -294,12 +307,19 @@ class String
         end
 		YAML::quick_emit( complex ? self.object_id : nil, opts ) { |out|
             if complex
-                if self.is_binary_data?
+                if not to_yaml_properties.empty?
+                    out.map( self.to_yaml_type ) { |map|
+                        map.add( 'str', "#{self}" )
+                        to_yaml_properties.each { |m|
+                            map.add( m, instance_variable_get( m ) )
+                        }
+                    }
+                elsif self.is_binary_data?
                     out.binary_base64( self )
-                elsif self =~ /^ |#{YAML::ESCAPE_CHAR}| $/
-                    complex = false
+                # elsif self =~ /^ |#{YAML::ESCAPE_CHAR}| $/
+                #     complex = false
                 else
-                    out.node_text( self )
+                    out.node_text( self, to_yaml_fold )
                 end
             end
             if not complex
@@ -307,7 +327,7 @@ class String
                             self
                         elsif empty?
                             "''"
-                        elsif self =~ /^[^#{YAML::WORD_CHAR}]| \#|#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}]( |$)| $|\n|\'/
+                        elsif self =~ /^[^#{YAML::WORD_CHAR}\/]| \#|#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}]( |$)| $|\n|\'/
                             "\"#{YAML.escape( self )}\"" 
                         elsif YAML.detect_implicit( self ) != 'str'
                             "\"#{YAML.escape( self )}\"" 
@@ -319,6 +339,21 @@ class String
 		}
 	end
 end
+
+YAML.add_ruby_type( /^string/ ) { |type, val|
+    type, obj_class = YAML.read_type_class( type, ::String )
+	if Hash === val
+        s = YAML::object_maker( obj_class, {} )
+        # Thank you, NaHi
+        String.instance_method(:initialize).
+              bind(s).
+              call( val.delete( 'str' ) )
+        val.each { |k,v| s.instance_variable_set( k, v ) }
+        s
+	else
+		raise YAML::Error, "Invalid String: " + val.inspect
+	end
+}
 
 #
 # Symbol#to_yaml
@@ -337,6 +372,7 @@ end
 
 symbol_proc = Proc.new { |type, val|
 	if String === val
+        val = YAML::load( "--- #{val}") if val =~ /^["'].*["']$/
 		val.intern
 	else
 		raise YAML::Error, "Invalid Symbol: " + val.inspect
@@ -350,75 +386,143 @@ YAML.add_ruby_type( 'sym', &symbol_proc )
 #
 class Range
     def is_complex_yaml?
-        false
+        true
+    end
+    def to_yaml_type
+        "!ruby/range#{ if self.class != ::Range; ":#{ self.class }"; end }"
     end
 	def to_yaml( opts = {} )
-		YAML::quick_emit( nil, opts ) { |out|
-			out << "!ruby/range " 
-			self.to_s.to_yaml( :Emitter => out )
+		YAML::quick_emit( self.object_id, opts ) { |out|
+            if self.begin.is_complex_yaml? or self.end.is_complex_yaml? or not to_yaml_properties.empty?
+                out.map( to_yaml_type ) { |map|
+                    map.add( 'begin', self.begin )
+                    map.add( 'end', self.end )
+                    map.add( 'excl', self.exclude_end? )
+                    to_yaml_properties.each { |m|
+                        map.add( m, instance_variable_get( m ) )
+                    }
+                }
+            else
+                out << "#{ to_yaml_type } '" 
+                self.begin.to_yaml(:Emitter => out)
+                out << ( self.exclude_end? ? "..." : ".." )
+                self.end.to_yaml(:Emitter => out)
+                out << "'"
+            end
 		}
 	end
 end
 
-YAML.add_ruby_type( 'range' ) { |type, val|
-	if String === val and val =~ /^(.*[^.])(\.{2,3})([^.].*)$/
+YAML.add_ruby_type( /^range/ ) { |type, val|
+    type, obj_class = YAML.read_type_class( type, ::Range )
+    inr = '(\w+|[+-]*\d+(?:\.\d+)?|"(?:[^\\"]|\\.)*")'
+    opts = {}
+	if String === val and val =~ /^#{inr}(\.{2,3})#{inr}$/
         r1, rdots, r2 = $1, $2, $3
-		Range.new( YAML.try_implicit( r1 ), YAML.try_implicit( r2 ), rdots.length == 3 )
+        opts = {
+            'begin' => YAML.load( "--- #{r1}" ),
+            'end' => YAML.load( "--- #{r2}" ),
+            'excl' => rdots.length == 3
+        }
+        val = {}
 	elsif Hash === val
-		Range.new( val['begin'], val['end'], val['exclude_end?'] )
+        opts['begin'] = val.delete('begin')
+        opts['end'] = val.delete('end')
+        opts['excl'] = val.delete('excl')
+    end
+	if Hash === opts
+        r = YAML::object_maker( obj_class, {} )
+        # Thank you, NaHi
+        Range.instance_method(:initialize).
+              bind(r).
+              call( opts['begin'], opts['end'], opts['excl'] )
+        val.each { |k,v| r.instance_variable_set( k, v ) }
+        r
 	else
 		raise YAML::Error, "Invalid Range: " + val.inspect
 	end
 }
 
 #
-# Make an RegExp
+# Make an Regexp
 #
 class Regexp
     def is_complex_yaml?
-        false
+        self.class != Regexp or not to_yaml_properties.empty?
+    end
+    def to_yaml_type
+        "!ruby/regexp#{ if self.class != ::Regexp; ":#{ self.class }"; end }"
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) { |out|
-			out << "!ruby/regexp "
+            if self.is_complex_yaml?
+                out.map( self.to_yaml_type ) { |map|
+                    src = self.inspect
+                    if src =~ /\A\/(.*)\/([a-z]*)\Z/
+                        map.add( 'regexp', $1 )
+                        map.add( 'mods', $2 )
+                    else
+		                raise YAML::Error, "Invalid Regular expression: " + src
+                    end
+                    to_yaml_properties.each { |m|
+                        map.add( m, instance_variable_get( m ) )
+                    }
+                }
+            else
+                out << "#{ to_yaml_type } "
 			self.inspect.to_yaml( :Emitter => out )
+            end
 		}
 	end
 end
 
 regexp_proc = Proc.new { |type, val|
+    type, obj_class = YAML.read_type_class( type, ::Regexp )
 	if String === val and val =~ /^\/(.*)\/([mix]*)$/
-		val = { 'REGEXP' => $1, 'MODIFIERS' => $2 }
+		val = { 'regexp' => $1, 'mods' => $2 }
 	end
 	if Hash === val
 		mods = nil
-		unless val['MODIFIERS'].to_s.empty?
+		unless val['mods'].to_s.empty?
 			mods = 0x00
-			if val['MODIFIERS'].include?( 'x' )
-				mods |= Regexp::EXTENDED
-			elsif val['MODIFIERS'].include?( 'i' )
-				mods |= Regexp::IGNORECASE
-			elsif val['MODIFIERS'].include?( 'm' )
-				mods |= Regexp::MULTILINE
-			end
+			mods |= Regexp::EXTENDED if val['mods'].include?( 'x' )
+			mods |= Regexp::IGNORECASE if val['mods'].include?( 'i' )
+			mods |= Regexp::MULTILINE if val['mods'].include?( 'm' )
 		end
-		Regexp::compile( val['REGEXP'], mods )
+        val.delete( 'mods' )
+        r = YAML::object_maker( obj_class, {} )
+        Regexp.instance_method(:initialize).
+              bind(r).
+              call( val.delete( 'regexp' ), mods )
+        val.each { |k,v| r.instance_variable_set( k, v ) }
+        r
 	else
 		raise YAML::Error, "Invalid Regular expression: " + val.inspect
 	end
 }
 YAML.add_domain_type( "perl.yaml.org,2002", /^regexp/, &regexp_proc )
-YAML.add_ruby_type( 'regexp', &regexp_proc )
+YAML.add_ruby_type( /^regexp/, &regexp_proc )
 
 #
 # Emit a Time object as an ISO 8601 timestamp
 #
 class Time
     def is_complex_yaml?
-        false
+        self.class != Time or not to_yaml_properties.empty?
+    end
+    def to_yaml_type
+        "!ruby/time#{ if self.class != ::Time; ":#{ self.class }"; end }"
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) { |out|
+            if self.is_complex_yaml?
+                out.map( self.to_yaml_type ) { |map|
+                    map.add( 'at', ::Time.at( self ) )
+                    to_yaml_properties.each { |m|
+                        map.add( m, instance_variable_get( m ) )
+                    }
+                }
+            else
             tz = "Z"
             # from the tidy Tobias Peters <t-peters@gmx.de> Thanks!
             unless self.utc?
@@ -435,12 +539,25 @@ class Time
                 difference_minutes = (absolute_difference/60).round
                 tz = "%s%02d:%02d" % [ difference_sign, difference_minutes / 60, difference_minutes % 60]
             end
-            ( self.strftime( "%Y-%m-%d %H:%M:%S." ) +
-                "%06d %s" % [usec, tz] ).
-                to_yaml( :Emitter => out, :KeepValue => true )
+                standard = self.strftime( "%Y-%m-%d %H:%M:%S" )
+                standard += ".%06d" % [usec] if usec.nonzero?
+                standard += " %s" % [tz]
+                standard.to_yaml( :Emitter => out, :KeepValue => true )
+            end
 		}
 	end
 end
+
+YAML.add_ruby_type( /^time/ ) { |type, val|
+    type, obj_class = YAML.read_type_class( type, ::Time )
+	if Hash === val
+        t = obj_class.at( val.delete( 'at' ) )
+        val.each { |k,v| t.instance_variable_set( k, v ) }
+        t
+	else
+		raise YAML::Error, "Invalid Time: " + val.inspect
+	end
+}
 
 #
 # Emit a Date object as a simple implicit

@@ -119,6 +119,7 @@
         YYCURSOR = YYTOKEN; \
         n->data.str->ptr = qstr; \
         n->data.str->len = qidx; \
+        n->data.str->style = scalar_plain; \
         sycklval->nodeData = n; \
         if ( parser->implicit_typing == 1 ) \
         { \
@@ -137,6 +138,7 @@
         n->type_id = syck_strndup( "str", 3 ); \
         n->data.str->ptr = qstr; \
         n->data.str->len = qidx; \
+        n->data.str->style = scalar_block; \
         if ( qidx > 0 ) \
         { \
             if ( nlDoWhat != NL_KEEP ) \
@@ -608,6 +610,7 @@ YINDENT             {   int indt_len;
                         n->type_id = syck_strndup( "str", 3 );
                         n->data.str->ptr = qstr;
                         n->data.str->len = qidx;
+                        n->data.str->style = scalar_1quote;
                         sycklval->nodeData = n;
                         return YAML_PLAIN; 
                     }
@@ -704,6 +707,7 @@ YINDENT             {   int indt_len;
                         n->type_id = syck_strndup( "str", 3 );
                         n->data.str->ptr = qstr;
                         n->data.str->len = qidx;
+                        n->data.str->style = scalar_2quote;
                         sycklval->nodeData = n;
                         return YAML_PLAIN; 
                     }

@@ -1194,17 +1194,6 @@ EOY
 		)
 	end
 
-	def test_perl_regexp
-		# Parsing perl regular expressions from YAML.pm
-		assert_parse_only(
-			[ /bozo$/i ], <<EOY
-- !perl/regexp:
-  REGEXP: bozo$
-  MODIFIERS: i
-EOY
-		)
-	end
-
 	def test_ruby_struct
 		# Ruby structures
 		book_struct = Struct::new( "BookStruct", :author, :title, :year, :isbn )

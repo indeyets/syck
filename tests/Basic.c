@@ -18,7 +18,7 @@ TestSyckNodeAlloc( CuTest *tc )
 {
     SyckNode* n;
 
-    n = syck_new_str( "YAML" );
+    n = syck_new_str( "YAML", scalar_plain );
 
     CuAssert( tc, "Allocated 'str' node reporting as 'seq'.", n->kind != syck_seq_kind );
     CuAssert( tc, "Allocated 'str' node reporting as 'map'.", n->kind != syck_map_kind );

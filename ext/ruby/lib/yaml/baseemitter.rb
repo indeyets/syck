@@ -36,28 +36,36 @@ module YAML
 		def node_text( value, block = '>' )
             @seq_map = false
 			valx = value.dup
-			if options(:UseBlock)
-				block = '|'
-			elsif not options(:UseFold) and valx =~ /\n[ \t]/ and not valx =~ /#{YAML::ESCAPE_CHAR}/
-				block = '|'
-			end 
-			str = block.dup
-			if valx =~ /\n\Z\n/
-				str << "+"
-			elsif valx =~ /\Z\n/
-			else
-				str << "-"
-			end
+            unless block
+            block =
+                if options(:UseBlock)
+                    '|'
+                elsif not options(:UseFold) and valx =~ /\n[ \t]/ and not valx =~ /#{YAML::ESCAPE_CHAR}/
+                    '|'
+                else
+                    '>'
+                end 
+                if valx =~ /\A[ \t#]/
+                    block += options(:Indent).to_s
+                end
+            block +=
+                if valx =~ /\n\Z\n/
+                    "+"
+                elsif valx =~ /\Z\n/
+                    ""
+                else
+                    "-"
+                end
+            end
 			if valx =~ /#{YAML::ESCAPE_CHAR}/
 				valx = YAML::escape( valx )
 			end
-			if valx =~ /\A[ \t#]/
-				str << options(:Indent).to_s
-			end
-			if block == '>'
+			if block[0] == ?> 
 				valx = fold( valx ) 
 			end
-			self << str + indent_text( valx ) + "\n"
+            indt = nil
+            indt = $&.to_i if block =~ /\d+/
+			self << block + indent_text( valx, indt ) + "\n"
 		end
 
 		#
@@ -85,18 +93,25 @@ module YAML
 		#
 		# Write a text block with the current indent
 		#
-		def indent_text( text )
+		def indent_text( text, indt = nil )
 			return "" if text.to_s.empty?
-            spacing = " " * ( level * options(:Indent) )
+            indt ||= 0
+            spacing = indent( indt )
 			return "\n" + text.gsub( /^([^\n])/, "#{spacing}\\1" )
 		end
 
 		#
 		# Write a current indent
 		#
-		def indent
+        def indent( mod = nil )
             #p [ self.id, @level, :INDENT ]
-			return " " * ( level * options(:Indent) )
+            if level.zero?
+                mod ||= 0
+            else
+                mod ||= options(:Indent)
+                mod += ( level - 1 ) * options(:Indent)
+            end
+            return " " * mod
 		end
 
 		#

@@ -19,7 +19,7 @@
 #define YYLEX_PARAM     parser
 
 #define NULL_NODE(parser, node) \
-        SyckNode *node = syck_new_str( "" ); \
+        SyckNode *node = syck_new_str( "", scalar_plain ); \
         if ( ((SyckParser *)parser)->taguri_expansion == 1 ) \
         { \
             node->type_id = syck_taguri( YAML_DOMAIN, "null", 4 ); \
@@ -77,6 +77,16 @@ doc_struct_rep : struct_rep
         ;
 
 ind_rep : struct_rep
+        | YAML_TRANSFER ind_rep
+        { 
+            syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
+            $$ = $2;
+        }
+        | YAML_TAGURI ind_rep
+        {
+            syck_add_transfer( $1, $2, 0 );
+            $$ = $2;
+        }
         | YAML_ANCHOR ind_rep
         { 
            /*
@@ -181,17 +191,7 @@ word_rep	: YAML_TRANSFER word_rep
  * Any of these structures can be used as
  * complex keys
  */
-struct_rep	: YAML_TRANSFER struct_rep
-            { 
-                syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
-                $$ = $2;
-            }
-            | YAML_TAGURI struct_rep
-            {
-                syck_add_transfer( $1, $2, 0 );
-                $$ = $2;
-            }
-			| YAML_BLOCK
+struct_rep	: YAML_BLOCK
 			| implicit_seq
 			| inline_seq
 			| implicit_map

@@ -1,9 +1,7 @@
 #
 # Classes required by the full core typeset
 #
-
-# Ruby 1.6.x Object#object_id
-class Object; alias_method :object_id, :id; end unless Object.respond_to? :object_id
+require 'yaml/compat'
 
 module YAML
 
