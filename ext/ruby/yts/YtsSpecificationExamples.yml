@@ -11,6 +11,17 @@ python: |
   [ ['Mark McGwire', 'Sammy Sosa', 'Ken Griffey'] ] 
 ruby: | 
   [ 'Mark McGwire', 'Sammy Sosa', 'Ken Griffey' ] 
+syck: |
+  struct test_node seq[] = {
+      { T_STR, 0, "Mark McGwire" },
+      { T_STR, 0, "Sammy Sosa" },
+      { T_STR, 0, "Ken Griffey" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_SEQ, 0, 0, seq },
+      end_node
+  };
  
 --- 
 test: Mapping of scalars to scalars 
@@ -25,6 +36,20 @@ python: |
   [ {'hr': 65, 'avg': .278, 'rbi': 147} ] 
 ruby: | 
   { 'hr' => 65, 'avg' => 0.278, 'rbi' => 147 } 
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "hr" },
+          { T_STR, 0, "65" },
+      { T_STR, 0, "avg" },
+          { T_STR, 0, "0.278" },
+      { T_STR, 0, "rbi" },
+          { T_STR, 0, "147" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Mapping of scalars to sequences 
@@ -65,6 +90,30 @@ ruby: |
         [ 'New York Mets', 'Chicago Cubs',  
           'Atlanta Braves' ]  
     } 
+syck: |
+  struct test_node seq1[] = {
+      { T_STR, 0, "Boston Red Sox" },
+      { T_STR, 0, "Detroit Tigers" },
+      { T_STR, 0, "New York Yankees" },
+      end_node
+  };
+  struct test_node seq2[] = {
+      { T_STR, 0, "New York Mets" },
+      { T_STR, 0, "Chicago Cubs" },
+      { T_STR, 0, "Atlanta Braves" },
+      end_node
+  };
+  struct test_node map[] = {
+      { T_STR, 0, "american" },
+          { T_SEQ, 0, 0, seq1 },
+      { T_STR, 0, "national" },
+          { T_SEQ, 0, 0, seq2 },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Sequence of mappings 
@@ -101,6 +150,34 @@ ruby: |
       {'name' => 'Mark McGwire', 'hr' => 65, 'avg' => 0.278}, 
       {'name' => 'Sammy Sosa', 'hr' => 63, 'avg' => 0.288} 
     ] 
+syck: |
+  struct test_node map1[] = {
+      { T_STR, 0, "name" },
+          { T_STR, 0, "Mark McGwire" },
+      { T_STR, 0, "hr" },
+          { T_STR, 0, "65" },
+      { T_STR, 0, "avg" },
+          { T_STR, 0, "0.278" },
+      end_node
+  };
+  struct test_node map2[] = {
+      { T_STR, 0, "name" },
+          { T_STR, 0, "Sammy Sosa" },
+      { T_STR, 0, "hr" },
+          { T_STR, 0, "63" },
+      { T_STR, 0, "avg" },
+          { T_STR, 0, "0.288" },
+      end_node
+  };
+  struct test_node seq[] = {
+      { T_MAP, 0, 0, map1 },
+      { T_MAP, 0, 0, map2 },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_SEQ, 0, 0, seq },
+      end_node
+  };
  
 --- 
 test: Legacy A5 
@@ -141,7 +218,38 @@ ruby: |
       [ 'Detroit Tigers', 'Chicago Cubs' ] => 
         [ Date.new( 2001, 7, 23 ) ] 
     } 
- 
+syck: |
+  struct test_node seq1[] = {
+      { T_STR, 0, "New York Yankees" },
+      { T_STR, 0, "Atlanta Braves" },
+      end_node
+  };
+  struct test_node seq2[] = {
+      { T_STR, 0, "2001-07-02" },
+      { T_STR, 0, "2001-08-12" },
+      { T_STR, 0, "2001-08-14" },
+      end_node
+  };
+  struct test_node seq3[] = {
+      { T_STR, 0, "Detroit Tigers" },
+      { T_STR, 0, "Chicago Cubs" },
+      end_node
+  };
+  struct test_node seq4[] = {
+      { T_STR, 0, "2001-07-23" },
+      end_node
+  };
+  struct test_node map[] = {
+      { T_SEQ, 0, 0, seq1 },
+      { T_SEQ, 0, 0, seq2 },
+      { T_SEQ, 0, 0, seq3 },
+      { T_SEQ, 0, 0, seq4 },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Sequence of sequences 
@@ -168,6 +276,35 @@ ruby: |
     [ 'Mark McGwire', 65, 0.278 ], 
     [ 'Sammy Sosa', 63, 0.288 ] 
   ] 
+syck: |
+  struct test_node seq1[] = {
+      { T_STR, 0, "name" },
+      { T_STR, 0, "hr" },
+      { T_STR, 0, "avg" },
+      end_node
+  };
+  struct test_node seq2[] = {
+      { T_STR, 0, "Mark McGwire" },
+      { T_STR, 0, "65" },
+      { T_STR, 0, "0.278" },
+      end_node
+  };
+  struct test_node seq3[] = {
+      { T_STR, 0, "Sammy Sosa" },
+      { T_STR, 0, "63" },
+      { T_STR, 0, "0.288" },
+      end_node
+  };
+  struct test_node seq[] = {
+      { T_SEQ, 0, 0, seq1 },
+      { T_SEQ, 0, 0, seq2 },
+      { T_SEQ, 0, 0, seq3 },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_SEQ, 0, 0, seq },
+      end_node
+  };
  
 --- 
 test: Mapping of mappings 
@@ -197,6 +334,32 @@ ruby: |
     'Sammy Sosa' => 
       { 'hr' => 63, 'avg' => 0.288 } 
   } 
+syck: |
+  struct test_node map1[] = {
+      { T_STR, 0, "hr" },
+          { T_STR, 0, "65" },
+      { T_STR, 0, "avg" },
+          { T_STR, 0, "0.278" },
+      end_node
+  };
+  struct test_node map2[] = {
+      { T_STR, 0, "hr" },
+          { T_STR, 0, "63" },
+      { T_STR, 0, "avg" },
+          { T_STR, 0, "0.288" },
+      end_node
+  };
+  struct test_node map[] = {
+      { T_STR, 0, "Mark McGwire" },
+          { T_MAP, 0, 0, map1 },
+      { T_STR, 0, "Sammy Sosa" },
+          { T_MAP, 0, 0, map2 },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Two documents in a stream each with a
@@ -225,6 +388,23 @@ ruby: |
   y = Stream.new 
   y.add( [ 'Mark McGwire', 'Sammy Sosa', 'Ken Griffey' ] ) 
   y.add( [ 'Chicago Cubs', 'St Louis Cardinals' ] ) 
+syck: |
+  struct test_node seq1[] = {
+      { T_STR, 0, "Mark McGwire" },
+      { T_STR, 0, "Sammy Sosa" },
+      { T_STR, 0, "Ken Griffey" },
+      end_node
+  };
+  struct test_node seq2[] = {
+      { T_STR, 0, "Chicago Cubs" },
+      { T_STR, 0, "St Louis Cardinals" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_SEQ, 0, 0, seq1 },
+      { T_SEQ, 0, 0, seq2 },
+      end_node
+  };
 documents: 2 
  
 --- 
@@ -249,6 +429,30 @@ ruby: |
   y = Stream.new 
   y.add( {"player"=>"Sammy Sosa", "time"=>72200, "action"=>"strike (miss)"} )
   y.add( {"player"=>"Sammy Sosa", "time"=>72227, "action"=>"grand slam"} )
+syck: |
+  struct test_node map1[] = {
+      { T_STR, 0, "time" },
+          { T_STR, 0, "20:03:20" },
+      { T_STR, 0, "player" },
+          { T_STR, 0, "Sammy Sosa" },
+      { T_STR, 0, "action" },
+          { T_STR, 0, "strike (miss)" },
+      end_node
+  };
+  struct test_node map2[] = {
+      { T_STR, 0, "time" },
+          { T_STR, 0, "20:03:47" },
+      { T_STR, 0, "player" },
+          { T_STR, 0, "Sammy Sosa" },
+      { T_STR, 0, "action" },
+          { T_STR, 0, "grand slam" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map1 },
+      { T_MAP, 0, 0, map2 },
+      end_node
+  };
 documents: 2 
  
 --- 
@@ -277,6 +481,28 @@ ruby: |
     'hr' => [ 'Mark McGwire', 'Sammy Sosa' ], 
     'rbi' => [ 'Sammy Sosa', 'Ken Griffey' ]  
   } 
+syck: |
+  struct test_node seq1[] = {
+      { T_STR, 0, "Mark McGwire" },
+      { T_STR, 0, "Sammy Sosa" },
+      end_node
+  };
+  struct test_node seq2[] = {
+      { T_STR, 0, "Sammy Sosa" },
+      { T_STR, 0, "Ken Griffey" },
+      end_node
+  };
+  struct test_node map[] = {
+      { T_STR, 0, "hr" },
+          { T_SEQ, 0, 0, seq1 },
+      { T_STR, 0, "rbi" },
+          { T_SEQ, 0, 0, seq2 },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Node for Sammy Sosa appears twice in this document 
@@ -307,6 +533,28 @@ ruby: |
       'rbi' => 
          [ 'Sammy Sosa', 'Ken Griffey' ] 
    } 
+syck: |
+  struct test_node seq1[] = {
+      { T_STR, 0, "Mark McGwire" },
+      { T_STR, 0, "Sammy Sosa" },
+      end_node
+  };
+  struct test_node seq2[] = {
+      { T_STR, 0, "Sammy Sosa" },
+      { T_STR, 0, "Ken Griffey" },
+      end_node
+  };
+  struct test_node map[] = {
+      { T_STR, 0, "hr" },
+          { T_SEQ, 0, 0, seq1 },
+      { T_STR, 0, "rbi" },
+          { T_SEQ, 0, 0, seq2 },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Mapping between sequences 
@@ -327,6 +575,38 @@ ruby: |
       [ 'Detroit Tigers', 'Chicago Cubs' ] => [ Date.new( 2001, 7, 23 ) ], 
       [ 'New York Yankees', 'Atlanta Braves' ] => [ Date.new( 2001, 7, 2 ), Date.new( 2001, 8, 12 ), Date.new( 2001, 8, 14 ) ] 
    } 
+syck: |
+  struct test_node seq1[] = {
+      { T_STR, 0, "New York Yankees" },
+      { T_STR, 0, "Atlanta Braves" },
+      end_node
+  };
+  struct test_node seq2[] = {
+      { T_STR, 0, "2001-07-02" },
+      { T_STR, 0, "2001-08-12" },
+      { T_STR, 0, "2001-08-14" },
+      end_node
+  };
+  struct test_node seq3[] = {
+      { T_STR, 0, "Detroit Tigers" },
+      { T_STR, 0, "Chicago Cubs" },
+      end_node
+  };
+  struct test_node seq4[] = {
+      { T_STR, 0, "2001-07-23" },
+      end_node
+  };
+  struct test_node map[] = {
+      { T_SEQ, 0, 0, seq3 },
+      { T_SEQ, 0, 0, seq4 },
+      { T_SEQ, 0, 0, seq1 },
+      { T_SEQ, 0, 0, seq2 },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Sequence key shortcut 
@@ -359,6 +639,38 @@ python: |
        { 'item': 'Basketball', 'quantity': 4 }, 
        { 'item': 'Big Shoes',  'quantity': 1 }  
   ] 
+syck: |
+  struct test_node map1[] = {
+      { T_STR, 0, "item" },
+          { T_STR, 0, "Super Hoop" },
+      { T_STR, 0, "quantity" },
+          { T_STR, 0, "1" },
+      end_node
+  };
+  struct test_node map2[] = {
+      { T_STR, 0, "item" },
+          { T_STR, 0, "Basketball" },
+      { T_STR, 0, "quantity" },
+          { T_STR, 0, "4" },
+      end_node
+  };
+  struct test_node map3[] = {
+      { T_STR, 0, "item" },
+          { T_STR, 0, "Big Shoes" },
+      { T_STR, 0, "quantity" },
+          { T_STR, 0, "1" },
+      end_node
+  };
+  struct test_node seq[] = {
+      { T_MAP, 0, 0, map1 },
+      { T_MAP, 0, 0, map2 },
+      { T_MAP, 0, 0, map3 },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_SEQ, 0, 0, seq },
+      end_node
+  };
   
  
 --- 
@@ -382,6 +694,11 @@ python: |
         """ 
         ) 
     ] 
+syck: |
+  struct test_node stream[] = {
+      { T_STR, 0, "\\//||\\/||\n// ||  ||_\n" },
+      end_node
+  };
  
 --- 
 test: Folded treats newlines as a space 
@@ -397,6 +714,11 @@ ruby: |
   "Mark McGwire's year was crippled by a knee injury."
 python: | 
     [ "Mark McGwire's year was crippled by a knee injury." ] 
+syck: |
+  struct test_node stream[] = {
+      { T_STR, 0, "Mark McGwire's year was crippled by a knee injury." },
+      end_node
+  };
  
 --- 
 test: Newlines preserved for indented and blank lines 
@@ -427,6 +749,11 @@ python: |
         """ 
         ) 
     ] 
+syck: |
+  struct test_node stream[] = {
+      { T_STR, 0, "Sammy Sosa completed another fine season with great stats.\n\n  63 Home Runs\n  0.288 Batting Average\n\nWhat a year!\n" },
+      end_node
+  };
  
  
 --- 
@@ -460,6 +787,20 @@ python: |
         'stats': "65 Home Runs\n0.278 Batting Average\n" 
         } 
     ] 
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "name" },
+          { T_STR, 0, "Mark McGwire" },
+      { T_STR, 0, "accomplishment" },
+          { T_STR, 0, "Mark set a major league home run record in 1998.\n" },
+      { T_STR, 0, "stats" },
+          { T_STR, 0, "65 Home Runs\n0.278 Batting Average\n" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Quoted scalars 
@@ -527,6 +868,18 @@ python: |
         'quoted': 'So does this quoted scalar.\n' 
       } 
     ] 
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "plain" },
+          { T_STR, 0, "This unquoted scalar spans many lines." },
+      { T_STR, 0, "quoted" },
+          { T_STR, 0, "So does this quoted scalar.\n" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Integers 
@@ -559,6 +912,24 @@ python: |
         'octal': 014, 
         'hexadecimal': 0xC 
     } ] 
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "canonical" },
+          { T_STR, 0, "12345" },
+      { T_STR, 0, "decimal" },
+          { T_STR, 0, "+12,345" },
+      { T_STR, 0, "sexagecimal" },
+          { T_STR, 0, "3:25:45" },
+      { T_STR, 0, "octal" },
+          { T_STR, 0, "014" },
+      { T_STR, 0, "hexadecimal" },
+          { T_STR, 0, "0xC" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 # FIX: spec shows parens around -inf and NaN
@@ -599,6 +970,26 @@ python: |
         'negative infinity': '-.inf', 
         'not a number': '.NaN', 
     } ] 
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "canonical" },
+          { T_STR, 0, "1.23015e+3" },
+      { T_STR, 0, "exponential" },
+          { T_STR, 0, "12.3015e+02" },
+      { T_STR, 0, "sexagecimal" },
+          { T_STR, 0, "20:30.15" },
+      { T_STR, 0, "fixed" },
+          { T_STR, 0, "1,230.15" },
+      { T_STR, 0, "negative infinity" },
+          { T_STR, 0, "-.inf" },
+      { T_STR, 0, "not a number" },
+          { T_STR, 0, ".NaN" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Miscellaneous 
@@ -629,6 +1020,22 @@ python: |
         'false': 0, 
         'string': '12345', 
     } ] 
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "null" },
+          { T_STR, 0, "~" },
+      { T_STR, 0, "true" },
+          { T_STR, 0, "y" },
+      { T_STR, 0, "false" },
+          { T_STR, 0, "n" },
+      { T_STR, 0, "string" },
+          { T_STR, 0, "12345" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 ---
 test: Timestamps
@@ -652,6 +1059,23 @@ ruby: |
     'spaced' => YAML::mktime( 2001, 12, 14, 21, 59, 43, 0.10, "-05:00" ),
     'date' => Date.new( 2002, 12, 14 )
   }
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "canonical" },
+          { T_STR, 0, "2001-12-15T02:59:43.1Z" },
+      { T_STR, 0, "iso8601" },
+          { T_STR, 0, "2001-12-14t21:59:43.10-05:00" },
+      { T_STR, 0, "spaced" },
+          { T_STR, 0, "2001-12-14 21:59:43.10 -05:00" },
+      { T_STR, 0, "date" },
+          { T_STR, 0, "2002-12-14" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
+
 ---
 test: legacy Timestamps test
 spec: legacy D4
@@ -674,6 +1098,22 @@ ruby: |
      'spaced' => YAML::mktime( 2001, 12, 14, 21, 59, 43, 0, "-05:00" ),
      'date' => Date.new( 2002, 12, 14 )
    }
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "canonical" },
+          { T_STR, 0, "2001-12-15T02:59:43.00Z" },
+      { T_STR, 0, "iso8601" },
+          { T_STR, 0, "2001-02-28t21:59:43.00-05:00" },
+      { T_STR, 0, "spaced" },
+          { T_STR, 0, "2001-12-14 21:59:43.00 -05:00" },
+      { T_STR, 0, "date" },
+          { T_STR, 0, "2002-12-14" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
 
 ---
 test: Various explicit families
@@ -701,6 +1141,20 @@ ruby: |
     'picture' => "GIF89a\f\000\f\000\204\000\000\377\377\367\365\365\356\351\351\345fff\000\000\000\347\347\347^^^\363\363\355\216\216\216\340\340\340\237\237\237\223\223\223\247\247\247\236\236\236i^\020' \202\n\001\000;",
     'application specific tag' => "SOMETHING: The semantics of the tag\nabove may be different for\ndifferent documents.\n"
   }
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "not-date" },
+          { T_STR, 0, "2002-04-28" },
+      { T_STR, 0, "picture" },
+          { T_STR, 0, "R0lGODlhDAAMAIQAAP//9/X\n17unp5WZmZgAAAOfn515eXv\nPz7Y6OjuDg4J+fn5OTk6enp\n56enmleECcgggoBADs=\n" },
+      { T_STR, 0, "application specific tag" },
+          { T_STR, 0, "The semantics of the tag\nabove may be different for\ndifferent documents.\n" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
 
 ---
 test: Application specific family
@@ -775,6 +1229,54 @@ ruby: |
     },
     "Shape Container"
   ]
+syck: |
+  struct test_node point1[] = {
+      { T_STR, 0, "x" },
+          { T_STR, 0, "73" },
+      { T_STR, 0, "y" },
+          { T_STR, 0, "129" },
+      end_node
+  };
+  struct test_node point2[] = {
+      { T_STR, 0, "x" },
+          { T_STR, 0, "89" },
+      { T_STR, 0, "y" },
+          { T_STR, 0, "102" },
+      end_node
+  };
+  struct test_node map1[] = {
+      { T_STR, 0, "center" },
+          { T_MAP, 0, 0, point1 },
+      { T_STR, 0, "radius" },
+          { T_STR, 0, "7" },
+      end_node
+  };
+  struct test_node map2[] = {
+      { T_STR, 0, "start" },
+          { T_MAP, 0, 0, point1 },
+      { T_STR, 0, "finish" },
+          { T_MAP, 0, 0, point2 },
+      end_node
+  };
+  struct test_node map3[] = {
+      { T_STR, 0, "start" },
+          { T_MAP, 0, 0, point1 },
+      { T_STR, 0, "color" },
+          { T_STR, 0, "0xFFEEBB" },
+      { T_STR, 0, "value" },
+          { T_STR, 0, "Pretty vector drawing." },
+      end_node
+  };
+  struct test_node seq[] = {
+      { T_MAP, 0, 0, map1 },
+      { T_MAP, 0, 0, map2 },
+      { T_MAP, 0, 0, map3 },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_SEQ, 0, 0, seq },
+      end_node
+  };
 
 # ---
 # test: Unordered set
@@ -804,6 +1306,33 @@ ruby: |
     'Sammy Sosa', 63,
     'Ken Griffy', 58
   ]
+syck: |
+  struct test_node map1[] = {
+      { T_STR, 0, "Mark McGwire" },
+          { T_STR, 0, "65" },
+      end_node
+  };
+  struct test_node map2[] = {
+      { T_STR, 0, "Sammy Sosa" },
+          { T_STR, 0, "63" },
+      end_node
+  };
+  struct test_node map3[] = {
+      { T_STR, 0, "Ken Griffy" },
+          { T_STR, 0, "58" },
+      end_node
+  };
+  struct test_node seq[] = {
+      { T_MAP, 0, 0, map1 },
+      { T_MAP, 0, 0, map2 },
+      { T_MAP, 0, 0, map3 },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_SEQ, 0, 0, seq },
+      end_node
+  };
+
 ---
 test: Invoice
 spec: 2.27

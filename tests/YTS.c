@@ -4,7 +4,7 @@
 // $Author$
 // $Date$
 //
-// Copyright (C) 2003 why the lucky stiff
+// Copyright (C) 2004 why the lucky stiff
 //
 // Well, this is the Yaml Testing Suite in the form of a plain C
 // API.  Basically, this is as good as C integration gets for Syck.
@@ -215,352 +215,1094 @@ void CuStreamCompare( CuTest* tc, char *yaml, struct test_node *stream ) {
  * Example 2.1: Sequence of scalars
  */
 void
-TestSyckSpecExample_2_1( CuTest *tc )
+YtsSpecificationExamples_0( CuTest *tc )
 {
-    struct test_node seq[] = {
-        { T_STR, 0, "Mark McGwire" },
-        { T_STR, 0, "Sammy Sosa" },
-        { T_STR, 0, "Ken Griffey" },
-        end_node
-    };
-    struct test_node stream[] = {
-        { T_SEQ, 0, 0, seq },
-        end_node
-    };
+struct test_node seq[] = {
+    { T_STR, 0, "Mark McGwire" },
+    { T_STR, 0, "Sammy Sosa" },
+    { T_STR, 0, "Ken Griffey" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_SEQ, 0, 0, seq },
+    end_node
+};
 
     CuStreamCompare( tc,
 
         /* YAML document */ 
-        "---\n"
-        "- Mark McGwire\n"
-        "- Sammy Sosa\n"
-        "- Ken Griffey\n",
+"- Mark McGwire \n"
+"- Sammy Sosa \n"
+"- Ken Griffey \n"
+        ,
 
         /* C structure of validations */
         stream
     );
 }
-
 /*
  * Example 2.2: Mapping of scalars to scalars
  */
 void
-TestSyckSpecExample_2_2( CuTest *tc )
+YtsSpecificationExamples_1( CuTest *tc )
 {
-    struct test_node map[] = {
-        { T_STR, 0, "hr" },
-            { T_STR, 0, "65" },
-        { T_STR, 0, "avg" },
-            { T_STR, 0, "0.278" },
-        { T_STR, 0, "rbi" },
-            { T_STR, 0, "147" },
-        end_node
-    };
-    struct test_node stream[] = {
-        { T_MAP, 0, 0, map },
-        end_node
-    };
+struct test_node map[] = {
+    { T_STR, 0, "hr" },
+        { T_STR, 0, "65" },
+    { T_STR, 0, "avg" },
+        { T_STR, 0, "0.278" },
+    { T_STR, 0, "rbi" },
+        { T_STR, 0, "147" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
 
     CuStreamCompare( tc,
 
         /* YAML document */ 
-        "---\n"
-        "hr: 65\n"
-        "avg: 0.278\n"
-        "rbi: 147\n",
+"hr:  65 \n"
+"avg: 0.278 \n"
+"rbi: 147 \n"
+        ,
 
         /* C structure of validations */
         stream
     );
 }
-
 /*
  * Example 2.3: Mapping of scalars to sequences
  */
 void
-TestSyckSpecExample_2_3( CuTest *tc )
+YtsSpecificationExamples_2( CuTest *tc )
 {
-    struct test_node seq1[] = {
-        { T_STR, 0, "Boston Red Sox" },
-        { T_STR, 0, "Detroit Tigers" },
-        { T_STR, 0, "New York Yankees" },
-        end_node
-    };
-    struct test_node seq2[] = {
-        { T_STR, 0, "New York Mets" },
-        { T_STR, 0, "Chicago Cubs" },
-        { T_STR, 0, "Atlanta Braves" },
-        end_node
-    };
-    struct test_node map[] = {
-        { T_STR, 0, "american" },
-            { T_SEQ, 0, 0, seq1 },
-        { T_STR, 0, "national" },
-            { T_SEQ, 0, 0, seq2 },
-        end_node
-    };
-    struct test_node stream[] = {
-        { T_MAP, 0, 0, map },
-        end_node
-    };
+struct test_node seq1[] = {
+    { T_STR, 0, "Boston Red Sox" },
+    { T_STR, 0, "Detroit Tigers" },
+    { T_STR, 0, "New York Yankees" },
+    end_node
+};
+struct test_node seq2[] = {
+    { T_STR, 0, "New York Mets" },
+    { T_STR, 0, "Chicago Cubs" },
+    { T_STR, 0, "Atlanta Braves" },
+    end_node
+};
+struct test_node map[] = {
+    { T_STR, 0, "american" },
+        { T_SEQ, 0, 0, seq1 },
+    { T_STR, 0, "national" },
+        { T_SEQ, 0, 0, seq2 },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
 
     CuStreamCompare( tc,
 
         /* YAML document */ 
-        "american:\n"
-        "   - Boston Red Sox\n"
-        "   - Detroit Tigers\n"
-        "   - New York Yankees\n"
-        "national:\n"
-        "   - New York Mets\n"
-        "   - Chicago Cubs\n"
-        "   - Atlanta Braves\n",
+"american: \n"
+"   - Boston Red Sox \n"
+"   - Detroit Tigers \n"
+"   - New York Yankees \n"
+"national: \n"
+"   - New York Mets \n"
+"   - Chicago Cubs \n"
+"   - Atlanta Braves \n"
+        ,
 
         /* C structure of validations */
         stream
     );
 }
-
 /*
  * Example 2.4: Sequence of mappings
  */
 void
-TestSyckSpecExample_2_4( CuTest *tc )
+YtsSpecificationExamples_3( CuTest *tc )
 {
-    struct test_node map1[] = {
-        { T_STR, 0, "name" },
-            { T_STR, 0, "Mark McGwire" },
-        { T_STR, 0, "hr" },
-            { T_STR, 0, "65" },
-        { T_STR, 0, "avg" },
-            { T_STR, 0, "0.278" },
-        end_node
-    };
-    struct test_node map2[] = {
-        { T_STR, 0, "name" },
-            { T_STR, 0, "Sammy Sosa" },
-        { T_STR, 0, "hr" },
-            { T_STR, 0, "63" },
-        { T_STR, 0, "avg" },
-            { T_STR, 0, "0.288" },
-        end_node
-    };
-    struct test_node seq[] = {
-        { T_MAP, 0, 0, map1 },
-        { T_MAP, 0, 0, map2 },
-        end_node
-    };
-    struct test_node stream[] = {
-        { T_SEQ, 0, 0, seq },
-        end_node
-    };
+struct test_node map1[] = {
+    { T_STR, 0, "name" },
+        { T_STR, 0, "Mark McGwire" },
+    { T_STR, 0, "hr" },
+        { T_STR, 0, "65" },
+    { T_STR, 0, "avg" },
+        { T_STR, 0, "0.278" },
+    end_node
+};
+struct test_node map2[] = {
+    { T_STR, 0, "name" },
+        { T_STR, 0, "Sammy Sosa" },
+    { T_STR, 0, "hr" },
+        { T_STR, 0, "63" },
+    { T_STR, 0, "avg" },
+        { T_STR, 0, "0.288" },
+    end_node
+};
+struct test_node seq[] = {
+    { T_MAP, 0, 0, map1 },
+    { T_MAP, 0, 0, map2 },
+    end_node
+};
+struct test_node stream[] = {
+    { T_SEQ, 0, 0, seq },
+    end_node
+};
 
     CuStreamCompare( tc,
 
         /* YAML document */ 
-        "- \n"
-        "  name: Mark McGwire\n"
-        "  hr:   65\n"
-        "  avg:  0.278\n"
-        "- \n"
-        "  name: Sammy Sosa\n"
-        "  hr:   63\n"
-        "  avg:  0.288\n",
+"-  \n"
+"  name: Mark McGwire \n"
+"  hr:   65 \n"
+"  avg:  0.278 \n"
+"-  \n"
+"  name: Sammy Sosa \n"
+"  hr:   63 \n"
+"  avg:  0.288 \n"
+        ,
 
         /* C structure of validations */
         stream
     );
 }
-
 /*
- * Example Legacy A5: Complex keys
+ * Example legacy_A5: Legacy A5
  */
 void
-TestSyckSpecExample_Legacy_A5( CuTest *tc )
+YtsSpecificationExamples_4( CuTest *tc )
 {
-    struct test_node seq1[] = {
-        { T_STR, 0, "New York Yankees" },
-        { T_STR, 0, "Atlanta Braves" },
-        end_node
-    };
-    struct test_node seq2[] = {
-        { T_STR, 0, "2001-07-02" },
-        { T_STR, 0, "2001-08-12" },
-        { T_STR, 0, "2001-08-14" },
-        end_node
-    };
-    struct test_node seq3[] = {
-        { T_STR, 0, "Detroit Tigers" },
-        { T_STR, 0, "Chicago Cubs" },
-        end_node
-    };
-    struct test_node seq4[] = {
-        { T_STR, 0, "2001-07-23" },
-        end_node
-    };
-    struct test_node map[] = {
-        { T_SEQ, 0, 0, seq1 },
-        { T_SEQ, 0, 0, seq2 },
-        { T_SEQ, 0, 0, seq3 },
-        { T_SEQ, 0, 0, seq4 },
-        end_node
-    };
-    struct test_node stream[] = {
-        { T_MAP, 0, 0, map },
-        end_node
-    };
+struct test_node seq1[] = {
+    { T_STR, 0, "New York Yankees" },
+    { T_STR, 0, "Atlanta Braves" },
+    end_node
+};
+struct test_node seq2[] = {
+    { T_STR, 0, "2001-07-02" },
+    { T_STR, 0, "2001-08-12" },
+    { T_STR, 0, "2001-08-14" },
+    end_node
+};
+struct test_node seq3[] = {
+    { T_STR, 0, "Detroit Tigers" },
+    { T_STR, 0, "Chicago Cubs" },
+    end_node
+};
+struct test_node seq4[] = {
+    { T_STR, 0, "2001-07-23" },
+    end_node
+};
+struct test_node map[] = {
+    { T_SEQ, 0, 0, seq1 },
+    { T_SEQ, 0, 0, seq2 },
+    { T_SEQ, 0, 0, seq3 },
+    { T_SEQ, 0, 0, seq4 },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
 
     CuStreamCompare( tc,
 
         /* YAML document */ 
-        "?\n"
-        "    - New York Yankees\n"
-        "    - Atlanta Braves\n"
-        ":\n"
-        "  - 2001-07-02\n"
-        "  - 2001-08-12\n"
-        "  - 2001-08-14\n"
-        "?\n"
-        "    - Detroit Tigers\n"
-        "    - Chicago Cubs\n"
-        ":\n"
-        "  - 2001-07-23\n",
+"? \n"
+"    - New York Yankees \n"
+"    - Atlanta Braves \n"
+": \n"
+"  - 2001-07-02 \n"
+"  - 2001-08-12 \n"
+"  - 2001-08-14 \n"
+"? \n"
+"    - Detroit Tigers \n"
+"    - Chicago Cubs \n"
+": \n"
+"  - 2001-07-23 \n"
+        ,
 
         /* C structure of validations */
         stream
     );
 }
-
 /*
  * Example 2.5: Sequence of sequences
  */
 void
-TestSyckSpecExample_2_5( CuTest *tc )
+YtsSpecificationExamples_5( CuTest *tc )
 {
-    struct test_node seq1[] = {
-        { T_STR, 0, "name" },
-        { T_STR, 0, "hr" },
-        { T_STR, 0, "avg" },
-        end_node
-    };
-    struct test_node seq2[] = {
-        { T_STR, 0, "Mark McGwire" },
-        { T_STR, 0, "65" },
-        { T_STR, 0, "0.278" },
-        end_node
-    };
-    struct test_node seq3[] = {
-        { T_STR, 0, "Sammy Sosa" },
-        { T_STR, 0, "63" },
-        { T_STR, 0, "0.288" },
-        end_node
-    };
-    struct test_node seq[] = {
-        { T_SEQ, 0, 0, seq1 },
-        { T_SEQ, 0, 0, seq2 },
-        { T_SEQ, 0, 0, seq3 },
-        end_node
-    };
-    struct test_node stream[] = {
-        { T_SEQ, 0, 0, seq },
-        end_node
-    };
+struct test_node seq1[] = {
+    { T_STR, 0, "name" },
+    { T_STR, 0, "hr" },
+    { T_STR, 0, "avg" },
+    end_node
+};
+struct test_node seq2[] = {
+    { T_STR, 0, "Mark McGwire" },
+    { T_STR, 0, "65" },
+    { T_STR, 0, "0.278" },
+    end_node
+};
+struct test_node seq3[] = {
+    { T_STR, 0, "Sammy Sosa" },
+    { T_STR, 0, "63" },
+    { T_STR, 0, "0.288" },
+    end_node
+};
+struct test_node seq[] = {
+    { T_SEQ, 0, 0, seq1 },
+    { T_SEQ, 0, 0, seq2 },
+    { T_SEQ, 0, 0, seq3 },
+    end_node
+};
+struct test_node stream[] = {
+    { T_SEQ, 0, 0, seq },
+    end_node
+};
 
     CuStreamCompare( tc,
 
         /* YAML document */ 
-        "- [ name         , hr , avg   ]\n"
-        "- [ Mark McGwire , 65 , 0.278 ]\n"
-        "- [ Sammy Sosa   , 63 , 0.288 ]\n",
+"- [ name         , hr , avg   ] \n"
+"- [ Mark McGwire , 65 , 0.278 ] \n"
+"- [ Sammy Sosa   , 63 , 0.288 ] \n"
+        ,
 
         /* C structure of validations */
         stream
     );
 }
-
 /*
  * Example 2.6: Mapping of mappings
  */
 void
-TestSyckSpecExample_2_6( CuTest *tc )
+YtsSpecificationExamples_6( CuTest *tc )
 {
-    struct test_node map1[] = {
-        { T_STR, 0, "hr" },
-            { T_STR, 0, "65" },
-        { T_STR, 0, "avg" },
-            { T_STR, 0, "0.278" },
-        end_node
-    };
-    struct test_node map2[] = {
-        { T_STR, 0, "hr" },
-            { T_STR, 0, "63" },
-        { T_STR, 0, "avg" },
-            { T_STR, 0, "0.288" },
-        end_node
-    };
-    struct test_node map[] = {
-        { T_STR, 0, "Mark McGwire" },
-            { T_MAP, 0, 0, map1 },
-        { T_STR, 0, "Sammy Sosa" },
-            { T_MAP, 0, 0, map2 },
-        end_node
-    };
-    struct test_node stream[] = {
-        { T_MAP, 0, 0, map },
-        end_node
-    };
+struct test_node map1[] = {
+    { T_STR, 0, "hr" },
+        { T_STR, 0, "65" },
+    { T_STR, 0, "avg" },
+        { T_STR, 0, "0.278" },
+    end_node
+};
+struct test_node map2[] = {
+    { T_STR, 0, "hr" },
+        { T_STR, 0, "63" },
+    { T_STR, 0, "avg" },
+        { T_STR, 0, "0.288" },
+    end_node
+};
+struct test_node map[] = {
+    { T_STR, 0, "Mark McGwire" },
+        { T_MAP, 0, 0, map1 },
+    { T_STR, 0, "Sammy Sosa" },
+        { T_MAP, 0, 0, map2 },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
 
     CuStreamCompare( tc,
 
         /* YAML document */ 
-        "Mark McGwire: {hr: 65, avg: 0.278}\n"
-        "Sammy Sosa: {\n"
-        "    hr: 63,\n"
-        "    avg: 0.288\n"
-        "  }\n",
+"Mark McGwire: {hr: 65, avg: 0.278}\n"
+"Sammy Sosa: {\n"
+"    hr: 63,\n"
+"    avg: 0.288\n"
+"  }\n"
+        ,
 
         /* C structure of validations */
         stream
     );
 }
-
 /*
- * Example 2.7: Two documents in a stream each
- *              with a leading comment
+ * Example 2.7: Two documents in a stream each with a leading comment
  */
 void
-TestSyckSpecExample_2_7( CuTest *tc )
+YtsSpecificationExamples_7( CuTest *tc )
 {
-    struct test_node seq1[] = {
-        { T_STR, 0, "Mark McGwire" },
-        { T_STR, 0, "Sammy Sosa" },
-        { T_STR, 0, "Ken Griffey" },
-        end_node
-    };
-    struct test_node seq2[] = {
-        { T_STR, 0, "Chicago Cubs" },
-        { T_STR, 0, "St Louis Cardinals" },
-        end_node
-    };
-    struct test_node stream[] = {
-        { T_SEQ, 0, 0, seq1 },
-        { T_SEQ, 0, 0, seq2 },
-        end_node
-    };
+struct test_node seq1[] = {
+    { T_STR, 0, "Mark McGwire" },
+    { T_STR, 0, "Sammy Sosa" },
+    { T_STR, 0, "Ken Griffey" },
+    end_node
+};
+struct test_node seq2[] = {
+    { T_STR, 0, "Chicago Cubs" },
+    { T_STR, 0, "St Louis Cardinals" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_SEQ, 0, 0, seq1 },
+    { T_SEQ, 0, 0, seq2 },
+    end_node
+};
 
     CuStreamCompare( tc,
 
         /* YAML document */ 
-        "# Ranking of 1998 home runs\n"
-        "---\n"
-        "- Mark McGwire\n"
-        "- Sammy Sosa\n"
-        "- Ken Griffey\n"
-        "\n"
-        "# Team ranking\n"
-        "---\n"
-        "- Chicago Cubs\n"
-        "- St Louis Cardinals\n",
+"# Ranking of 1998 home runs\n"
+"---\n"
+"- Mark McGwire\n"
+"- Sammy Sosa\n"
+"- Ken Griffey\n"
+"\n"
+"# Team ranking\n"
+"---\n"
+"- Chicago Cubs\n"
+"- St Louis Cardinals\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.8: Play by play feed from a game
+ */
+void
+YtsSpecificationExamples_8( CuTest *tc )
+{
+struct test_node map1[] = {
+    { T_STR, 0, "time" },
+        { T_STR, 0, "20:03:20" },
+    { T_STR, 0, "player" },
+        { T_STR, 0, "Sammy Sosa" },
+    { T_STR, 0, "action" },
+        { T_STR, 0, "strike (miss)" },
+    end_node
+};
+struct test_node map2[] = {
+    { T_STR, 0, "time" },
+        { T_STR, 0, "20:03:47" },
+    { T_STR, 0, "player" },
+        { T_STR, 0, "Sammy Sosa" },
+    { T_STR, 0, "action" },
+        { T_STR, 0, "grand slam" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map1 },
+    { T_MAP, 0, 0, map2 },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"---\n"
+"time: 20:03:20\n"
+"player: Sammy Sosa\n"
+"action: strike (miss)\n"
+"...\n"
+"---\n"
+"time: 20:03:47\n"
+"player: Sammy Sosa\n"
+"action: grand slam\n"
+"...\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.9: Single document with two comments
+ */
+void
+YtsSpecificationExamples_9( CuTest *tc )
+{
+struct test_node seq1[] = {
+    { T_STR, 0, "Mark McGwire" },
+    { T_STR, 0, "Sammy Sosa" },
+    end_node
+};
+struct test_node seq2[] = {
+    { T_STR, 0, "Sammy Sosa" },
+    { T_STR, 0, "Ken Griffey" },
+    end_node
+};
+struct test_node map[] = {
+    { T_STR, 0, "hr" },
+        { T_SEQ, 0, 0, seq1 },
+    { T_STR, 0, "rbi" },
+        { T_SEQ, 0, 0, seq2 },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"hr: # 1998 hr ranking \n"
+"  - Mark McGwire \n"
+"  - Sammy Sosa \n"
+"rbi: \n"
+"  # 1998 rbi ranking \n"
+"  - Sammy Sosa \n"
+"  - Ken Griffey \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.1: Node for Sammy Sosa appears twice in this document
+ */
+void
+YtsSpecificationExamples_10( CuTest *tc )
+{
+struct test_node seq1[] = {
+    { T_STR, 0, "Mark McGwire" },
+    { T_STR, 0, "Sammy Sosa" },
+    end_node
+};
+struct test_node seq2[] = {
+    { T_STR, 0, "Sammy Sosa" },
+    { T_STR, 0, "Ken Griffey" },
+    end_node
+};
+struct test_node map[] = {
+    { T_STR, 0, "hr" },
+        { T_SEQ, 0, 0, seq1 },
+    { T_STR, 0, "rbi" },
+        { T_SEQ, 0, 0, seq2 },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"---\n"
+"hr: \n"
+"   - Mark McGwire \n"
+"   # Following node labeled SS \n"
+"   - &SS Sammy Sosa \n"
+"rbi: \n"
+"   - *SS # Subsequent occurance \n"
+"   - Ken Griffey \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.11: Mapping between sequences
+ */
+void
+YtsSpecificationExamples_11( CuTest *tc )
+{
+struct test_node seq1[] = {
+    { T_STR, 0, "New York Yankees" },
+    { T_STR, 0, "Atlanta Braves" },
+    end_node
+};
+struct test_node seq2[] = {
+    { T_STR, 0, "2001-07-02" },
+    { T_STR, 0, "2001-08-12" },
+    { T_STR, 0, "2001-08-14" },
+    end_node
+};
+struct test_node seq3[] = {
+    { T_STR, 0, "Detroit Tigers" },
+    { T_STR, 0, "Chicago Cubs" },
+    end_node
+};
+struct test_node seq4[] = {
+    { T_STR, 0, "2001-07-23" },
+    end_node
+};
+struct test_node map[] = {
+    { T_SEQ, 0, 0, seq3 },
+    { T_SEQ, 0, 0, seq4 },
+    { T_SEQ, 0, 0, seq1 },
+    { T_SEQ, 0, 0, seq2 },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"? # PLAY SCHEDULE \n"
+"  - Detroit Tigers \n"
+"  - Chicago Cubs \n"
+":   \n"
+"  - 2001-07-23 \n"
+"\n"
+"? [ New York Yankees, \n"
+"    Atlanta Braves ] \n"
+": [ 2001-07-02, 2001-08-12,  \n"
+"    2001-08-14 ] \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.12: Sequence key shortcut
+ */
+void
+YtsSpecificationExamples_12( CuTest *tc )
+{
+struct test_node map1[] = {
+    { T_STR, 0, "item" },
+        { T_STR, 0, "Super Hoop" },
+    { T_STR, 0, "quantity" },
+        { T_STR, 0, "1" },
+    end_node
+};
+struct test_node map2[] = {
+    { T_STR, 0, "item" },
+        { T_STR, 0, "Basketball" },
+    { T_STR, 0, "quantity" },
+        { T_STR, 0, "4" },
+    end_node
+};
+struct test_node map3[] = {
+    { T_STR, 0, "item" },
+        { T_STR, 0, "Big Shoes" },
+    { T_STR, 0, "quantity" },
+        { T_STR, 0, "1" },
+    end_node
+};
+struct test_node seq[] = {
+    { T_MAP, 0, 0, map1 },
+    { T_MAP, 0, 0, map2 },
+    { T_MAP, 0, 0, map3 },
+    end_node
+};
+struct test_node stream[] = {
+    { T_SEQ, 0, 0, seq },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"---\n"
+"# products purchased\n"
+"- item    : Super Hoop\n"
+"  quantity: 1\n"
+"- item    : Basketball\n"
+"  quantity: 4\n"
+"- item    : Big Shoes\n"
+"  quantity: 1\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.13: Literal perserves newlines
+ */
+void
+YtsSpecificationExamples_13( CuTest *tc )
+{
+struct test_node stream[] = {
+    { T_STR, 0, "\\//||\\/||\n// ||  ||_\n" },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"# ASCII Art\n"
+"--- | \n"
+"  \\//||\\/||\n"
+"  // ||  ||_\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.14: Folded treats newlines as a space
+ */
+void
+YtsSpecificationExamples_14( CuTest *tc )
+{
+struct test_node stream[] = {
+    { T_STR, 0, "Mark McGwire's year was crippled by a knee injury." },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"---\n"
+"  Mark McGwire's\n"
+"  year was crippled\n"
+"  by a knee injury.\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.15: Newlines preserved for indented and blank lines
+ */
+void
+YtsSpecificationExamples_15( CuTest *tc )
+{
+struct test_node stream[] = {
+    { T_STR, 0, "Sammy Sosa completed another fine season with great stats.\n\n  63 Home Runs\n  0.288 Batting Average\n\nWhat a year!\n" },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"--- > \n"
+" Sammy Sosa completed another\n"
+" fine season with great stats.\n"
+"\n"
+"   63 Home Runs\n"
+"   0.288 Batting Average\n"
+"\n"
+" What a year!\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.16: Indentation determines scope
+ */
+void
+YtsSpecificationExamples_16( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "name" },
+        { T_STR, 0, "Mark McGwire" },
+    { T_STR, 0, "accomplishment" },
+        { T_STR, 0, "Mark set a major league home run record in 1998.\n" },
+    { T_STR, 0, "stats" },
+        { T_STR, 0, "65 Home Runs\n0.278 Batting Average\n" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"name: Mark McGwire \n"
+"accomplishment: > \n"
+"   Mark set a major league\n"
+"   home run record in 1998.\n"
+"stats: | \n"
+"   65 Home Runs\n"
+"   0.278 Batting Average\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.18: Multiline flow scalars
+ */
+void
+YtsSpecificationExamples_18( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "plain" },
+        { T_STR, 0, "This unquoted scalar spans many lines." },
+    { T_STR, 0, "quoted" },
+        { T_STR, 0, "So does this quoted scalar.\n" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"plain:\n"
+"  This unquoted scalar\n"
+"  spans many lines.\n"
+"\n"
+"quoted: \"So does this\n"
+"  quoted scalar.\\n\"\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.19: Integers
+ */
+void
+YtsSpecificationExamples_19( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "canonical" },
+        { T_STR, 0, "12345" },
+    { T_STR, 0, "decimal" },
+        { T_STR, 0, "+12,345" },
+    { T_STR, 0, "sexagecimal" },
+        { T_STR, 0, "3:25:45" },
+    { T_STR, 0, "octal" },
+        { T_STR, 0, "014" },
+    { T_STR, 0, "hexadecimal" },
+        { T_STR, 0, "0xC" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"canonical: 12345 \n"
+"decimal: +12,345 \n"
+"sexagecimal: 3:25:45\n"
+"octal: 014 \n"
+"hexadecimal: 0xC \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.2: Floating point
+ */
+void
+YtsSpecificationExamples_20( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "canonical" },
+        { T_STR, 0, "1.23015e+3" },
+    { T_STR, 0, "exponential" },
+        { T_STR, 0, "12.3015e+02" },
+    { T_STR, 0, "sexagecimal" },
+        { T_STR, 0, "20:30.15" },
+    { T_STR, 0, "fixed" },
+        { T_STR, 0, "1,230.15" },
+    { T_STR, 0, "negative infinity" },
+        { T_STR, 0, "-.inf" },
+    { T_STR, 0, "not a number" },
+        { T_STR, 0, ".NaN" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"canonical: 1.23015e+3 \n"
+"exponential: 12.3015e+02 \n"
+"sexagecimal: 20:30.15\n"
+"fixed: 1,230.15 \n"
+"negative infinity: -.inf\n"
+"not a number: .NaN \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.21: Miscellaneous
+ */
+void
+YtsSpecificationExamples_21( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "null" },
+        { T_STR, 0, "~" },
+    { T_STR, 0, "true" },
+        { T_STR, 0, "y" },
+    { T_STR, 0, "false" },
+        { T_STR, 0, "n" },
+    { T_STR, 0, "string" },
+        { T_STR, 0, "12345" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"null: ~ \n"
+"true: y\n"
+"false: n \n"
+"string: '12345' \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.22: Timestamps
+ */
+void
+YtsSpecificationExamples_22( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "canonical" },
+        { T_STR, 0, "2001-12-15T02:59:43.1Z" },
+    { T_STR, 0, "iso8601" },
+        { T_STR, 0, "2001-12-14t21:59:43.10-05:00" },
+    { T_STR, 0, "spaced" },
+        { T_STR, 0, "2001-12-14 21:59:43.10 -05:00" },
+    { T_STR, 0, "date" },
+        { T_STR, 0, "2002-12-14" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"canonical: 2001-12-15T02:59:43.1Z\n"
+"iso8601:  2001-12-14t21:59:43.10-05:00\n"
+"spaced:  2001-12-14 21:59:43.10 -05:00\n"
+"date:   2002-12-14 # Time is noon UTC\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example legacy D4: legacy Timestamps test
+ */
+void
+YtsSpecificationExamples_23( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "canonical" },
+        { T_STR, 0, "2001-12-15T02:59:43.00Z" },
+    { T_STR, 0, "iso8601" },
+        { T_STR, 0, "2001-02-28t21:59:43.00-05:00" },
+    { T_STR, 0, "spaced" },
+        { T_STR, 0, "2001-12-14 21:59:43.00 -05:00" },
+    { T_STR, 0, "date" },
+        { T_STR, 0, "2002-12-14" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"canonical: 2001-12-15T02:59:43.00Z\n"
+"iso8601:  2001-02-28t21:59:43.00-05:00\n"
+"spaced:  2001-12-14 21:59:43.00 -05:00\n"
+"date:   2002-12-14\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.23: Various explicit families
+ */
+void
+YtsSpecificationExamples_24( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "not-date" },
+        { T_STR, 0, "2002-04-28" },
+    { T_STR, 0, "picture" },
+        { T_STR, 0, "R0lGODlhDAAMAIQAAP//9/X\n17unp5WZmZgAAAOfn515eXv\nPz7Y6OjuDg4J+fn5OTk6enp\n56enmleECcgggoBADs=\n" },
+    { T_STR, 0, "application specific tag" },
+        { T_STR, 0, "The semantics of the tag\nabove may be different for\ndifferent documents.\n" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"not-date: !str 2002-04-28\n"
+"picture: !binary |\n"
+" R0lGODlhDAAMAIQAAP//9/X\n"
+" 17unp5WZmZgAAAOfn515eXv\n"
+" Pz7Y6OjuDg4J+fn5OTk6enp\n"
+" 56enmleECcgggoBADs=\n"
+"\n"
+"application specific tag: !!something |\n"
+" The semantics of the tag\n"
+" above may be different for\n"
+" different documents.\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.24: Application specific family
+ */
+void
+YtsSpecificationExamples_25( CuTest *tc )
+{
+struct test_node point1[] = {
+    { T_STR, 0, "x" },
+        { T_STR, 0, "73" },
+    { T_STR, 0, "y" },
+        { T_STR, 0, "129" },
+    end_node
+};
+struct test_node point2[] = {
+    { T_STR, 0, "x" },
+        { T_STR, 0, "89" },
+    { T_STR, 0, "y" },
+        { T_STR, 0, "102" },
+    end_node
+};
+struct test_node map1[] = {
+    { T_STR, 0, "center" },
+        { T_MAP, 0, 0, point1 },
+    { T_STR, 0, "radius" },
+        { T_STR, 0, "7" },
+    end_node
+};
+struct test_node map2[] = {
+    { T_STR, 0, "start" },
+        { T_MAP, 0, 0, point1 },
+    { T_STR, 0, "finish" },
+        { T_MAP, 0, 0, point2 },
+    end_node
+};
+struct test_node map3[] = {
+    { T_STR, 0, "start" },
+        { T_MAP, 0, 0, point1 },
+    { T_STR, 0, "color" },
+        { T_STR, 0, "0xFFEEBB" },
+    { T_STR, 0, "value" },
+        { T_STR, 0, "Pretty vector drawing." },
+    end_node
+};
+struct test_node seq[] = {
+    { T_MAP, 0, 0, map1 },
+    { T_MAP, 0, 0, map2 },
+    { T_MAP, 0, 0, map3 },
+    end_node
+};
+struct test_node stream[] = {
+    { T_SEQ, 0, 0, seq },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"# Establish a tag prefix\n"
+"--- !clarkevans.com,2002/graph/^shape\n"
+"  # Use the prefix: shorthand for\n"
+"  # !clarkevans.com,2002/graph/circle\n"
+"- !^circle\n"
+"  center: &ORIGIN {x: 73, 'y': 129}\n"
+"  radius: 7\n"
+"- !^line # !clarkevans.com,2002/graph/line\n"
+"  start: *ORIGIN\n"
+"  finish: { x: 89, 'y': 102 }\n"
+"- !^label\n"
+"  start: *ORIGIN\n"
+"  color: 0xFFEEBB\n"
+"  value: Pretty vector drawing.\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+/*
+ * Example 2.26: Ordered mappings
+ */
+void
+YtsSpecificationExamples_26( CuTest *tc )
+{
+struct test_node map1[] = {
+    { T_STR, 0, "Mark McGwire" },
+        { T_STR, 0, "65" },
+    end_node
+};
+struct test_node map2[] = {
+    { T_STR, 0, "Sammy Sosa" },
+        { T_STR, 0, "63" },
+    end_node
+};
+struct test_node map3[] = {
+    { T_STR, 0, "Ken Griffy" },
+        { T_STR, 0, "58" },
+    end_node
+};
+struct test_node seq[] = {
+    { T_MAP, 0, 0, map1 },
+    { T_MAP, 0, 0, map2 },
+    { T_MAP, 0, 0, map3 },
+    end_node
+};
+struct test_node stream[] = {
+    { T_SEQ, 0, 0, seq },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"# ordered maps are represented as\n"
+"# a sequence of mappings, with\n"
+"# each mapping having one key\n"
+"--- !omap\n"
+"- Mark McGwire: 65\n"
+"- Sammy Sosa: 63\n"
+"- Ken Griffy: 58\n"
+        ,
 
         /* C structure of validations */
         stream
@@ -571,14 +1313,32 @@ CuSuite *
 SyckGetSuite()
 {
     CuSuite *suite = CuSuiteNew();
-    SUITE_ADD_TEST( suite, TestSyckSpecExample_2_1 );
-    SUITE_ADD_TEST( suite, TestSyckSpecExample_2_2 );
-    SUITE_ADD_TEST( suite, TestSyckSpecExample_2_3 );
-    SUITE_ADD_TEST( suite, TestSyckSpecExample_2_4 );
-    SUITE_ADD_TEST( suite, TestSyckSpecExample_Legacy_A5 );
-    SUITE_ADD_TEST( suite, TestSyckSpecExample_2_5 );
-    SUITE_ADD_TEST( suite, TestSyckSpecExample_2_6 );
-    SUITE_ADD_TEST( suite, TestSyckSpecExample_2_7 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_0 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_1 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_2 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_3 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_4 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_5 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_6 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_7 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_8 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_9 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_10 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_11 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_12 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_13 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_14 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_15 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_16 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_18 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_19 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_20 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_21 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_22 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_23 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_24 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_25 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_26 );
     return suite;
 }
 
