@@ -118,37 +118,6 @@ syck_free_copies( char *key, struct test_node *tn, char *arg )
     return ST_CONTINUE;
 }
 
-/* Dislay node tree */
-void p_indent( int i ) {
-    int j;
-    for ( j = 0; j < i; j++ ) {
-        printf( " " );
-    }
-}
-
-void p( struct test_node *tn, int depth ) {
-    int i = 0;
-    while ( tn[i].type != T_END ) {
-        switch ( tn[i].type ) {
-            case T_STR:
-                p_indent( depth );
-                printf( "%s\n", tn[i].key );
-            break;
-            case T_SEQ:
-                p_indent( depth );
-                printf( "SEQ\n" );
-                p( tn[i].value, depth + ILEN );
-            break;
-            case T_MAP:
-                p_indent( depth );
-                printf( "MAP\n" );
-                p( tn[i].value, depth + ILEN );
-            break;
-        }
-        i++;
-    }
-}
-
 void CuStreamCompareX( CuTest* tc, struct test_node *s1, struct test_node *s2 ) {
     int i = 0;
     while ( 1 ) {
@@ -204,6 +173,26 @@ void CuStreamCompare( CuTest* tc, char *yaml, struct test_node *stream ) {
     if ( parser->syms != NULL )
         st_foreach( parser->syms, syck_free_copies, 0 );
     syck_free_parser( parser );
+}
+
+/*
+ * Setup assertions for the emitter
+ */
+SyckNode *
+test_emit_handler(p, v)
+    SyckParser *p;
+    SYMID v;
+{
+    SyckNode *n = NULL;
+
+    switch (n->kind)
+    {
+    }
+}
+
+void
+void p( struct test_node *tn ) {
+
 }
 
 /*

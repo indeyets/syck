@@ -1,0 +1,231 @@
+//
+// YTS.c
+//
+// $Author$
+// $Date$
+//
+// Copyright (C) 2004 why the lucky stiff
+//
+// Well, this is the Yaml Testing Suite in the form of a plain C
+// API.  Basically, this is as good as C integration gets for Syck.
+// You've got to have a symbol table around.  From there, you can
+// query your data.
+//
+
+#include <string.h>
+#include "syck.h"
+#include "CuTest.h"
+
+/* YAML test node structures */
+#define T_STR 10
+#define T_SEQ 20
+#define T_MAP 30
+#define T_END 40
+#define ILEN  2
+
+struct test_node {
+    int type;
+    char *tag;
+    char *key;
+    struct test_node *value;
+};
+struct test_node end_node = { T_END };
+
+/*
+ * Assertion which compares a YAML document with an
+ * equivalent set of test_node structs.
+ */
+SYMID
+syck_copy_handler(p, n)
+    SyckParser *p;
+    SyckNode *n;
+{
+    int i = 0;
+    struct test_node *tn = S_ALLOC_N( struct test_node, 1 );
+
+    switch ( n->kind )
+    {
+        case syck_str_kind:
+            tn->type = T_STR;
+            tn->key = syck_strndup( n->data.str->ptr, n->data.str->len );
+            tn->value = 0;
+        break;
+
+        case syck_seq_kind:
+        {
+            struct test_node *val;
+            struct test_node *seq = S_ALLOC_N( struct test_node, n->data.list->idx + 1 );
+            tn->type = T_SEQ;
+            tn->key = 0;
+            for ( i = 0; i < n->data.list->idx; i++ )
+            {
+                SYMID oid = syck_seq_read( n, i );
+                syck_lookup_sym( p, oid, (char **)&val );
+                seq[i] = val[0];
+            }
+            seq[n->data.list->idx] = end_node;
+            tn->value = seq;
+        }
+        break;
+
+        case syck_map_kind:
+        {
+            struct test_node *val;
+            struct test_node *map = S_ALLOC_N( struct test_node, ( n->data.pairs->idx * 2 ) + 1 );
+            tn->type = T_MAP;
+            tn->key = 0;
+            for ( i = 0; i < n->data.pairs->idx; i++ )
+            {
+                SYMID oid = syck_map_read( n, map_key, i );
+                syck_lookup_sym( p, oid, (char **)&val );
+                map[i * 2] = val[0];
+
+                oid = syck_map_read( n, map_value, i );
+                syck_lookup_sym( p, oid, (char **)&val );
+                map[(i * 2) + 1] = val[0];
+            }
+            map[n->data.pairs->idx * 2] = end_node;
+            tn->value = map;
+        }
+        break;
+    }
+
+    tn->tag = 0;
+    if ( n->type_id != NULL )
+        tn->tag = syck_strndup( n->type_id, strlen( n->type_id ) );
+
+    return syck_add_sym( p, (char *) tn );
+}
+
+int
+syck_free_copies( char *key, struct test_node *tn, char *arg )
+{
+    if ( tn != NULL ) {
+        switch ( tn->type ) {
+            case T_STR:
+                S_FREE( tn->key );
+            break;
+
+            case T_SEQ:
+            case T_MAP:
+                S_FREE( tn->value );
+            break;
+        }
+        if ( tn->tag != NULL ) S_FREE( tn->tag );
+        S_FREE( tn );
+    }
+    tn = NULL;
+    return ST_CONTINUE;
+}
+
+void CuStreamCompareX( CuTest* tc, struct test_node *s1, struct test_node *s2 ) {
+    int i = 0;
+    while ( 1 ) {
+        CuAssertIntEquals( tc, s1[i].type, s2[i].type );
+        if ( s1[i].type == T_END ) return;
+        switch ( s1[i].type ) {
+            case T_STR:
+                CuAssertStrEquals( tc, s1[i].key, s2[i].key );
+            break;
+            case T_SEQ:
+            case T_MAP:
+                CuStreamCompareX( tc, s1[i].value, s2[i].value );
+            break;
+        }
+        i++;
+    }
+}
+
+void CuStreamCompare( CuTest* tc, char *yaml, struct test_node *stream ) {
+    int doc_ct = 0;
+    struct test_node *ystream = S_ALLOC_N( struct test_node, doc_ct + 1 );
+    CuString *msg;
+
+    /* Set up parser */
+    SyckParser *parser = syck_new_parser();
+    syck_parser_str_auto( parser, yaml, NULL );
+    syck_parser_handler( parser, syck_copy_handler );
+    syck_parser_error_handler( parser, NULL );
+    syck_parser_implicit_typing( parser, 1 );
+    syck_parser_taguri_expansion( parser, 1 );
+
+    /* Parse all streams */
+    while ( 1 )
+    {
+        struct test_node *ydoc;
+        SYMID oid = syck_parse( parser );
+        if ( parser->eof == 1 ) break;
+
+        /* Add document to stream */
+        syck_lookup_sym( parser, oid, (char **)&ydoc );
+        ystream[doc_ct] = ydoc[0];
+        doc_ct++;
+        S_REALLOC_N( ystream, struct test_node, doc_ct + 1 );
+    }
+    ystream[doc_ct] = end_node;
+
+    /* Traverse the struct and the symbol table side-by-side */
+    /* DEBUG: p( stream, 0 ); p( ystream, 0 ); */
+    CuStreamCompareX( tc, stream, ystream );
+
+    /* Free the node tables and the parser */
+    S_FREE( ystream );
+    if ( parser->syms != NULL )
+        st_foreach( parser->syms, syck_free_copies, 0 );
+    syck_free_parser( parser );
+}
+
+/*
+ * ACTUAL TESTS FOR THE YAML TESTING SUITE BEGIN HERE
+ *   (EVERYTHING PREVIOUS WAS SET UP FOR THE TESTS)
+ */
+
+% syck_tests.each do |yt|
+/*
+ * Example <%= yt['spec'] %>: <%= yt['test'] %>
+ */
+void
+<%= yt['func'] %>( CuTest *tc )
+{
+<%= yt['syck'] %>
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+<%= yt['yaml'].gsub( /\\/, '\\\\\\\\' ).gsub( '"', '\"' ).gsub( /^(.*)$/, '"\1\n"' ) %>
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+}
+% end
+
+CuSuite *
+SyckGetSuite()
+{
+    CuSuite *suite = CuSuiteNew();
+% syck_tests.each do |yt|
+    SUITE_ADD_TEST( suite, <%= yt['func'] %> );
+% end
+    return suite;
+}
+
+int main(void)
+{
+	CuString *output = CuStringNew();
+	CuSuite* suite = SyckGetSuite();
+    int count;
+
+	CuSuiteRun(suite);
+	CuSuiteSummary(suite, output);
+	CuSuiteDetails(suite, output);
+
+	printf("%s\n", output->buffer);
+    count = suite->failCount;
+
+    CuStringFree( output );
+    CuSuiteFree( suite );
+
+    return count;
+}
