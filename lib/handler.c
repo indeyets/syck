@@ -152,11 +152,11 @@ syck_fold_format( struct SyckStr *n, int blockType, int indt_len, int nlDisp )
             spc = fc;
             while ( *(++spc) == ' ' )
             {
-                if ( spc - fc > indt_len )
+                if ( blockType != BLOCK_PLAIN && spc - fc > indt_len )
                     break;
             }
 
-            if ( blockType == BLOCK_FOLD && *spc != ' ' )
+            if ( blockType != BLOCK_LIT && *spc != ' ' )
             {
                 if ( eol != NULL ) fc = eol;
                 if ( first_nl == NULL && keep_nl == 1 )

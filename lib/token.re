@@ -101,10 +101,14 @@
 // Tags a plain scalar with a transfer method
 // * Use only in "Plain" section *
 //
-#define RETURN_IMPLICIT() \
+#define RETURN_IMPLICIT(fold) \
     { \
+        SyckLevel *i_lvl = CURRENT_LEVEL(); \
         YYCURSOR = YYTOKTMP; \
         yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN ); \
+        if ( fold ) { \
+            syck_fold_format( yylval->nodeData->data.str, BLOCK_PLAIN, i_lvl->spaces, NL_CHOMP ); \
+        } \
         if ( parser->implicit_typing == 1 ) \
         { \
             try_tag_implicit( yylval->nodeData, parser->taguri_expansion ); \
@@ -134,6 +138,23 @@
     else if ( *YYLINEPTR == ' ' ) \
     { \
         ict = YYCURSOR - YYLINEPTR; \
+    }
+
+//
+// If an indent exists at the current level, back up.
+//
+#define GET_TRUE_INDENT(indt_len) \
+    { \
+        SyckLevel *lvl_deep = CURRENT_LEVEL(); \
+        indt_len = lvl_deep->spaces; \
+        if ( indt_len == YYTOKEN - YYLINEPTR ) \
+        { \
+            SyckLevel *lvl_over; \
+            parser->lvl_idx--; \
+            lvl_over = CURRENT_LEVEL(); \
+            indt_len = lvl_over->spaces; \
+            parser->lvl_idx++; \
+        } \
     }
 
 //
@@ -329,8 +350,11 @@ ANY                 {   YYCURSOR = YYTOKTMP;
 Plain:
     {
         SyckLevel *plvl;
+        int parentIndent;
+        int multiLine = 0;
         YYCURSOR = YYTOKEN;
         plvl = CURRENT_LEVEL();
+        GET_TRUE_INDENT(parentIndent);
 
 Plain2: 
         YYTOKTMP = YYCURSOR;
@@ -339,18 +363,31 @@ Plain3:
 
 /*!re2c
 
-ALLX                {   RETURN_IMPLICIT(); }
+INDENT              {   int indt_len;
+                        SyckLevel *lvl;
+                        char *tok = YYTOKTMP;
+                        GOBBLE_UP_INDENT( indt_len, tok );
+                        lvl = CURRENT_LEVEL();
 
-INLINEX             {   if ( plvl->status != syck_lvl_inline ) goto Plain2;
-                        RETURN_IMPLICIT();
+                        if ( indt_len <= parentIndent )
+                        {
+                            RETURN_IMPLICIT(multiLine);
+                        }
+
+                        multiLine = 1;
+                        goto Plain2; 
                     }
 
-NULL                {   RETURN_IMPLICIT(); }
+ALLX                {   RETURN_IMPLICIT(multiLine); }
 
-LF                  {   RETURN_IMPLICIT(); }
+INLINEX             {   if ( plvl->status != syck_lvl_inline ) goto Plain2;
+                        RETURN_IMPLICIT(multiLine);
+                    }
+
+NULL                {   RETURN_IMPLICIT(multiLine); }
 
 " #"                {   eat_comments( parser ); 
-                        RETURN_IMPLICIT();
+                        RETURN_IMPLICIT(multiLine);
                     }
 
 [ ]                 {   goto Plain3; }
@@ -591,26 +628,13 @@ ScalarBlock:
         int forceIndent = -1;
         char *yyt = YYTOKEN;
         SyckLevel *lvl = CURRENT_LEVEL();
-        int parentIndent = lvl->spaces;
+        int parentIndent;
+        GET_TRUE_INDENT(parentIndent);
 
         switch ( *yyt )
         {
             case '|': blockType = BLOCK_LIT; break;
             case '>': blockType = BLOCK_FOLD; break;
-        }
-
-        //
-        // SORTOFAHACK!! We're just checking to be sure that our indentation isn't 
-        // at the exact level of the block.  We need to back it of to the previous level
-        // if so.
-        //
-        if ( parentIndent == YYTOKEN - YYLINEPTR )
-        {
-            SyckLevel *lvl2;
-            parser->lvl_idx--;
-            lvl2 = CURRENT_LEVEL();
-            parentIndent = lvl2->spaces;
-            parser->lvl_idx++;
         }
 
         while ( ++yyt <= YYCURSOR )

@@ -58,8 +58,9 @@ extern "C" {
 
 #define BLOCK_FOLD  10
 #define BLOCK_LIT   20
-#define NL_CHOMP    30
-#define NL_KEEP     40
+#define BLOCK_PLAIN 30
+#define NL_CHOMP    130
+#define NL_KEEP     140
 
 //
 // Node definitions

@@ -197,6 +197,18 @@ product:
 """
         )
 
+    def testSpecShortcuts2(self):
+        self.parseOnly(
+            ['This sequence is not indented.', {'map-in-seq': 'further indented by four.', 'this key': 'is also further indented by four.'}, ['seq-in-seq; further indented by three.', 'second entry in nested sequence.'], 'Last entry in top sequence.'], """
+- This sequence is not indented.
+-   map-in-seq: further indented by four.
+    this key: is also further indented by four.
+-  - seq-in-seq; further indented by three.
+   -    second entry in nested sequence.
+- Last entry in top sequence.
+"""
+        )
+
     def testSingleLiteral(self):
         self.parseOnly(
 		    [ "\\/|\\/|\n/ |  |_\n" ], """
@@ -333,6 +345,26 @@ comments: >
     Backup contact is Nancy
     Billsmer @ 338-4338.
 """
+        )
+
+    def testRootBlock(self):
+        self.parseOnly(
+            'This YAML stream contains a single text value. The next stream is a log file - a sequence of log entries. Adding an entry to the log is a simple matter of appending it at the end.\n', """
+--- >
+This YAML stream contains a single text value.
+The next stream is a log file - a sequence of
+log entries. Adding an entry to the log is a
+simple matter of appending it at the end.
+"""
+        )
+
+    def testForceImplicit(self):
+        self.parseOnly(
+			{ 'integer': 12, 'also int': 12, 'string': '12' }, """
+integer: 12
+also int: ! "12"
+string: !str 12
+""" 
         )
 
     def testOverrideAnchor(self):
@@ -532,7 +564,9 @@ class SyckTestSuite(unittest.TestSuite):
              "testSingleFolded",
              "testIndentationScope",
              "testDocComments", 
-             "testDocComments2", 
+             "testDocComments2",
+             "testRootBlock",
+             "testForceImplicit",
              "testOverrideAnchor",
              "testSpecBuiltinSeq",
              "testSpecBuiltinMap",
