@@ -33,6 +33,7 @@ try_tag_implicit( SyckNode *n, int taguri )
             tid = "map";
         break;
     }
+    if ( n->type_id != NULL ) S_FREE( n->type_id );
     if ( taguri == 1 )
     {
         n->type_id = syck_taguri( YAML_DOMAIN, tid, strlen( tid ) );

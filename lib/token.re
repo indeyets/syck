@@ -135,7 +135,14 @@
 #define RETURN_YAML_BLOCK() \
     { \
         SyckNode *n = syck_alloc_str(); \
-        n->type_id = syck_strndup( "str", 3 ); \
+        if ( ((SyckParser *)parser)->taguri_expansion == 1 ) \
+        { \
+            n->type_id = syck_taguri( YAML_DOMAIN, "str", 3 ); \
+        } \
+        else \
+        { \
+            n->type_id = syck_strndup( "str", 3 ); \
+        } \
         n->data.str->ptr = qstr; \
         n->data.str->len = qidx; \
         n->data.str->style = scalar_block; \
@@ -633,7 +640,14 @@ YINDENT             {   int indt_len;
                         {
                             POP_LEVEL();
                         }
-                        n->type_id = syck_strndup( "str", 3 );
+                        if ( ((SyckParser *)parser)->taguri_expansion == 1 )
+                        {
+                            n->type_id = syck_taguri( YAML_DOMAIN, "str", 3 );
+                        }
+                        else
+                        {
+                            n->type_id = syck_strndup( "str", 3 );
+                        }
                         n->data.str->ptr = qstr;
                         n->data.str->len = qidx;
                         n->data.str->style = scalar_1quote;
@@ -734,7 +748,14 @@ YINDENT             {   int indt_len;
                         {
                             POP_LEVEL();
                         }
-                        n->type_id = syck_strndup( "str", 3 );
+                        if ( ((SyckParser *)parser)->taguri_expansion == 1 )
+                        {
+                            n->type_id = syck_taguri( YAML_DOMAIN, "str", 3 );
+                        }
+                        else
+                        {
+                            n->type_id = syck_strndup( "str", 3 );
+                        }
                         n->data.str->ptr = qstr;
                         n->data.str->len = qidx;
                         n->data.str->style = scalar_2quote;
