@@ -1,11 +1,11 @@
-//
-// gram.y
-//
-// $Author$
-// $Date$
-//
-// Copyright (C) 2003 why the lucky stiff
-//
+/*
+ * gram.y
+ *
+ * $Author$
+ * $Date$
+ *
+ * Copyright (C) 2003 why the lucky stiff
+ */
 
 %start doc
 %pure-parser
@@ -96,9 +96,9 @@ atom_or_empty   : atom
                 }
                 ;
 
-//
-// Indentation abstractions
-//
+/*
+ * Indentation abstractions
+ */
 indent_open     : IOPEN
                 | indent_open INDENT
                 ;
@@ -109,11 +109,11 @@ indent_end      : IEND
 indent_sep      : INDENT
                 ;
 
-//
-// Words are broken out to distinguish them
-// as keys in implicit maps and valid elements
-// for the inline structures
-//
+/*
+ * Words are broken out to distinguish them
+ * as keys in implicit maps and valid elements
+ * for the inline structures
+ */
 word_rep	: TRANSFER word_rep						
             { 
                syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
@@ -143,10 +143,10 @@ word_rep	: TRANSFER word_rep
             | PLAIN
             ;
 
-//
-// Any of these structures can be used as
-// complex keys
-//
+/*
+ * Any of these structures can be used as
+ * complex keys
+ */
 struct_rep	: TRANSFER struct_rep
             { 
                 syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
@@ -159,9 +159,9 @@ struct_rep	: TRANSFER struct_rep
 			| inline_map
             ;
 
-//
-// Implicit sequence 
-//
+/*
+ * Implicit sequence 
+ */
 implicit_seq	: indent_open in_implicit_seq indent_end
                 { 
                     $$ = $2;
@@ -189,9 +189,9 @@ in_implicit_seq : basic_seq
 				}
                 ;
 
-//
-// Inline sequences
-//
+/*
+ * Inline sequences
+ */
 inline_seq		: '[' in_inline_seq ']'
                 { 
                     $$ = $2;
@@ -213,12 +213,17 @@ in_inline_seq   : atom
 				}
                 ;
 
-//
-// Implicit maps
-//
+/*
+ * Implicit maps
+ */
 implicit_map	: indent_open in_implicit_map indent_end
                 { 
                     $$ = $2;
+                }
+                | indent_open TRANSFER indent_sep in_implicit_map indent_end
+                { 
+                    syck_add_transfer( $2, $4, ((SyckParser *)parser)->taguri_expansion );
+                    $$ = $4;
                 }
                 ;
 
@@ -258,9 +263,9 @@ in_implicit_map : complex_mapping
                 }
                 ;
 
-//
-// Inline maps
-//
+/*
+ * Inline maps
+ */
 basic_mapping2	: atom ':' atom_or_empty
                 {
                     $$ = syck_new_map( 

@@ -1,23 +1,22 @@
-//
-// token.re
-//
-// $Author$
-// $Date$
-//
-// Copyright (C) 2003 why the lucky stiff
-//
-
+/*
+ * token.re
+ *
+ * $Author$
+ * $Date$
+ *
+ * Copyright (C) 2003 why the lucky stiff
+ */
 #include "syck.h"
 #include "gram.h"
 
-//
-// Allocate quoted strings in chunks
-//
+/*
+ * Allocate quoted strings in chunks
+ */
 #define QUOTELEN    1024
 
-//
-// They do my bidding...
-//
+/*
+ * They do my bidding...
+ */
 #define YYCTYPE     char
 #define YYCURSOR    parser->cursor
 #define YYMARKER    parser->marker
@@ -28,33 +27,33 @@
 #define YYLINE      parser->linect
 #define YYFILL(n)   syck_parser_read(parser)
 
-//
-// Repositions the cursor at `n' offset from the token start.
-// Only works in `Header' and `Document' sections.
-//
+/*
+ * Repositions the cursor at `n' offset from the token start.
+ * Only works in `Header' and `Document' sections.
+ */
 #define YYPOS(n)    YYCURSOR = YYTOKEN + n
 
-//
-// Track line numbers
-//
+/*
+ * Track line numbers
+ */
 #define NEWLINE(ptr)    YYLINE++; YYLINEPTR = ptr + 1
 
-//
-// I like seeing the level operations as macros...
-//
+/*
+ * I like seeing the level operations as macros...
+ */
 #define ADD_LEVEL(len, status)  syck_parser_add_level( parser, len, status )
 #define POP_LEVEL()     syck_parser_pop_level( parser )
 #define CURRENT_LEVEL() syck_parser_current_level( parser )
 
-//
-// Force a token next time around yylex()
-//
+/*
+ * Force a token next time around yylex()
+ */
 #define FORCE_NEXT_TOKEN(tok)    parser->force_token = tok;
 
-//
-// Nice little macro to ensure we're IOPENed to the current level.
-// * Only use this macro in the "Document" section *
-//
+/*
+ * Nice little macro to ensure we're IOPENed to the current level.
+ * * Only use this macro in the "Document" section *
+ */
 #define ENSURE_IOPEN(last_lvl, to_len, reset) \
         if ( last_lvl->spaces < to_len ) \
         { \
@@ -70,10 +69,10 @@
             } \
         } 
 
-//
-// Nice little macro to ensure closure of levels.
-// * Only use this macro in the "Document" section *
-//
+/*
+ * Nice little macro to ensure closure of levels.
+ * * Only use this macro in the "Document" section *
+ */
 #define ENSURE_IEND(last_lvl, to_len) \
         if ( last_lvl->spaces > to_len ) \
         { \
@@ -82,10 +81,10 @@
             return IEND; \
         }
 
-//
-// Concatenates quoted string items and manages allocation
-// to the quoted string
-//
+/*
+ * Concatenates quoted string items and manages allocation
+ * to the quoted string
+ */
 #define QUOTECAT(s, c, i, l) \
         { \
             if ( i + 1 >= c ) \
@@ -97,10 +96,10 @@
             s[i] = '\0'; \
         }
 
-//
-// Tags a plain scalar with a transfer method
-// * Use only in "Plain" section *
-//
+/*
+ * Tags a plain scalar with a transfer method
+ * * Use only in "Plain" section *
+ */
 #define RETURN_IMPLICIT(fold) \
     { \
         SyckLevel *i_lvl = CURRENT_LEVEL(); \
@@ -116,9 +115,9 @@
         return PLAIN; \
     }
 
-//
-// Handles newlines, calculates indent
-//
+/*
+ * Handles newlines, calculates indent
+ */
 #define GOBBLE_UP_INDENT( ict, start ) \
     char *indent = start; \
     NEWLINE(indent); \
@@ -140,9 +139,9 @@
         ict = YYCURSOR - YYLINEPTR; \
     }
 
-//
-// If an indent exists at the current level, back up.
-//
+/*
+ * If an indent exists at the current level, back up.
+ */
 #define GET_TRUE_INDENT(indt_len) \
     { \
         SyckLevel *lvl_deep = CURRENT_LEVEL(); \
@@ -157,21 +156,21 @@
         } \
     }
 
-//
-// Argjh!  I hate globals!  Here for yyerror() only!
-//
+/*
+ * Argjh!  I hate globals!  Here for yyerror() only!
+ */
 SyckParser *syck_parser_ptr = NULL;
 
-//
-// Accessory funcs later in this file.
-//
+/*
+ * Accessory funcs later in this file.
+ */
 void eat_comments( SyckParser * );
 
-//
-// My own re-entrant yylex() using re2c.
-// You really get used to the limited regexp.
-// It's really nice to not rely on backtracking and such.
-//
+/*
+ * My own re-entrant yylex() using re2c.
+ * You really get used to the limited regexp.
+ * It's really nice to not rely on backtracking and such.
+ */
 int
 yylex( YYSTYPE *yylval, SyckParser *parser )
 {
@@ -595,14 +594,14 @@ ENDSPC              {   SyckLevel *lvl;
                         //
                         if ( *(YYTOKEN + 1) == '^' )
                         {
-                            yylval->name = S_ALLOC_N( char, YYCURSOR - YYTOKEN + strlen( lvl->domain ) );
+                            yylval->name = S_ALLOC_N( char, ( YYCURSOR - YYTOKEN ) + strlen( lvl->domain ) );
                             yylval->name[0] = '\0';
                             strcat( yylval->name, lvl->domain );
-                            strncat( yylval->name, YYTOKEN + 2, YYCURSOR - YYTOKEN - 2 );
+                            strncat( yylval->name, YYTOKEN + 2, ( YYCURSOR - YYTOKEN ) - 2 );
                         }
                         else
                         {
-                            char *carat = YYTOKEN + 1;
+                            char *carat = YYTOKEN;
                             while ( (++carat) < YYCURSOR )
                             {
                                 if ( *carat == '^' )
@@ -611,23 +610,19 @@ ENDSPC              {   SyckLevel *lvl;
 
                             if ( carat < YYCURSOR )
                             {
-                                lvl->domain = syck_strndup( YYTOKEN + 1, carat - YYTOKEN - 1 );
-                                yylval->name = S_ALLOC_N( char, YYCURSOR - carat + strlen( lvl->domain ) );
+                                free( lvl->domain );
+                                lvl->domain = syck_strndup( YYTOKEN + 1, ( carat - YYTOKEN ) - 1 );
+                                yylval->name = S_ALLOC_N( char, ( YYCURSOR - carat ) + strlen( lvl->domain ) );
                                 yylval->name[0] = '\0';
                                 strcat( yylval->name, lvl->domain );
-                                strncat( yylval->name, carat + 1, YYCURSOR - carat - 1 );
+                                strncat( yylval->name, carat + 1, ( YYCURSOR - carat ) - 1 );
                             }
                             else
                             {
-                                yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
+                                yylval->name = syck_strndup( YYTOKEN + 1, ( YYCURSOR - YYTOKEN ) - 1 );
                             }
                         }
 
-                        if ( *YYCURSOR == '\n' )
-                        {
-                            FORCE_NEXT_TOKEN(IOPEN);
-                            ADD_LEVEL(lvl->spaces, syck_lvl_doc);
-                        }
                         return TRANSFER; 
                     }
 
@@ -768,7 +763,7 @@ yyerror( char *msg )
     if ( syck_parser_ptr->error_handler == NULL )
         syck_parser_ptr->error_handler = syck_default_error_handler;
 
-    syck_parser_ptr->root = NULL;
+    syck_parser_ptr->root = 0;
     (syck_parser_ptr->error_handler)(syck_parser_ptr, msg);
 }
 
