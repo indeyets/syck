@@ -22,10 +22,13 @@
 %token <name>       ANCHOR ALIAS TRANSFER FOLD
 %token <nodeData>   WORD PLAIN FSTART RAWTEXT
 %token              "+" "-" IOPEN INDENT IEND
+%token              "[" "]" "{" "}" ":" "," "?" "="
 
 %type <nodeId>      atom word_rep struct_rep atom_or_empty
 %type <nodeId>      scalar_block implicit_seq inline_seq implicit_map inline_map
-%type <nodeData>    in_implicit_seq basic_seq
+%type <nodeId>      basic_seq seq_map_shortcut
+%type <nodeData>    in_implicit_seq in_inline_seq simple_mapping basic_mapping
+%type <nodeData>    in_implicit_map in_inline_map complex_mapping
 
 %%
 
@@ -122,19 +125,19 @@ scalar_block	: FOLD IOPEN RAWTEXT IEND
 //
 implicit_seq	: IOPEN in_implicit_seq	IEND	
                 { 
-                    struct SyckNode *n = $2;
-                    n->type_id = "seq";
-                    $$ = hdlr_add_node( n );
+                    $$ = hdlr_add_node( $2 );
                 }
 
 basic_seq       : '-' atom_or_empty             
                 { 
                     $$ = $2
                 }
+/* Still need to rethink this...
 				| '-' seq_map_short
                 { 
                     $$ = $2
                 }
+*/
 
 in_implicit_seq : basic_seq
                 {
@@ -149,88 +152,107 @@ in_implicit_seq : basic_seq
 //
 // The sequence-mapping shortcut
 //
+/* This needs to be rethought based on the symbol table
 seq_map_short	: simple_mapping
 			  	{
-                    struct SyckNode *n = $1;
-                    n->type_id = "map";
-                    $$ = hdlr_add_node( n );
+                    $$ = hdlr_add_node( $1 );
 				}
 				| simple_mapping implicit_map	
                 { 
-                    result = hash_update( val[1], val[0] ) 
+                    map_update( $1, $2 );
+                    $$ = hdlr_add_node( $1 );
                 }
+*/
 
 //
 // Inline sequences
 //
-inline_seq		: '[' in_inline_seq ']'  			{ result = new_node( 'seq', val[1] ) }
-				| '[' ']'        					{ result = new_node( 'seq', [] ) }
+inline_seq		: '[' in_inline_seq ']'
+                { 
+                    $$ = hdlr_add_node( $1 );
+                }
+				| '[' ']'
+                { 
+                    $$ = hdlr_add_node( alloc_seq_node() );
+                }
 
-in_inline_seq   : atom           					{ result = val }
-                | in_inline_seq ',' atom 			{ result.push val[2] }
+in_inline_seq   : atom
+                {
+                    $$ = new_seq_node( $1 );
+                }
+                | in_inline_seq ',' atom
+				{ 
+                    add_seq_item( $1, $3 );
+                    $$ = $1;
+				}
 
 //
 // Implicit maps
 //
-implicit_map	: IOPEN in_implicit_map IEND		{ result = val[1] }
+implicit_map	: IOPEN in_implicit_map IEND
+                { 
+                    $$ = hdlr_add_node( $2 );
+                }
 
 simple_mapping	: word_rep ':' atom
-				{ 
-                    if val[0] == '<='
-                        result = [ :MERGE, val[2] ]
-                    else
-                        result = { val[0] => val[2] }
-                    end
-				}
+                {
+                    $$ = new_map_node( $1, $3 );
+                }
+/* Default needs to be added to SyckSeq i think...
 				| '=' ':' atom
 				{
 					result = [ :DEFAULT, val[2] ]
 				}
+*/
 
 basic_mapping	: word_rep ':' atom_or_empty
-				{ 
-                    if val[0] == '<='
-                        result = [ :MERGE, val[2] ]
-                    else
-                        result = { val[0] => val[2] }
-                    end
-				}
-				| '=' ':' atom_or_empty
+                {
+                    $$ = new_map_node( $1, $3 );
+                }
+/* Default needs to be added to SyckSeq i think...
+				| '=' ':' atom
 				{
 					result = [ :DEFAULT, val[2] ]
 				}
+*/
 
 complex_mapping : basic_mapping
 				| '?' atom INDENT ':' atom_or_empty
-				{
-					result = { val[1] => val[4] }
-				}
+                {
+                    $$ = new_map_node( $2, $5 );
+                }
 
 in_implicit_map : complex_mapping
 				{
-                    result = new_node( 'map', hash_update( {}, val[0] ) )
+                    $$ = $1;
 				}
 				| in_implicit_map INDENT complex_mapping
-				{
-					result = hash_update( val[0], val[2] )
-				}
+                { 
+                    map_update( $1, $3 );
+                    $$ = $1;
+                }
 
 //
 // Inline maps
 //
-inline_map		: '{' in_inline_map '}'   			{ result = new_node( 'map', val[1] ) }
-          		| '{' '}'							{ result = new_node( 'map', Hash.new ) }
+inline_map		: '{' in_inline_map '}'
+                {
+                    $$ = hdlr_add_node( $1 );
+                }
+          		| '{' '}'
+                {
+                    $$ = hdlr_add_node( alloc_map_node() );
+                }
          
 in_inline_map	: basic_mapping 
 				{
-					result = hash_update( {}, val[0] )
+					$$ = $1;
 				}
 				| in_inline_map ',' basic_mapping
 				{
-					result = hash_update( val[0], val[2] )
+                    map_update( $1, $3 );
+                    $$ = $1;
 				}
-
-end
 
 %%
 
