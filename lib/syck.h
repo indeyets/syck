@@ -118,6 +118,8 @@ struct _syck_node {
             long len;
         } *str;
     } data;
+    // Shortcut node
+    void *shortcut;
 };
 
 /*
@@ -249,12 +251,15 @@ char *syck_str_read( SyckNode * );
 SyckNode *syck_new_map( SYMID, SYMID );
 void syck_map_add( SyckNode *, SYMID, SYMID );
 SYMID syck_map_read( SyckNode *, enum map_part, long );
+void syck_map_assign( SyckNode *, enum map_part, long, SYMID );
 long syck_map_count( SyckNode * );
 void syck_map_update( SyckNode *, SyckNode * );
 SyckNode *syck_new_seq( SYMID );
 void syck_seq_add( SyckNode *, SYMID );
 SYMID syck_seq_read( SyckNode *, long );
 long syck_seq_count( SyckNode * );
+
+void apply_seq_in_map( SyckParser *, SyckNode * );
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

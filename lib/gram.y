@@ -218,10 +218,12 @@ in_inline_seq   : atom
  */
 implicit_map	: indent_open in_implicit_map indent_end
                 { 
+                    apply_seq_in_map( (SyckParser *)parser, $2 );
                     $$ = $2;
                 }
                 | indent_open TRANSFER indent_sep in_implicit_map indent_end
                 { 
+                    apply_seq_in_map( (SyckParser *)parser, $4 );
                     syck_add_transfer( $2, $4, ((SyckParser *)parser)->taguri_expansion );
                     $$ = $4;
                 }
@@ -252,13 +254,27 @@ complex_mapping : basic_mapping
                 ;
 
 in_implicit_map : complex_mapping
+				| in_implicit_map indent_sep basic_seq
+                { 
+                    if ( $1->shortcut == NULL )
+                    {
+                        $1->shortcut = syck_new_seq( $3 );
+                    }
+                    else
+                    {
+                        syck_seq_add( $1->shortcut, $3 );
+                    }
+                    $$ = $1;
+                }
 				| in_implicit_map indent_sep complex_mapping
                 { 
+                    apply_seq_in_map( (SyckParser *)parser, $1 );
                     syck_map_update( $1, $3 );
                     $$ = $1;
                 }
 				| in_implicit_map indent_sep
                 { 
+                    apply_seq_in_map( (SyckParser *)parser, $1 );
                     $$ = $1;
                 }
                 ;
@@ -293,4 +309,20 @@ in_inline_map	: basic_mapping2
                 ;
 
 %%
+
+void
+apply_seq_in_map( SyckParser *parser, SyckNode *n )
+{
+    long map_len;
+    if ( n->shortcut == NULL )
+    {
+        return;
+    }
+
+    map_len = syck_map_count( n );
+    syck_map_assign( n, map_value, map_len - 1,
+        syck_hdlr_add_node( parser, n->shortcut ) );
+
+    n->shortcut = NULL;
+}
 

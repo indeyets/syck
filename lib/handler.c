@@ -13,6 +13,7 @@ SYMID
 syck_hdlr_add_node( SyckParser *p, SyckNode *n )
 {
     SYMID id;
+
     if ( ! n->id ) 
     {
         n->id = (p->handler)( p, n );
