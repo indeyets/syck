@@ -2265,6 +2265,23 @@ ruby: |
      'space separated' => YAML::mktime( 2001, 12, 14, 21, 59, 43, 0.10, "-05:00" ), 
      'date (noon UTC)' => Date.new( 2002, 12, 14 ) 
    } 
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "canonical" },
+          { T_STR, 0, "2001-12-15T02:59:43.1Z" },
+      { T_STR, 0, "valid iso8601" },
+          { T_STR, 0, "2001-12-14t21:59:43.10-05:00" },
+      { T_STR, 0, "space separated" },
+          { T_STR, 0, "2001-12-14 21:59:43.10 -05:00" },
+      { T_STR, 0, "date (noon UTC)" },
+          { T_STR, 0, "2002-12-14" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
+
  
 --- 
 test: Binary 

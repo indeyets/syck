@@ -200,9 +200,11 @@ build_symbol_table( SyckEmitter *emitter, struct test_node *node ) {
                 i++;
             }        
         }
-        break;
+        return syck_emitter_mark_node( emitter, (char *)node );
+
+        case T_STR:
+        return 0;
     }
-    return syck_emitter_mark_node( emitter, (char *)node );
 }
 
 void
@@ -239,13 +241,6 @@ test_emitter_handler( SyckEmitter *emitter, char *data ) {
     }
 }
 
-int
-print_marker_table( struct test_node *node, SYMID oid, char *arg )
-{
-    printf( "%lu: %d\n", oid, node->type );
-    return ST_CONTINUE;
-}
-
 void CuRoundTrip( CuTest* tc, struct test_node *stream ) {
     int i = 0;
     CuString *cs = CuStringNew();
@@ -265,8 +260,9 @@ void CuRoundTrip( CuTest* tc, struct test_node *stream ) {
         i++;
     }
 
-    /* Output the stream */
-    printf( "%s\n", cs->buffer );
+    /* Reload the stream and compare */
+    /* printf( "-- output for %s --\n%s\n--- end of output --\n", tc->name, cs->buffer ); */
+    CuStreamCompare( tc, cs->buffer, stream );
     CuStringFree( cs );
 
     syck_free_emitter( emitter );

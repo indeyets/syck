@@ -27,7 +27,7 @@ syck_base64enc( char *s, long len )
 {
     long i = 0;
     int padding = '=';
-    char *buff = S_ALLOCA_N(char, len * 4 / 3 + 6);
+    char *buff = S_ALLOC_N(char, len * 4 / 3 + 6);
 
     while (len >= 3) {
         buff[i++] = b64_table[077 & (*s >> 2)];
@@ -107,7 +107,6 @@ syck_new_emitter()
     SyckEmitter *e;
     e = S_ALLOC( SyckEmitter );
     e->headless = 0;
-    e->seq_map = 0;
     e->use_header = 0;
     e->use_version = 0;
     e->sort_keys = 0;
@@ -120,6 +119,7 @@ syck_new_emitter()
     e->level = -1;
     e->anchors = NULL;
     e->markers = NULL;
+    e->anchored = NULL;
     e->bufsize = SYCK_BUFFERSIZE;
     e->buffer = NULL;
     e->marker = NULL;
@@ -152,6 +152,12 @@ syck_emitter_st_free( SyckEmitter *e )
         st_foreach( e->anchors, syck_st_free_anchors, 0 );
         st_free_table( e->anchors );
         e->anchors = NULL;
+    }
+
+    if ( e->anchored != NULL )
+    {
+        st_free_table( e->anchored );
+        e->anchored = NULL;
     }
 
     /*
@@ -296,6 +302,7 @@ syck_emitter_write( SyckEmitter *e, char *str, long len )
      */
     S_MEMCPY( e->marker, str, char, len );
     e->marker += len;
+    e->marker[0] = '\0';
 }
 
 /*
@@ -353,14 +360,15 @@ syck_emitter_flush( SyckEmitter *e, long check_room )
 }
 
 /*
- * Start emitting from the given node, 
+ * Start emitting from the given node, check for anchoring and then
+ * issue the callback to the emitter handler.
  */
 void
 syck_emit( SyckEmitter *e, char *n )
 {
     SYMID oid;
     char *anchor_name = NULL;
-    int indent = 0;
+    int indent = 0, x = 0;
     SyckLevel *lvl = syck_emitter_current_level( e );
     
     /* Add new level */
@@ -374,25 +382,52 @@ syck_emit( SyckEmitter *e, char *n )
         st_lookup( e->markers, (st_data_t)n, (st_data_t *)&oid ) &&
         st_lookup( e->anchors, (st_data_t)oid, (st_data_t *)&anchor_name ) )
     {
-        char *an = S_ALLOC_N( char, strlen( anchor_name ) + 3 );
-        sprintf( an, "&%s ", anchor_name );
-        syck_emitter_write( e, an, strlen( anchor_name ) + 2 );
-        free( an );
+        if ( e->anchored == NULL )
+        {
+            e->anchored = st_init_numtable();
+        }
+
+        if ( ! st_lookup( e->anchored, (st_data_t)anchor_name, (st_data_t *)&x ) )
+        {
+            char *an = S_ALLOC_N( char, strlen( anchor_name ) + 3 );
+            sprintf( an, "&%s ", anchor_name );
+            syck_emitter_write( e, an, strlen( anchor_name ) + 2 );
+            free( an );
+
+            x = 1;
+            st_insert( e->anchored, (st_data_t)anchor_name, (st_data_t)x );
+        }
+        else
+        {
+            char *an = S_ALLOC_N( char, strlen( anchor_name ) + 2 );
+            sprintf( an, "*%s", anchor_name );
+            syck_emitter_write( e, an, strlen( anchor_name ) + 1 );
+            free( an );
+
+            goto end_emit;
+        }
     }
     (e->emitter_handler)( e, n );
 
     /* Pop the level */
+end_emit:
     syck_emitter_pop_level( e );
+    if ( e->lvl_idx == 1 ) {
+        syck_emitter_write( e, "\n", 1 );
+        e->stage = doc_open;
+    }
 }
 
 void syck_emit_indent( SyckEmitter *e )
 {
     int i;
     SyckLevel *lvl = syck_emitter_current_level( e );
-    syck_emitter_write( e, "\n", 1 );
-    for ( i = 0; i < lvl->spaces; i++ ) {
-        syck_emitter_write( e, " ", 1 );
-    }
+    char *spcs = S_ALLOC_N( char, lvl->spaces + 2 );
+
+    spcs[0] = '\n'; spcs[lvl->spaces + 1] = '\0';
+    for ( i = 0; i < lvl->spaces; i++ ) spcs[i+1] = ' ';
+    syck_emitter_write( e, spcs, lvl->spaces + 1 );
+    free( spcs );
 }
 
 void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style, int force_indent,
@@ -400,8 +435,6 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
 {
     int mark = 0, end = 0;
     SyckLevel *lvl = syck_emitter_current_level( e );
-
-    e->seq_map = 0;
 
     /* Determine block style */
     if ( force_style == block_arbitrary ) {
@@ -417,7 +450,76 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
     }
 
     /* Write the text node */
-    syck_emitter_write( e, str, len );
+    if ( strchr( str, '\n' ) ) {
+        syck_emit_literal( e, str, len );
+    } else {
+        syck_emitter_write( e, str, len );
+    }
+}
+
+void syck_emit_literal( SyckEmitter *e, char *str, long len )
+{
+    char *mark = str;
+    char *start = str;
+    char *end = str;
+    syck_emitter_write( e, "|", 1 );
+    syck_emit_indent( e );
+    while ( mark < str + len ) {
+        if ( *mark == '\n' ) {
+            end = mark;
+            if ( *start != ' ' && *start != '\n' && *end != '\n' && *end != ' ' ) end += 1;
+            syck_emitter_write( e, start, end - start );
+            syck_emit_indent( e );
+            start = mark + 1;
+        }
+        mark++;
+    }
+    end = str + len;
+    if ( start < end ) {
+        syck_emitter_write( e, start, end - start );
+    }
+}
+
+void syck_emit_folded( SyckEmitter *e, int width, char *str, long len )
+{
+    char *mark = str;
+    char *start = str;
+    char *end = str;
+    syck_emitter_write( e, ">", 1 );
+    syck_emit_indent( e );
+    while ( mark < str + len ) {
+        switch ( *mark ) {
+            case '\n':
+                end = mark;
+                if ( *start != ' ' && *start != '\n' && *end != '\n' && *end != ' ' ) end += 1;
+                syck_emitter_write( e, start, end - start );
+                syck_emit_indent( e );
+                start = mark + 1;
+            break;
+
+            case ' ':
+                if ( *start != ' ' ) {
+                    if ( mark - start > width ) {
+                        if ( start >= end ) {
+                            end = mark;
+                        }
+                        syck_emitter_write( e, start, end - start );
+                        syck_emit_indent( e );
+                        start = end + 1;
+                        end = end + 1;
+                        mark = end;
+                    } else {
+                        end = mark;
+                    }
+                }
+            break;
+        }
+        mark++;
+    }
+    end = str + len;
+    if ( start < end ) {
+        syck_emitter_write( e, start, end - start );
+    }
 }
 
 void syck_emit_seq( SyckEmitter *e, char *tag )
@@ -455,7 +557,23 @@ void syck_emit_item( SyckEmitter *e )
 
 void syck_emit_end( SyckEmitter *e )
 {
-    syck_emitter_write( e, "\n", 1 );
+    SyckLevel *lvl = syck_emitter_current_level( e );
+    switch ( lvl->status )
+    {
+        case syck_lvl_seq:
+            if ( lvl->ncount == 0 ) {
+                syck_emitter_write( e, "[]\n", 3 );
+            }
+        break;
+
+        case syck_lvl_map:
+            if ( lvl->ncount == 0 ) {
+                syck_emitter_write( e, "{}\n", 3 );
+            } else if ( lvl->ncount % 2 == 1 ) {
+                syck_emitter_write( e, ":\n", 1 );
+            }
+        break;
+    }
 }
 
 /*

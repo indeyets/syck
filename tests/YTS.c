@@ -200,9 +200,11 @@ build_symbol_table( SyckEmitter *emitter, struct test_node *node ) {
                 i++;
             }        
         }
-        break;
+        return syck_emitter_mark_node( emitter, (char *)node );
+
+        case T_STR:
+        return 0;
     }
-    return syck_emitter_mark_node( emitter, (char *)node );
 }
 
 void
@@ -239,13 +241,6 @@ test_emitter_handler( SyckEmitter *emitter, char *data ) {
     }
 }
 
-int
-print_marker_table( struct test_node *node, SYMID oid, char *arg )
-{
-    printf( "%lu: %d\n", oid, node->type );
-    return ST_CONTINUE;
-}
-
 void CuRoundTrip( CuTest* tc, struct test_node *stream ) {
     int i = 0;
     CuString *cs = CuStringNew();
@@ -265,8 +260,9 @@ void CuRoundTrip( CuTest* tc, struct test_node *stream ) {
         i++;
     }
 
-    /* Output the stream */
-    printf( "%s\n", cs->buffer );
+    /* Reload the stream and compare */
+    /* printf( "-- output for %s --\n%s\n--- end of output --\n", tc->name, cs->buffer ); */
+    CuStreamCompare( tc, cs->buffer, stream );
     CuStringFree( cs );
 
     syck_free_emitter( emitter );
@@ -1543,6 +1539,43 @@ struct test_node stream[] = {
 
     CuRoundTrip( tc, stream );
 }
+/*
+ * Example : Timestamp
+ */
+void
+YtsSpecificationExamples_62( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "canonical" },
+        { T_STR, 0, "2001-12-15T02:59:43.1Z" },
+    { T_STR, 0, "valid iso8601" },
+        { T_STR, 0, "2001-12-14t21:59:43.10-05:00" },
+    { T_STR, 0, "space separated" },
+        { T_STR, 0, "2001-12-14 21:59:43.10 -05:00" },
+    { T_STR, 0, "date (noon UTC)" },
+        { T_STR, 0, "2002-12-14" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"canonical:       2001-12-15T02:59:43.1Z \n"
+"valid iso8601:   2001-12-14t21:59:43.10-05:00 \n"
+"space separated: 2001-12-14 21:59:43.10 -05:00 \n"
+"date (noon UTC): 2002-12-14 \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
 
 CuSuite *
 SyckGetSuite()
@@ -1575,6 +1608,7 @@ SyckGetSuite()
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_25 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_26 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_27 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_62 );
     return suite;
 }
 

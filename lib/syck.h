@@ -272,8 +272,6 @@ enum block_styles {
 struct _syck_emitter {
     /* Headerless doc flag */
     int headless;
-    /* Sequence map shortcut flag */
-    int seq_map;
     /* Force header? */
     int use_header;
     /* Force version? */
@@ -297,7 +295,7 @@ struct _syck_emitter {
     /* Object ignore ID */
     SYMID ignore_id;
     /* Symbol table for anchors */
-    st_table *markers, *anchors;
+    st_table *markers, *anchors, *anchored;
     /* Custom buffer size */
     size_t bufsize;
     /* Buffer */
@@ -364,6 +362,8 @@ void syck_emitter_write( SyckEmitter *, char *, long );
 void syck_emitter_flush( SyckEmitter *, long );
 void syck_emit( SyckEmitter *, char * );
 void syck_emit_scalar( SyckEmitter *, char *, enum block_styles, int, char, char *, long );
+void syck_emit_folded( SyckEmitter *, int, char *, long );
+void syck_emit_literal( SyckEmitter *, char *, long );
 void syck_emit_seq( SyckEmitter *, char * );
 void syck_emit_item( SyckEmitter * );
 void syck_emit_map( SyckEmitter *, char * );

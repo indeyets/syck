@@ -52,9 +52,9 @@ TestSyckEmit( CuTest *tc )
  */
 void TestBase64Encode( CuTest *tc )
 {
-    char gif[] = "GIF89a\001\000\001\000\200\377\000\300\300\300\000\000\000!\371\004\001\000\000\000\000,\000\000\000\000\001\000\001\000\000\002\002D\001\000;"; 
-    char *enc = syck_base64enc( gif, strlen( gif ) );
-    printf( "ENCODED:\n%s\n", enc );
+    char gif[] = "GIF89a\f\000\f\000\204\000\000\377\377\367\365\365\356\351\351\345fff\000\000\000\347\347\347^^^\363\363\355\216\216\216\340\340\340\237\237\237\223\223\223\247\247\247\236\236\236iiiccc\243\243\243\204\204\204\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371!\376\016Made with GIMP\000,\000\000\000\000\f\000\f\000\000\005,  \216\2010\236\343@\024\350i\020\304\321\212\010\034\317\200M$z\357\3770\205p\270\2601f\r\e\316\001\303\001\036\020' \202\n\001\000;"; 
+    char *enc = syck_base64enc( gif, 185 );
+    CuAssertStrEquals( tc, enc, "R0lGODlhDAAMAIQAAP//9/X17unp5WZmZgAAAOfn515eXvPz7Y6OjuDg4J+fn5OTk6enp56enmlpaWNjY6Ojo4SEhP/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++f/++SH+Dk1hZGUgd2l0aCBHSU1QACwAAAAADAAMAAAFLCAgjoEwnuNAFOhpEMTRiggcz4BNJHrv/zCFcLiwMWYNG84BwwEeECcgggoBADs=\n" );
     S_FREE( enc );
 }
 
@@ -63,7 +63,7 @@ SyckGetSuite()
 {
     CuSuite *suite = CuSuiteNew();
     SUITE_ADD_TEST( suite, TestSyckEmit );
-//  SUITE_ADD_TEST( suite, TestBase64Encode );
+    SUITE_ADD_TEST( suite, TestBase64Encode );
     return suite;
 }
 
