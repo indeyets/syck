@@ -782,19 +782,19 @@ EOY
         assert_bytecode( map, "D\nM\nSname\nSMark McGwire\nSaccomplishment\nSMark set a major league home run record in 1998.\nN\nSstats\nS65 Home Runs\nN\nC0.278 Batting Average\nN\nE\n" )
 	end
 
-	def test_spec_quoted_scalars
-		assert_to_yaml(
-			{"tie-fighter"=>"|\\-*-/|", "control"=>"\0101998\t1999\t2000\n", "unicode"=>"Sosa did fine." + ["263A".hex].pack('U*'), "quoted"=>" # not a 'comment'.", "single"=>"\"Howdy!\" he cried.", "hexesc"=>"\r\n is \r\n"}, <<EOY
-unicode: "Sosa did fine.\\u263A"
-control: "\\b1998\\t1999\\t2000\\n"
-hexesc:  "\\x0D\\x0A is \\r\\n"
-
-single: '"Howdy!" he cried.'
-quoted: ' # not a ''comment''.'
-tie-fighter: '|\\-*-/|'
-EOY
-		)
-	end
+    #	def test_spec_quoted_scalars
+    #		assert_to_yaml(
+    #			{"tie-fighter"=>"|\\-*-/|", "control"=>"\0101998\t1999\t2000\n", "unicode"=>"Sosa did fine." + ["263A".hex].pack('U*'), "quoted"=>" # not a 'comment'.", "single"=>"\"Howdy!\" he cried.", "hexesc"=>"\r\n is \r\n"}, <<EOY
+    #unicode: "Sosa did fine.\\u263A"
+    #control: "\\b1998\\t1999\\t2000\\n"
+    #hexesc:  "\\x0D\\x0A is \\r\\n"
+    #
+    #single: '"Howdy!" he cried.'
+    #quoted: ' # not a ''comment''.'
+    #tie-fighter: '|\\-*-/|'
+    #EOY
+    #		)
+    #	end
 
 	def test_spec_multiline_scalars
 		# Multiline flow scalars

@@ -15,6 +15,13 @@ end
 
 class Object
     tag_as "tag:ruby.yaml.org,2002:object"
+    def Object.yaml_new( tag, val )
+        o = allocate
+        val.each_pair do |k,v|
+            o.instance_variable_set "@#{k}", v
+        end
+        o
+    end
     def to_yaml_properties; instance_variables.sort; end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|

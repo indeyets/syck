@@ -1,4 +1,14 @@
 --- %YAML:1.0
+- version: 0.51
+  date: 2005-02-09
+  changes:
+    tests/YTS.c: tests failing due to bad syck_emit_scalar call.
+
+    ext/ruby/lib/yaml/rubytypes.rb: added Object#yaml_new.
+
+    ext/ruby/ext/syck/rubyext.c: both yaml_new and yaml_initialize get
+      called, should they be present.
+    
 - version: 0.50
   date: 2005-02-08
   changes:

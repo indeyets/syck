@@ -1076,6 +1076,7 @@ syck_resolver_transfer( self, type, val )
         VALUE tags = rb_attr_get(self, s_tags);
         VALUE target_class = rb_hash_aref( tags, type );
         VALUE subclass = Qnil;
+        VALUE obj = Qnil;
 
         /*
          * Should no tag match exactly, check for subclass format
@@ -1133,20 +1134,22 @@ syck_resolver_transfer( self, type, val )
 
         if ( rb_respond_to( target_class, s_call ) )
         {
-            val = rb_funcall( target_class, s_call, 2, type, val );
+            obj = rb_funcall( target_class, s_call, 2, type, val );
         }
         else if ( rb_respond_to( target_class, s_yaml_new ) )
         {
-            val = rb_funcall( subclass, s_yaml_new, 2, type, val );
+            obj = rb_funcall( subclass, s_yaml_new, 2, type, val );
         }
         else if ( !NIL_P( subclass ) )
         {
-            val = rb_obj_alloc( subclass );
-            if ( rb_respond_to( val, s_yaml_initialize ) )
-            {
-                rb_funcall( val, s_yaml_initialize, 2, type, val );
-            }
+            obj = rb_obj_alloc( subclass );
         }
+
+        if ( rb_respond_to( obj, s_yaml_initialize ) )
+        {
+            rb_funcall( obj, s_yaml_initialize, 2, type, val );
+        }
+        val = obj;
     }
 
     return val;
