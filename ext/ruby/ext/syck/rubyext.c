@@ -1324,7 +1324,6 @@ syck_emitter_new(argc, argv, class)
     syck_emitter_handler( emitter, rb_syck_output_handler );
     emitter->bonus = (void *)rb_str_new2( "" );
 
-
     if ( ! rb_obj_is_instance_of( options, rb_cHash ) )
     {
         options = rb_hash_new();

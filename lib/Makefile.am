@@ -23,5 +23,5 @@ libsyck_a_SOURCES = \
 
 REC = re2c
 .re.c:
-	$(REC) -b $< > $@.new && mv $@.new $@
+	$(REC) $< > $@.new && mv $@.new $@
 

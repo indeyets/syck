@@ -1,6 +1,6 @@
 --- %YAML:1.0
 - version: 0.45
-  date: 2004-08-06
+  date: 2004-08-18
   changes:
     CHANGELOG: Added.
 
@@ -34,8 +34,12 @@
     - was forcing a mod value of zero at times, which kept 
       some blocks from getting indentation.
 
-    ext/ruby/lib/yaml/rubytypes.rb: exceptions were using an older
-      YAML.object_maker. [ruby-core:03080]
+    - double-quoted strings now are handled through the flow block code to
+      increase readability.
+
+    ext/ruby/lib/yaml/rubytypes.rb: 
+    - exceptions were using an older YAML.object_maker. [ruby-core:03080]
+    - subtleties in emitting strings with opening whitespace.
        
     ext/ruby/lib/yaml.rb: 
     - added YAML::load_file, YAML::parse_file.
