@@ -1,4 +1,4 @@
-released: { name: Syck, version: 0.45 }
+released: { name: Syck, version: 0.50 }
 for: [ Ruby, PHP, Python ]
 by: why the lucky stiff
 about: >
@@ -18,11 +18,10 @@ links:
   YAML Specification: http://yaml.org/spec/
   Syck: http://www.whytheluckystiff.net/syck/
   Syck Benchmarks: http://www.whytheluckystiff.net/arch/2003/03/19
-  Tarball @ SourceForge: http://aleron.dl.sourceforge.net/sourceforge/yaml4r/syck-0.45.tar.gz
 
 status: >
 
-  Syck is about 90% compliant with the YAML spec.  Largely, small
+  Syck is about 95% compliant with the YAML spec.  Largely, small
   issues remain.
 
   The extensions are quite usable.  Ruby, PHP and Python
@@ -39,10 +38,10 @@ benchmarks: >
 
   Syck runs at about:
 
-  30-35% of the speed of Ruby's Marshal.
-  35-90% of the speed of PHP's deserialize().
+  50-60% of the speed of Ruby's Marshal.
+  65-90% of the speed of PHP's deserialize().
   600% of the speed of Python's Pickle.
-  33-40% of the speed of Python's cPickle.
+  50-60% of the speed of Python's cPickle.
 
   (Based on various types of structured data.)
 
@@ -54,8 +53,8 @@ installation: >
 
   To compile libsyck, first download libsyck.
 
-    tar xzvf syck-0.45.tar.gz
-    cd syck-0.45
+    tar xzvf syck-0.50.tar.gz
+    cd syck-0.50
     ./configure
     make
     sudo make install
@@ -106,7 +105,7 @@ examples:
          [released] => Array
              (   
                  [name] => Syck
-                 [version] => 0.45
+                 [version] => 0.50
              )
 
      .. and so on ..
