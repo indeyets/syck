@@ -399,7 +399,7 @@ regexp_proc = Proc.new { |type, val|
 			elsif val['MODIFIERS'].include?( 'i' )
 				mods |= Regexp::IGNORECASE
 			elsif val['MODIFIERS'].include?( 'm' )
-				mods |= Regexp::POSIXLINE
+				mods |= Regexp::MULTILINE
 			end
 		end
 		Regexp::compile( val['REGEXP'], mods )
