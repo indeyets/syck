@@ -294,7 +294,7 @@ module YAML
 	# Add a global handler for a YAML domain type.
 	#
 	def YAML.add_domain_type( domain, type_tag, &transfer_proc )
-        @@resolver.add_type( "tag:#{ domain }:#{ type_re }", transfer_proc )
+        @@resolver.add_type( "tag:#{ domain }:#{ type_tag }", transfer_proc )
 	end
 
 	#

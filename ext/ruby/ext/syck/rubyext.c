@@ -55,7 +55,7 @@ typedef struct {
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect, s_out, s_intern, s_yaml_new, s_yaml_initialize, s_to_yaml;
+static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect, s_out, s_intern, s_yaml_new, s_yaml_initialize, s_to_yaml, s_write;
 static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_value;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
@@ -81,6 +81,7 @@ SYMID rb_syck_load_handler _((SyckParser *, SyckNode *));
 void rb_syck_err_handler _((SyckParser *, char *));
 SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
 void rb_syck_output_handler _((SyckEmitter *, char *, long));
+void rb_syck_emitter_handler _((SyckEmitter *, st_data_t));
 int syck_parser_assign_io _((SyckParser *, VALUE));
 
 struct parser_xtra {
@@ -1240,28 +1241,25 @@ syck_node_transform( self )
 void
 rb_syck_emitter_handler(e, data)
     SyckEmitter *e;
-    char *data;
+    st_data_t data;
 {
     VALUE n = (VALUE)data;
-    VALUE tag = rb_funcall( n, s_type_id, 0 ); 
+    VALUE tag = rb_ivar_get( n, s_type_id ); 
 
 	if ( rb_obj_is_kind_of( n, cOutMap ) )
     {
         int i;
-        VALUE keys = rb_funcall( n, s_keys, 0 );
-        syck_emit_map( e, RSTRING(tag)->ptr );
-        for ( i = 0; i < RARRAY(keys)->len; i++ )
+        syck_emit_map( e, NULL ); // RSTRING(tag)->ptr );
+        for ( i = 0; i < RARRAY(n)->len; i++ )
         {
-            VALUE key = rb_ary_entry(keys, i);
-            syck_emit_item( e, (st_data_t)key );
-            syck_emit_item( e, (st_data_t)rb_hash_aref(n, key) );
+            syck_emit_item( e, (st_data_t)rb_ary_entry(n, i) );
         }
         syck_emit_end( e );
     }
     else if ( rb_obj_is_kind_of( n, cOutSeq ) )
     {
         int i;
-        syck_emit_seq( e, RSTRING(tag)->ptr );
+        syck_emit_seq( e, NULL ); // RSTRING(tag)->ptr );
         for ( i = 0; i < RARRAY(n)->len; i++ )
         {
             syck_emit_item( e, (st_data_t)rb_ary_entry(n, i) );
@@ -1270,11 +1268,12 @@ rb_syck_emitter_handler(e, data)
     }
     else if ( rb_obj_is_kind_of( n, cOutScalar ) )
     {
-        syck_emit_scalar( e, RSTRING(tag)->ptr, block_arbitrary, 0, 0, RSTRING(n)->ptr, RSTRING(n)->len );
+        syck_emit_scalar( e, NULL, block_arbitrary, 0, 0, RSTRING(n)->ptr, RSTRING(n)->len );
     }
     else
     {
-        syck_emit_scalar( e, NULL, block_arbitrary, 0, 0, "", 0 );
+        // TODO: Handle strange nodes
+        syck_emit_scalar( e, NULL, block_arbitrary, 0, 0, "<Unknown>", 9 );
     }
 }
 
@@ -1287,7 +1286,8 @@ rb_syck_output_handler( emitter, str, len )
     char *str;
     long len;
 {
-    VALUE dest = (VALUE)emitter->bonus;
+    struct emitter_xtra *bonus = (struct emitter_xtra *)emitter->bonus;
+    VALUE dest = bonus->port;
     if ( rb_respond_to( dest, s_to_str ) ) {
         rb_str_cat( dest, str, len );
     } else {
@@ -1299,13 +1299,13 @@ rb_syck_output_handler( emitter, str, len )
  * Helper function for marking nodes in the anchor
  * symbol table.
  */
-VALUE
+void
 syck_out_mark( emitter, node )
+    VALUE emitter, node;
 {
     SyckEmitter *emitterPtr;
 	Data_Get_Struct(emitter, SyckEmitter, emitterPtr);
-    syck_emitter_mark_node( emitterPtr, (st_data_t)node );
-    return emitter;
+    /* syck_emitter_mark_node( emitterPtr, (st_data_t)node ); */
 }
 
 /*
@@ -1343,10 +1343,6 @@ syck_emitter_new(argc, argv, class)
     syck_emitter_handler( emitter, rb_syck_emitter_handler );
     syck_output_handler( emitter, rb_syck_output_handler );
 
-    if ( ! rb_obj_is_instance_of( options, rb_cHash ) )
-    {
-        options = rb_hash_new();
-    }
 	init_argv[0] = options;
 	rb_obj_call_init(pobj, 1, init_argv);
     rb_ivar_set( pobj, s_out, rb_funcall( cOut, s_new, 1, pobj ) );
@@ -1369,12 +1365,23 @@ syck_emitter_reset( self, options )
     if ( bonus != NULL ) S_FREE( bonus );
 
     bonus = S_ALLOC_N( struct emitter_xtra, 1 );
-	bonus->port = Qnil;
+	bonus->port = rb_str_new2( "" );
     bonus->data = hash = rb_hash_new();
+
+    if ( ! rb_obj_is_instance_of( options, rb_cHash ) )
+    {
+        if ( rb_respond_to( options, s_to_str ) || rb_respond_to( options, s_write ) )
+        {
+            bonus->port = options;
+        }
+        options = rb_hash_new();
+    }
+    else
+    {
+        rb_ivar_set(self, s_options, options);
+    }
     
     emitter->bonus = (void *)bonus;
-
-    rb_ivar_set(self, s_options, options);
     rb_ivar_set(self, s_level, INT2FIX(0));
     rb_ivar_set(self, s_resolver, Qnil);
 	return self;
@@ -1402,12 +1409,12 @@ syck_emitter_emit( argc, argv, self )
 
     /* Calculate anchors, build a simpler symbol table, etc. */
     symple = rb_funcall(proc, s_call, 1, rb_ivar_get(self, s_out));
-    syck_emitter_mark_node( emitter, (st_data_t)symple );
+    /* syck_emitter_mark_node( emitter, (st_data_t)symple ); */
 
     /* Second pass, build emitted string */
     if ( level == 1 ) 
     {
-        syck_emit(emitter, (st_data_t)&oid);
+        syck_emit(emitter, (st_data_t)symple);
         syck_emitter_flush(emitter, 0);
 
         bonus = (struct emitter_xtra *)emitter->bonus;
@@ -1451,7 +1458,8 @@ syck_out_map( self, type_id )
 {
     VALUE map = rb_funcall( cOutMap, s_new, 2, rb_ivar_get( self, s_emitter ), type_id );
     syck_out_mark( rb_ivar_get( self, s_emitter ), map );
-    return rb_yield( map );
+    rb_yield( map );
+    return map;
 }
 
 /*
@@ -1463,7 +1471,8 @@ syck_out_seq( self, type_id )
 {
     VALUE seq = rb_funcall( cOutSeq, s_new, 2, rb_ivar_get( self, s_emitter ), type_id );
     syck_out_mark( rb_ivar_get( self, s_emitter ), seq );
-    return rb_yield( seq );
+    rb_yield( seq );
+    return seq;
 }
 
 /*
@@ -1499,11 +1508,9 @@ VALUE
 syck_out_map_add( self, k, v )
     VALUE self, k, v;
 {
-    VALUE ary[2];
     VALUE emitter = rb_ivar_get( self, s_emitter );
-    ary[0] = rb_funcall( k, s_to_yaml, 1, emitter );
-    ary[1] = rb_funcall( v, s_to_yaml, 1, emitter );
-    rb_funcall( self, s_push, 1, rb_ary_new4( 2, ary ) );
+    rb_funcall( self, s_push, 1, rb_funcall( k, s_to_yaml, 1, emitter ) );
+    rb_funcall( self, s_push, 1, rb_funcall( v, s_to_yaml, 1, emitter ) );
     return self;
 }
 
@@ -1584,6 +1591,7 @@ Init_syck()
 	s_to_str = rb_intern("to_str");
 	s_tr_bang = rb_intern("tr!");
     s_unpack = rb_intern("unpack");
+	s_write = rb_intern("write");
     s_tag_subclasses = rb_intern( "tag_subclasses?" );
     s_emitter = rb_intern( "emitter" );
     s_level = rb_intern( "level" );
@@ -1700,11 +1708,11 @@ Init_syck()
     rb_define_method( cOut, "scalar", syck_out_scalar, 3 );
     cOutMap = rb_define_class_under( rb_syck, "OutMap", rb_cArray );
     rb_define_attr( cOutMap, "emitter", 1, 1 );
-    rb_define_method( cOutMap, "initialize", syck_out_map_initialize, 1 );
+    rb_define_method( cOutMap, "initialize", syck_out_map_initialize, 2 );
     rb_define_method( cOutMap, "add", syck_out_map_add, 2 );
     cOutSeq = rb_define_class_under( rb_syck, "OutSeq", rb_cArray );
     rb_define_attr( cOutSeq, "emitter", 1, 1 );
-    rb_define_method( cOutSeq, "initialize", syck_out_seq_initialize, 1 );
+    rb_define_method( cOutSeq, "initialize", syck_out_seq_initialize, 2 );
     rb_define_method( cOutSeq, "add", syck_out_seq_add, 1 );
     cOutScalar = rb_define_class_under( rb_syck, "OutScalar", rb_cString );
     rb_define_method( cOutScalar, "initialize", syck_out_scalar_initialize, 3 );

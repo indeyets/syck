@@ -1,6 +1,7 @@
 # -*- mode: ruby; ruby-indent-level: 4; tab-width: 4 -*- vim: sw=4 ts=4
 require 'date'
 require 'yaml/compat'
+
 #
 # Type conversions
 #
@@ -24,12 +25,6 @@ class Object
         end
 	end
 end
-
-# REF: for reference only, moved to tag_as typing.
-# YAML.add_ruby_type( /^object/ ) { |type, val|
-#     type, obj_class = YAML.read_type_class( type, Object )
-#     YAML.object_maker( obj_class, val )
-# }
 
 #
 # Maps: Hash#to_yaml
@@ -224,13 +219,14 @@ class Symbol
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
-            out.scalar( tag_as, ":#{ self.id2name }" )
+            out.scalar( tag_as, ":#{ self.id2name }", :plain )
         end
 	end
 end
 
 #
 # Range#to_yaml
+# TODO: Rework the Range as a sequence (simpler)
 #
 class Range
     tag_as "tag:ruby.yaml.org,2002:range"
@@ -319,7 +315,7 @@ class Regexp
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
             if to_yaml_properties.empty?
-                out.scalar( tag_as, self.inspect )
+                out.scalar( tag_as, self.inspect, :plain )
             else
                 out.map( tag_as ) do |map|
                     src = self.inspect
@@ -376,7 +372,7 @@ class Time
             standard += ".%06d" % [usec] if usec.nonzero?
             standard += " %s" % [tz]
             if to_yaml_properties.empty?
-                out.scalar( tag_as, standard )
+                out.scalar( tag_as, standard, :plain )
             else
                 out.map( tag_as ) do |map|
                     map.add( 'at', standard )
@@ -396,7 +392,7 @@ class Date
     tag_as "tag:yaml.org,2002:timestamp#ymd"
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
-            out.scalar( "tag:yaml.org,2002:timestamp", self.to_s )
+            out.scalar( "tag:yaml.org,2002:timestamp", self.to_s, :plain )
         end
 	end
 end
@@ -407,40 +403,38 @@ end
 class Numeric
     tag_as "tag:yaml.org,2002:int"
 	def to_yaml( opts = {} )
-		str = self.to_s
-		if str == "Infinity"
-			str = ".Inf"
-		elsif str == "-Infinity"
-			str = "-.Inf"
-		elsif str == "NaN"
-			str = ".NaN"
-		end
-		opts[:KeepValue] = true
-		str.to_yaml( opts )
+		YAML::quick_emit( nil, opts ) do |out|
+            str = self.to_s
+            if str == "Infinity"
+                str = ".Inf"
+            elsif str == "-Infinity"
+                str = "-.Inf"
+            elsif str == "NaN"
+                str = ".NaN"
+            end
+            out.scalar( tag_as, str, :plain )
+        end
 	end
 end
 
 class TrueClass
     tag_as "tag:yaml.org,2002:bool#yes"
 	def to_yaml( opts = {} )
-		opts[:KeepValue] = true
-		"true".to_yaml( opts )
+		out.scalar( tag_as, "true", :plain )
 	end
 end
 
 class FalseClass
     tag_as "tag:yaml.org,2002:bool#no"
 	def to_yaml( opts = {} )
-		opts[:KeepValue] = true
-		"false".to_yaml( opts )
+		out.scalar( tag_as, "false", :plain )
 	end
 end
 
 class NilClass 
     tag_as "tag:yaml.org,2002:null"
 	def to_yaml( opts = {} )
-		opts[:KeepValue] = true
-		"".to_yaml( opts )
+		out.scalar( tag_as, "", :plain )
 	end
 end
 
