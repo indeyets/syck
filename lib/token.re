@@ -134,6 +134,7 @@
 #define RETURN_YAML_BLOCK() \
     { \
         SyckNode *n = syck_alloc_str(); \
+        n->type_id = syck_strndup( "str", 3 ); \
         n->data.str->ptr = qstr; \
         n->data.str->len = qidx; \
         if ( qidx > 0 ) \
@@ -567,6 +568,7 @@ YINDENT             {   int indt_len;
                         {
                             POP_LEVEL();
                         }
+                        n->type_id = syck_strndup( "str", 3 );
                         n->data.str->ptr = qstr;
                         n->data.str->len = qidx;
                         sycklval->nodeData = n;
@@ -673,6 +675,7 @@ YINDENT             {   int indt_len;
                         {
                             POP_LEVEL();
                         }
+                        n->type_id = syck_strndup( "str", 3 );
                         n->data.str->ptr = qstr;
                         n->data.str->len = qidx;
                         sycklval->nodeData = n;

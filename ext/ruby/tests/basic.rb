@@ -12,7 +12,9 @@ class YAML_Unit_Tests < RUNIT::TestCase
 	#
 	def assert_to_yaml( obj, yaml )
 		assert_equal( obj, YAML::load( yaml ) )
+		assert_equal( obj, YAML::parse( yaml ).transform )
         assert_equal( obj, YAML::load( obj.to_yaml ) )
+		assert_equal( obj, YAML::parse( obj.to_yaml ).transform )
         assert_equal( obj, YAML::load(
 			obj.to_yaml( :UseVersion => true, :UseHeader => true, :SortKeys => true ) 
 		) )
@@ -23,6 +25,7 @@ class YAML_Unit_Tests < RUNIT::TestCase
 	#
 	def assert_parse_only( obj, yaml )
 		assert_equal( obj, YAML::load( yaml ) )
+		assert_equal( obj, YAML::parse( yaml ).transform )
 	end
 
     def assert_path_segments( path, segments )

@@ -1,5 +1,5 @@
 /*
- * handler.h
+ * handler.c
  *
  * $Author$
  * $Date$
