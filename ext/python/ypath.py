@@ -1,6 +1,13 @@
 # copyright (c) 2003 Clark Evans
-#
 # You may copy this under the terms of any open source license.
+#
+# Documentation:
+#
+#   A YPath expression is split into a recurisve combination of
+#   two sorts of items:  path segments and predicates.   
+#
+#
+#
 #
 
 from types import ListType, StringType, IntType, DictType, InstanceType
