@@ -1,8 +1,9 @@
 --- %YAML:1.0
 - version: 0.60
-  date: 2003-04-24
+  date: 2003-06-05
   changes:
     - New parser backed by Syck. [http://whytheluckystiff.net/syck/]  100x faster.
+    - New YAML::DBM module.
 
 - version: 0.50
   date: 2003-01-13

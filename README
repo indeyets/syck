@@ -3,7 +3,7 @@
 
                              . syck .
 
-                         [ version 0.34 ]
+                         [ version 0.35 ]
 
 
 
@@ -44,7 +44,7 @@ as outlined above.
 Syck works best with Ruby.  Ruby's symbol table is leveraged, as well
 as Ruby's VALUE system.  (You can read more about that below.)
 
-I'm pushing for Syck to appear in coming Ruby distributions.  Please
+Syck is now included with Ruby (beginning with Ruby 1.8.0.)  Please
 voice your support for Syck/YAML in Ruby distributions on the various
 platforms.
 
@@ -100,4 +100,4 @@ A simple Ruby YAML::load could be built like so:
 
 If I can get this to work then it will be a no-brainer to bring
 basic YAML serialization to PHP, Tcl, Cocoa, etc.
-  
+

@@ -49,8 +49,6 @@ char *syck_match_implicit( char *str, size_t len )
 
 /*!re2c
 
-WORDC = [A-Za-z0-9_-\.]+ ;
-ENDSPC = [ \n]+ ;
 NULL = [\000] ;
 ANY = [\001-\377] ;
 DIGIT = [0-9] ;
@@ -78,6 +76,8 @@ TIMEYMD = YEAR "-" MON "-" MON ;
 TIMEISO = YEAR "-" MON "-" MON [Tt] MON ":" MON ":" MON ( "." DIGIT* )? TIMEZ ;
 TIMESPACED = YEAR "-" MON "-" MON [ \t]+ MON ":" MON ":" MON ( "." DIGIT* )? [ \t]+ TIMEZ ;
 TIMECANON = YEAR "-" MON "-" MON "T" MON ":" MON ":" MON ( "." DIGIT* [1-9]+ )? "Z" ;
+MERGE = "<<" ;
+DEFAULTKEY = "=" ;
 
 NULLTYPE NULL       {   return "null"; }
 
@@ -108,6 +108,10 @@ TIMEISO NULL        {   return "timestamp#iso8601"; }
 TIMESPACED NULL     {   return "timestamp#spaced"; }
 
 TIMECANON NULL      {   return "timestamp"; }
+
+DEFAULTKEY NULL     {   return "default"; }
+
+MERGE NULL          {   return "merge"; }
 
 ANY                 {   return "str"; }
 

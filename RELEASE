@@ -1,4 +1,4 @@
-released: { name: Syck, version: 0.34 }
+released: { name: Syck, version: 0.35 }
 for: [ Ruby, PHP, Python ]
 by: why the lucky stiff
 about: >
@@ -18,19 +18,18 @@ links:
   YAML Specification: http://yaml.org/spec/
   Syck: http://www.whytheluckystiff.net/syck/
   Syck Benchmarks: http://www.whytheluckystiff.net/arch/2003/03/19
-  Tarball @ SourceForge: http://aleron.dl.sourceforge.net/sourceforge/yaml4r/syck-0.25.tar.gz
+  Tarball @ SourceForge: http://aleron.dl.sourceforge.net/sourceforge/yaml4r/syck-0.35.tar.gz
 
 status: >
 
-  Syck is about 80% compliant with the YAML spec.  Syck currently
-  has a few issues with anchors before a mapping.
+  Syck is about 85% compliant with the YAML spec.  Largely, small
+  issues remain.
 
-  The extensions are quite usable, though.  Ruby, PHP and Python
-  can load from a string containing YAML.  Ruby also has support
-  for stream loading from any IO object.
+  The extensions are quite usable.  Ruby, PHP and Python
+  can load from a string containing YAML.
 
-  This release also introduces the YAML.rb 0.50 source code into
-  the Ruby extension.  Which means: YPath, emitting, Okay.
+  Ruby has support for stream loading, type handling, YPath, Okay.
+  This release marks the 0.60 release of YAML.rb.
 
 benchmarks: >
 
@@ -54,8 +53,8 @@ installation: >
 
   To compile libsyck, first download libsyck.
 
-    tar xzvf syck-0.34.tar.gz
-    cd syck-0.34
+    tar xzvf syck-0.35.tar.gz
+    cd syck-0.35
     ./configure
     make
     sudo make install
@@ -84,11 +83,9 @@ examples:
   To load this document in Ruby: |
 
      ($:~)$ irb
-     >> require 'syck'
+     >> require 'yaml'
      => true
-     >> yp = YAML::Syck::Parser.new( {} )
-     => #<YAML::Syck::Parser:0x8058530>
-     >> yp.load( File.open( 'syck-0.34.yml' ) )
+     >> YAML::load( File.open( 'syck-0.35.yml' ) )
      => {"status"=>"Syck is about 60% compliant ..."}
 
   To load this document in PHP: |
@@ -96,7 +93,7 @@ examples:
      ($:~)$ php -a
      Interactive mode enabled
 
-     <? dl( 'syck.so' ); print_r( syck_load( implode( '', file( 'syck-0.34.yml' ) ) ) ); ?>
+     <? dl( 'syck.so' ); print_r( syck_load( implode( '', file( 'syck-0.35.yml' ) ) ) ); ?>
   
      .. php then outputs ..
 
@@ -108,7 +105,7 @@ examples:
          [released] => Array
              (   
                  [name] => Syck
-                 [version] => 0.34
+                 [version] => 0.35
              )
 
      .. and so on ..
@@ -120,7 +117,7 @@ examples:
      [GCC 2.95.3 20010315 (release) [FreeBSD]] on freebsd4
      Type "copyright", "credits" or "license" for more information.
      >>> import syck
-     >>> f = open( 'syck-0.34.yml' )
+     >>> f = open( 'syck-0.35.yml' )
      >>> syck.load( f.read() )
      {'by': 'why the lucky stiff', ... }
 

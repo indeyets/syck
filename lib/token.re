@@ -142,7 +142,7 @@
             if ( nlDoWhat != NL_KEEP ) \
             { \
                 char *fc = n->data.str->ptr + n->data.str->len - 1; \
-                while ( *fc == '\n' ) fc--; \
+                while ( is_newline( fc ) ) fc--; \
                 if ( nlDoWhat != NL_CHOMP ) \
                     fc += 1; \
                 n->data.str->len = fc - n->data.str->ptr + 1; \
@@ -160,7 +160,7 @@
     NEWLINE(indent); \
     while ( indent < YYCURSOR ) \
     { \
-        if ( *(++indent) == '\n' ) \
+        if ( is_newline( ++indent ) ) \
         { \
             NEWLINE(indent); \
         } \
@@ -228,9 +228,10 @@ yylex( YYSTYPE *yylval, SyckParser *parser )
 
 WORDC = [A-Za-z0-9_-] ;
 WORDP = [A-Za-z0-9_-\.] ;
-LF = [\n]+ ;
-ENDSPC = ( [ ]+ | LF );
-INDENT = LF [ \n]* ;
+LF = ( "\n" | "\r\n" ) ;
+SPC = " " ;
+ENDSPC = ( SPC+ | LF );
+INDENT = LF ( SPC | LF )* ;
 NULL = [\000] ;
 ANY = [\001-\377] ;
 ODELIMS = [\{\[] ;
@@ -332,7 +333,7 @@ CDELIMS             {   POP_LEVEL();
 
 [-?] ENDSPC         {   ENSURE_IOPEN(lvl, YYTOKEN - YYLINEPTR, 1);
                         FORCE_NEXT_TOKEN(IOPEN);
-                        if ( *YYCURSOR == '\n' || *( YYCURSOR - 1 ) == '\n' )
+                        if ( is_newline( YYCURSOR ) || is_newline( YYCURSOR - 1 ) )
                         {
                             YYCURSOR--; 
                             ADD_LEVEL((YYTOKEN + 1) - YYLINEPTR, syck_lvl_doc);
@@ -363,7 +364,7 @@ CDELIMS             {   POP_LEVEL();
 "\""                {   ENSURE_IOPEN(lvl, 0, 1);
                         goto DoubleQuote; }
 
-BLOCK               {   if ( *( YYCURSOR - 1 ) == '\n' ) 
+BLOCK               {   if ( is_newline( YYCURSOR - 1 ) ) 
                         {
                             YYCURSOR--;
                         }
@@ -374,7 +375,7 @@ BLOCK               {   if ( *( YYCURSOR - 1 ) == '\n' )
                         goto Document;
                     }
 
-[ ]+                {   goto Document; }
+SPC+                {   goto Document; }
 
 NULL                {   ENSURE_IEND(lvl, -1);
                         YYPOS(0);
@@ -396,7 +397,7 @@ Directive:
 
 DIR                 {   goto Directive; }
 
-[ ]+                {   goto Directive; }
+SPC+                {   goto Directive; }
 
 ANY                 {   YYCURSOR = YYTOKTMP;
                         return DOCSEP;
@@ -437,7 +438,7 @@ INDENT              {   int indt_len, nl_count = 0;
 
                         while ( YYTOKTMP < YYCURSOR )
                         {
-                            if ( *YYTOKTMP++ == '\n' )
+                            if ( is_newline( YYTOKTMP++ ) )
                                 nl_count++;
                         }
                         if ( nl_count <= 1 )
@@ -460,7 +461,7 @@ ALLX                {   RETURN_IMPLICIT(); }
 
 INLINEX             {   if ( plvl->status != syck_lvl_inline )
                         {
-                            if ( *(YYCURSOR - 1) == ' ' || *(YYCURSOR - 1) == '\n' )
+                            if ( *(YYCURSOR - 1) == ' ' || is_newline( YYCURSOR - 1 ) )
                             {
                                 YYCURSOR--;
                             }
@@ -476,7 +477,7 @@ INLINEX             {   if ( plvl->status != syck_lvl_inline )
 
 NULL                {   RETURN_IMPLICIT(); }
 
-[ ]                 {   goto Plain3; }
+SPC                 {   goto Plain3; }
 
 ANY                 {   QUOTECATS(qstr, qcapa, qidx, YYTOKTMP, YYCURSOR - YYTOKTMP);
                         goto Plain2;
@@ -513,7 +514,7 @@ INDENT              {   int indt_len;
 
                         while ( YYTOKTMP < YYCURSOR )
                         {
-                            if ( *YYTOKTMP++ == '\n' )
+                            if ( is_newline( YYTOKTMP++ ) )
                                 nl_count++;
                         }
                         if ( nl_count <= 1 )
@@ -591,7 +592,7 @@ INDENT              {   int indt_len;
                         {
                             while ( YYTOKTMP < YYCURSOR )
                             {
-                                if ( *YYTOKTMP++ == '\n' )
+                                if ( is_newline( YYTOKTMP++ ) )
                                     nl_count++;
                             }
                             if ( nl_count <= 1 )
@@ -637,7 +638,7 @@ INDENT              {   int indt_len;
                         goto DoubleQuote2; 
                     }
 
-"\\" [ ]* "\n"      {   keep_nl = 0;
+"\\" SPC* LF        {   keep_nl = 0;
                         YYCURSOR--;
                         goto DoubleQuote2; 
                     }
@@ -767,7 +768,7 @@ ScalarBlock2:
 
 INDENT              {   char *pacer;
                         char *tok = YYTOKTMP;
-                        int indt_len = 0, nl_count = 0, fold_nl = 0;
+                        int indt_len = 0, nl_count = 0, fold_nl = 0, nl_begin = 0;
                         GOBBLE_UP_INDENT( indt_len, tok );
                         lvl = CURRENT_LEVEL();
 
@@ -776,12 +777,10 @@ INDENT              {   char *pacer;
                             int new_spaces = forceIndent > 0 ? forceIndent : indt_len;
                             ADD_LEVEL( new_spaces, syck_lvl_block );
                             lastIndent = indt_len - new_spaces;
-                            YYCURSOR -= lastIndent;
-                            goto ScalarBlock2;
+                            nl_begin = 1;
+                            lvl = CURRENT_LEVEL();
                         }
-
-                        lvl = CURRENT_LEVEL();
-                        if ( lvl->status != syck_lvl_block )
+                        else if ( lvl->status != syck_lvl_block )
                         {
                             YYCURSOR = YYTOKTMP;
                             RETURN_BLOCK();
@@ -799,16 +798,16 @@ INDENT              {   char *pacer;
                         pacer = YYTOKTMP;
                         while ( pacer < YYCURSOR )
                         {
-                            if ( *pacer++ == '\n' )
+                            if ( is_newline( pacer++ ) )
                                 nl_count++;
                         }
 
-                        if ( fold_nl == 1 )
+                        if ( fold_nl == 1 || nl_begin == 1 )
                         {
                             nl_count--;
                         }
 
-                        if ( nl_count < 1 )
+                        if ( nl_count < 1 && nl_begin == 0 )
                         {
                             QUOTECAT(qstr, qcapa, qidx, ' ');
                         }
@@ -874,7 +873,7 @@ Comment:
 
 /*!re2c
 
-( LF | NULL )       {   SyckLevel *lvl = CURRENT_LEVEL();
+( LF+ | NULL )      {   SyckLevel *lvl = CURRENT_LEVEL();
                         YYCURSOR = tok;
                         return;
                     }
@@ -886,6 +885,18 @@ ANY                 {   goto Comment;
 
     }
 
+}
+
+int
+is_newline( char *ptr )
+{
+    if ( *ptr == '\n' )
+        return 1;
+    
+    if ( *ptr == '\r' && *( ptr + 1 ) == '\n' )
+        return 1;
+
+    return 0;
 }
 
 int 
