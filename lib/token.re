@@ -535,14 +535,14 @@ INDENT              {   int indt_len;
 "\\" ["\\abefnrtv]   {   char ch = *( YYCURSOR - 1 );
                         switch ( ch )
                         {
-                            case 'a': ch = '\a'; break;
-                            case 'b': ch = '\b'; break;
-                            case 'e': ch = '\e'; break;
-                            case 'f': ch = '\f'; break;
+                            case 'a': ch = 7; break;
+                            case 'b': ch = '\010'; break;
+                            case 'e': ch = '\033'; break;
+                            case 'f': ch = '\014'; break;
                             case 'n': ch = '\n'; break;
-                            case 'r': ch = '\r'; break;
+                            case 'r': ch = '\015'; break;
                             case 't': ch = '\t'; break;
-                            case 'v': ch = '\v'; break;
+                            case 'v': ch = '\013'; break;
                         }
                         QUOTECAT(qstr, qcapa, qidx, ch);
                         goto DoubleQuote2; 

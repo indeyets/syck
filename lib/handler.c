@@ -30,7 +30,7 @@ SyckNode *
 syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
 {
     n->anchor = a;
-    st_insert( p->anchors, a, n );
+    st_insert( p->anchors, (st_data_t)a, (st_data_t)n );
     return n;
 }
 
@@ -39,11 +39,14 @@ syck_hdlr_add_alias( SyckParser *p, char *a )
 {
     SyckNode *n;
 
-    if ( st_lookup( p->anchors, a, &n ) )
+    if ( st_lookup( p->anchors, (st_data_t)a, (st_data_t *)&n ) )
     {
         return n;
     }
 
+    //
+    // FIXME: Return an InvalidAnchor object
+    //
     return syck_new_str( "..." );
 }
 
