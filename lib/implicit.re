@@ -15,7 +15,7 @@
 #define YYLIMIT     limit
 #define YYFILL(n)
 
-#define TAG_IMPLICIT( tid )     n->type_id = tid; return;
+#define TAG_IMPLICIT( tid )     syck_taguri( n, "yaml.org,2002", tid, strlen( tid ) ); return;
 
 void
 try_tag_implicit( SyckNode *n )

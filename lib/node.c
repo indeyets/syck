@@ -20,7 +20,7 @@ syck_alloc_node( enum syck_kind_tag type )
     s = S_ALLOC( SyckNode );
     s->kind = type;
     s->id = NULL;
-    s->type_id = "";
+    s->type_id = NULL;
 
     return s;
 }
@@ -29,7 +29,9 @@ void
 syck_free_node( SyckNode *n )
 {
     syck_free_members( n );
-    free( n );
+    if ( n->type_id != NULL )
+        S_FREE( n->type_id );
+    S_FREE( n );
 }
 
 SyckNode *
@@ -261,21 +263,21 @@ syck_free_members( SyckNode *n )
         case syck_str_kind:
             if ( n->data.str->ptr != NULL ) 
             {
-                free( n->data.str->ptr );
+                S_FREE( n->data.str->ptr );
                 n->data.str->ptr = NULL;
                 n->data.str->len = 0;
             }
         break;
 
         case syck_seq_kind:
-            free( n->data.list->items );
-            free( n->data.list );
+            S_FREE( n->data.list->items );
+            S_FREE( n->data.list );
         break;
 
         case syck_map_kind:
-            free( n->data.pairs->keys );
-            free( n->data.pairs->values );
-            free( n->data.pairs );
+            S_FREE( n->data.pairs->keys );
+            S_FREE( n->data.pairs->values );
+            S_FREE( n->data.pairs );
         break;
     }
 }

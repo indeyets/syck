@@ -28,18 +28,6 @@ extern "C" {
 #include <alloca.h>
 #endif
 
-#define ALLOC_CT 8
-#define S_ALLOC_N(type,n) (type*)malloc(sizeof(type)*(n))
-#define S_ALLOC(type) (type*)malloc(sizeof(type))
-#define S_REALLOC_N(var,type,n) (var)=(type*)realloc((char*)(var),sizeof(type)*(n))
-
-#define S_ALLOCA_N(type,n) (type*)alloca(sizeof(type)*(n))
-
-#define S_MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(n))
-#define S_MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
-#define S_MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
-#define S_MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(n))
-
 #if DEBUG
   void syck_assert( char *, unsigned );
 # define ASSERT(f) \
@@ -54,6 +42,19 @@ extern "C" {
 #ifndef NULL
 # define NULL (void *)0
 #endif
+
+#define ALLOC_CT 8
+#define S_ALLOC_N(type,n) (type*)malloc(sizeof(type)*(n))
+#define S_ALLOC(type) (type*)malloc(sizeof(type))
+#define S_REALLOC_N(var,type,n) (var)=(type*)realloc((char*)(var),sizeof(type)*(n))
+#define S_FREE(n) free(n); n = NULL;
+
+#define S_ALLOCA_N(type,n) (type*)alloca(sizeof(type)*(n))
+
+#define S_MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(n))
+#define S_MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
+#define S_MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
+#define S_MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(n))
 
 //
 // Node definitions
@@ -175,7 +176,9 @@ struct _syck_parser {
 SYMID syck_hdlr_add_node( SyckParser *, SyckNode * );
 SyckNode *syck_hdlr_add_anchor( SyckParser *, char *, SyckNode * );
 SyckNode *syck_hdlr_add_alias( SyckParser *, char * );
-SyckNode *syck_add_transfer( char *, SyckNode * );
+void syck_add_transfer( char *, SyckNode * );
+void syck_xprivate( SyckNode *, char *, int );
+void syck_taguri( SyckNode *, char *, char *, int );
 int syck_add_sym( SyckParser *, char * );
 int syck_lookup_sym( SyckParser *, SYMID, char ** );
 int syck_try_implicit( SyckNode * );

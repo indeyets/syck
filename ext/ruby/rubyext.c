@@ -65,8 +65,11 @@ rb_syck_parse_handler(p, n)
     int i;
 
     obj = rb_obj_alloc(cNode);
-    t = rb_str_new2( n->type_id );
-    rb_iv_set(obj, "@type_id", t);
+    if ( n->type_id != NULL )
+    {
+        t = rb_str_new2(n->type_id);
+        rb_iv_set(obj, "@type_id", t);
+    }
 
     switch (n->kind)
     {
@@ -105,53 +108,71 @@ rb_syck_load_handler(p, n)
 {
     VALUE obj;
     long i;
+    int str = 0;
 
     switch (n->kind)
     {
         case syck_str_kind:
-            if ( strcmp( n->type_id, "null" ) == 0 )
+            if ( n->type_id == NULL )
             {
-                obj = Qnil;
+                str = 1;
             }
-            else if ( strcmp( n->type_id, "bool#yes" ) == 0 )
+            else if ( strncmp( n->type_id, "taguri:yaml.org,2002:", 21 ) == 0 )
             {
-                obj = Qtrue;
-            }
-            else if ( strcmp( n->type_id, "bool#no" ) == 0 )
-            {
-                obj = Qfalse;
-            }
-            else if ( strcmp( n->type_id, "int#hex" ) == 0 )
-            {
-                obj = rb_cstr2inum( n->data.str->ptr, 16 );
-            }
-            else if ( strcmp( n->type_id, "int#oct" ) == 0 )
-            {
-                obj = rb_cstr2inum( n->data.str->ptr, -8 );
-            }
-            else if ( strcmp( n->type_id, "int" ) == 0 )
-            {
-                obj = rb_cstr2inum( n->data.str->ptr, 10 );
-            }
-            else if ( strcmp( n->type_id, "timestamp" ) == 0 )
-            {
-                obj = rb_syck_mktime( n->data.str->ptr );
-            }
-            else if ( strcmp( n->type_id, "timestamp#iso8601" ) == 0 )
-            {
-                obj = rb_syck_mktime( n->data.str->ptr );
-            }
-            else if ( strcmp( n->type_id, "timestamp#spaced" ) == 0 )
-            {
-                obj = rb_syck_mktime( n->data.str->ptr );
-            }
-            else if ( strcmp( n->type_id, "timestamp#ymd" ) == 0 )
-            {
-                S_REALLOC_N( n->data.str->ptr, char, 22 );
-                strcat( n->data.str->ptr, "T12:00:00Z" );
-                obj = rb_syck_mktime( n->data.str->ptr );
+                char *type_id = n->type_id + 21;
+                if ( strcmp( type_id, "null" ) == 0 )
+                {
+                    obj = Qnil;
+                }
+                else if ( strcmp( type_id, "bool#yes" ) == 0 )
+                {
+                    obj = Qtrue;
+                }
+                else if ( strcmp( type_id, "bool#no" ) == 0 )
+                {
+                    obj = Qfalse;
+                }
+                else if ( strcmp( type_id, "int#hex" ) == 0 )
+                {
+                    obj = rb_cstr2inum( n->data.str->ptr, 16 );
+                }
+                else if ( strcmp( type_id, "int#oct" ) == 0 )
+                {
+                    obj = rb_cstr2inum( n->data.str->ptr, -8 );
+                }
+                else if ( strcmp( type_id, "int" ) == 0 )
+                {
+                    obj = rb_cstr2inum( n->data.str->ptr, 10 );
+                }
+                else if ( strcmp( type_id, "timestamp" ) == 0 )
+                {
+                    obj = rb_syck_mktime( n->data.str->ptr );
+                }
+                else if ( strcmp( type_id, "timestamp#iso8601" ) == 0 )
+                {
+                    obj = rb_syck_mktime( n->data.str->ptr );
+                }
+                else if ( strcmp( type_id, "timestamp#spaced" ) == 0 )
+                {
+                    obj = rb_syck_mktime( n->data.str->ptr );
+                }
+                else if ( strcmp( type_id, "timestamp#ymd" ) == 0 )
+                {
+                    S_REALLOC_N( n->data.str->ptr, char, 22 );
+                    strcat( n->data.str->ptr, "T12:00:00Z" );
+                    obj = rb_syck_mktime( n->data.str->ptr );
+                }
+                else
+                {
+                    str = 1;
+                }
             }
             else
+            {
+                str = 1;
+            }
+
+            if ( str == 1 )
             {
                 obj = rb_str_new( n->data.str->ptr, n->data.str->len );
             }

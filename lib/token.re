@@ -214,13 +214,7 @@ CDELIMS             {   SyckLevel *lvl = CURRENT_LEVEL();
                         return ALIAS;
                     }
 
-"!" WORDC+          {   yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
-                        return TRANSFER;
-                    }
-
-"!" ENDSPC          {   YYPOS(1);
-                        return ITRANSFER; 
-                    }
+"!"                 {   goto TransferMethod; }
 
 "'"                 {   goto SingleQuote; 
                     }
@@ -344,6 +338,29 @@ DoubleQuote2:
 ANY                 {   QUOTECAT(qstr, qcapa, qidx, *(YYCURSOR - 1)); 
                         goto DoubleQuote2; 
                     }
+
+*/
+    }
+
+TransferMethod:
+    {
+        YYTOKTMP = YYCURSOR;
+
+/*!re2c
+
+ENDSPC              {   YYCURSOR = YYTOKTMP;
+                        if ( YYCURSOR == YYTOKEN + 1 )
+                        {
+                            return ITRANSFER;
+                        }
+                        else
+                        {
+                            yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
+                            return TRANSFER; 
+                        }
+                    }
+
+ANY                 {   goto TransferMethod; }
 
 */
     }

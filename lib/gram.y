@@ -79,7 +79,7 @@ atom_or_empty   : atom
                 |
                 {
                    SyckNode *n = syck_new_str( "" ); 
-                   n->type_id = "null";
+                   syck_taguri( n, "yaml.org,2002", "null", 4 );
                    $$ = n;
                 }
                 ;
@@ -91,7 +91,9 @@ atom_or_empty   : atom
 //
 word_rep	: TRANSFER word_rep						
             { 
-               $$ = syck_add_transfer( $1, $2 );
+               syck_add_transfer( $1, $2 );
+               S_FREE( $1 );
+               $$ = $2;
             } 
             | ITRANSFER word_rep						
             { 
@@ -104,7 +106,7 @@ word_rep	: TRANSFER word_rep
 			| WORD
             { 
                SyckNode *n = $1;
-               n->type_id = "str";
+               syck_taguri( n, "yaml.org,2002", "str", 3 );
                $$ = n;
             }
             | PLAIN
@@ -119,7 +121,9 @@ word_rep	: TRANSFER word_rep
 //
 struct_rep	: TRANSFER struct_rep
             { 
-                $$ = syck_add_transfer( $1, $2 );
+                syck_add_transfer( $1, $2 );
+                S_FREE( $1 );
+                $$ = $2;
             }
 			| BLOCK
 			{ 

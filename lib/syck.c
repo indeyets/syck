@@ -169,10 +169,10 @@ syck_free_parser( SyckParser *p )
     //
     // Free all else
     //
-    free( p->levels );
-    free( p->buffer );
+    S_FREE( p->levels );
+    S_FREE( p->buffer );
     free_any_io( p );
-    free( p );
+    S_FREE( p );
 }
 
 void
@@ -281,7 +281,7 @@ free_any_io( SyckParser *p )
         case syck_io_str:
             if ( p->io.str != NULL ) 
             {
-                free( p->io.str );
+                S_FREE( p->io.str );
                 p->io.str = NULL;
             }
         break;
@@ -289,7 +289,7 @@ free_any_io( SyckParser *p )
         case syck_io_file:
             if ( p->io.file != NULL ) 
             {
-                free( p->io.file );
+                S_FREE( p->io.file );
                 p->io.file = NULL;
             }
         break;
