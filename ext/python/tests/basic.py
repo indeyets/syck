@@ -376,7 +376,7 @@ nested:
 					'The previous entry is equal to the following one.',
 					{ 'A key': 'value pair in a sequence.', 'A second': 'key:value pair.' } ],
 				  12.0: 'This key is a float.', "?\n": 'This key had to be protected.',
-				  "\\a": 'This key had to be escaped.',
+				  "\a": 'This key had to be escaped.',
 				  "This is a multi-line folded key \n": "Whose value is also multi-line.\n" } }, """
 empty: {}
 in-line: { one: 1, two: 2 }
@@ -423,6 +423,35 @@ nested:
 """
         )
 
+    def testSpecSingleQuote(self):
+        self.parseOnly( {'empty': '', 'span': 'this contains six spaces\nand one line break', 'third': "a single quote ' must be escaped.", 'second': '! : \\ etc. can be used freely.', 'is same as': 'this contains six spaces\nand one line break'}, """
+empty: ''
+second:
+  '! : \\ etc. can be used freely.'
+third: 'a single quote '' must be escaped.'
+span: 'this contains
+      six spaces
+
+      and one
+      line break'
+is same as: "this contains six spaces\\nand one line break" 
+"""
+        )
+
+    def testSpecDoubleQuote(self):
+        self.parseOnly( {'empty': '', 'third': 'a " or a \\ must be escaped.', 'is equal to': 'this contains four  spaces', 'fourth': 'this value ends with an LF.\n', 'span': 'this contains four  spaces', 'second': '! : etc. can be used freely.'}, """
+empty: ""
+second: "! : etc. can be used freely."
+third: "a \\" or a \\\\ must be escaped."
+fourth:
+  "this value ends with an LF.\\n"
+span: "this contains
+  four  \\
+      spaces"
+is equal to: "this contains four  spaces" 
+"""
+        )
+
 class SyckTestSuite(unittest.TestSuite):
     def __init__(self):
         unittest.TestSuite.__init__(self,map(BasicTests,     
@@ -445,7 +474,9 @@ class SyckTestSuite(unittest.TestSuite):
              "testDocComments2", 
              "testOverrideAnchor",
              "testSpecBuiltinSeq",
-             "testSpecBuiltinMap"
+             "testSpecBuiltinMap",
+             "testSpecSingleQuote",
+             "testSpecDoubleQuote"
              )))
 
 if __name__ == '__main__':

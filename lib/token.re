@@ -367,14 +367,58 @@ SingleQuote:
         char *qstr = S_ALLOC_N( char, qcapa );
 
 SingleQuote2:
+        YYTOKTMP = YYCURSOR;
 
 /*!re2c
+
+INDENT              {   int indt_len;
+                        int nl_count = 0;
+                        SyckLevel *lvl;
+                        GOBBLE_UP_INDENT( indt_len, YYTOKTMP );
+                        lvl = CURRENT_LEVEL();
+
+                        if ( lvl->status != syck_lvl_str )
+                        {
+                            ADD_LEVEL( indt_len, syck_lvl_str );
+                        }
+                        else if ( indt_len < lvl->spaces )
+                        {
+                            // Error!
+                        }
+
+                        while ( YYTOKTMP < YYCURSOR )
+                        {
+                            if ( *YYTOKTMP++ == '\n' )
+                                nl_count++;
+                        }
+                        if ( nl_count <= 1 )
+                        {
+                            QUOTECAT(qstr, qcapa, qidx, ' ');
+                        }
+                        else
+                        {
+                            int i;
+                            for ( i = 0; i < nl_count - 1; i++ )
+                            {
+                                QUOTECAT(qstr, qcapa, qidx, '\n');
+                            }
+                        }
+
+                        goto SingleQuote2; 
+                    }
 
 "''"                {   QUOTECAT(qstr, qcapa, qidx, '\'');
                         goto SingleQuote2; 
                     }
 
-( "'" | NULL )      {   SyckNode *n = syck_alloc_str();
+( "'" | NULL )      {   SyckLevel *lvl;
+                        SyckNode *n = syck_alloc_str();
+                        lvl = CURRENT_LEVEL();
+
+                        if ( lvl->status == syck_lvl_str )
+                        {
+                            POP_LEVEL();
+                        }
                         n->data.str->ptr = qstr;
                         n->data.str->len = qidx;
                         yylval->nodeData = n;
@@ -392,19 +436,86 @@ ANY                 {   QUOTECAT(qstr, qcapa, qidx, *(YYCURSOR - 1));
 
 DoubleQuote:
     {
+        int keep_nl = 1;
         int qidx = 0;
         int qcapa = 100;
         char *qstr = S_ALLOC_N( char, qcapa );
 
 DoubleQuote2:
+        YYTOKTMP = YYCURSOR;
+
 
 /*!re2c
 
-"\\\""              {   QUOTECAT(qstr, qcapa, qidx, '"');
+INDENT              {   int indt_len;
+                        int nl_count = 0;
+                        SyckLevel *lvl;
+                        GOBBLE_UP_INDENT( indt_len, YYTOKTMP );
+                        lvl = CURRENT_LEVEL();
+
+                        if ( lvl->status != syck_lvl_str )
+                        {
+                            ADD_LEVEL( indt_len, syck_lvl_str );
+                        }
+                        else if ( indt_len < lvl->spaces )
+                        {
+                            // Error!
+                        }
+
+                        if ( keep_nl == 1 )
+                        {
+                            while ( YYTOKTMP < YYCURSOR )
+                            {
+                                if ( *YYTOKTMP++ == '\n' )
+                                    nl_count++;
+                            }
+                            if ( nl_count <= 1 )
+                            {
+                                QUOTECAT(qstr, qcapa, qidx, ' ');
+                            }
+                            else
+                            {
+                                int i;
+                                for ( i = 0; i < nl_count - 1; i++ )
+                                {
+                                    QUOTECAT(qstr, qcapa, qidx, '\n');
+                                }
+                            }
+                        }
+
+                        keep_nl = 1;
                         goto DoubleQuote2; 
                     }
 
-( "\"" | NULL )     {   SyckNode *n = syck_alloc_str();
+"\\" ["\\abefnrtv]   {   char ch = *( YYCURSOR - 1 );
+                        switch ( ch )
+                        {
+                            case 'a': ch = '\a'; break;
+                            case 'b': ch = '\b'; break;
+                            case 'e': ch = '\e'; break;
+                            case 'f': ch = '\f'; break;
+                            case 'n': ch = '\n'; break;
+                            case 'r': ch = '\r'; break;
+                            case 't': ch = '\t'; break;
+                            case 'v': ch = '\v'; break;
+                        }
+                        QUOTECAT(qstr, qcapa, qidx, ch);
+                        goto DoubleQuote2; 
+                    }
+
+"\\" [ ]* "\n"      {   keep_nl = 0;
+                        YYCURSOR--;
+                        goto DoubleQuote2; 
+                    }
+
+( "\"" | NULL )     {   SyckLevel *lvl;
+                        SyckNode *n = syck_alloc_str();
+                        lvl = CURRENT_LEVEL();
+
+                        if ( lvl->status == syck_lvl_str )
+                        {
+                            POP_LEVEL();
+                        }
                         n->data.str->ptr = qstr;
                         n->data.str->len = qidx;
                         yylval->nodeData = n;

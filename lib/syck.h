@@ -132,6 +132,7 @@ enum syck_level_status {
     syck_lvl_doc,
     syck_lvl_seq,
     syck_lvl_block,
+    syck_lvl_str,
     syck_lvl_inline,
     syck_lvl_end,
     syck_lvl_pause
