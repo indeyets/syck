@@ -119,8 +119,10 @@ SyckParseString2Handler( SyckParser *p, SyckNode *n )
 enum st_retval 
 ListAnchors( char *key, SyckNode *n, CuTest *tc )
 {
+    char *sd = syck_strndup( n->data.str->ptr, n->data.str->len );
     CuAssertStrEquals( tc, "test", key );
-    CuAssertStrEquals( tc, "13", syck_strndup( n->data.str->ptr, n->data.str->len ) );
+    CuAssertStrEquals( tc, "13", sd );
+    free( sd );
     return ST_CONTINUE;
 }
 
@@ -189,13 +191,18 @@ SyckGetSuite()
 int main(void)
 {
 	CuString *output = CuStringNew();
-	CuSuite* suite = CuSuiteNew();
-	
-	CuSuiteAddSuite(suite, SyckGetSuite());
+	CuSuite* suite = SyckGetSuite();
+    int count;
 
 	CuSuiteRun(suite);
 	CuSuiteSummary(suite, output);
 	CuSuiteDetails(suite, output);
+
 	printf("%s\n", output->buffer);
-    return suite->failCount;
+    count = suite->failCount;
+
+    CuStringFree( output );
+    CuSuiteFree( suite );
+
+    return count;
 }

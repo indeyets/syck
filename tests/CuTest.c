@@ -79,6 +79,15 @@ void CuStringAppendFormat(CuString* str, char* format, ...)
 	CuStringAppend(str, buf);
 }
 
+void CuStringFree(CuString* str)
+{
+    if ( str != NULL )
+    {
+        free( str->buffer );
+        free( str );
+    }
+}
+
 /*-------------------------------------------------------------------------*
  * CuTest
  *-------------------------------------------------------------------------*/
@@ -98,6 +107,15 @@ CuTest* CuTestNew(char* name, TestFunction function)
 	CuTest* tc = CU_ALLOC(CuTest);
 	CuTestInit(tc, name, function);
 	return tc;
+}
+
+void CuTestFree(CuTest* t)
+{
+    if ( t != NULL )
+    {
+        free( t->name );
+        free( t );
+    }
 }
 
 void CuFail(CuTest* tc, char* message)
@@ -183,6 +201,16 @@ CuSuite* CuSuiteNew()
 	CuSuite* testSuite = CU_ALLOC(CuSuite);
 	CuSuiteInit(testSuite);
 	return testSuite;
+}
+
+void CuSuiteFree(CuSuite* testSuite)
+{
+	int i;
+	for (i = 0 ; i < testSuite->count ; ++i)
+	{
+		CuTestFree( testSuite->list[i] );
+	}
+    free( testSuite );
 }
 
 void CuSuiteAdd(CuSuite* testSuite, CuTest *testCase)

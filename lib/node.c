@@ -21,6 +21,7 @@ syck_alloc_node( enum syck_kind_tag type )
     s->kind = type;
     s->id = NULL;
     s->type_id = NULL;
+    s->anchor = NULL;
 
     return s;
 }
@@ -31,6 +32,8 @@ syck_free_node( SyckNode *n )
     syck_free_members( n );
     if ( n->type_id != NULL )
         S_FREE( n->type_id );
+    if ( n->anchor != NULL )
+        S_FREE( n->anchor );
     S_FREE( n );
 }
 
@@ -284,6 +287,7 @@ syck_free_members( SyckNode *n )
                 S_FREE( n->data.str->ptr );
                 n->data.str->ptr = NULL;
                 n->data.str->len = 0;
+                S_FREE( n->data.str );
             }
         break;
 

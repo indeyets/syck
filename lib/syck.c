@@ -431,6 +431,7 @@ syck_parse( SyckParser *p )
 
     ASSERT( p != NULL );
 
+    p->root = NULL;
     yyparse( p );
     syck_parser_reset_levels( p );
     return p->root;

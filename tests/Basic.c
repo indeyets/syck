@@ -25,7 +25,7 @@ TestSyckNodeAlloc( CuTest *tc )
     CuAssert( tc, "Allocated 'str' not reporting as 'str'.", n->kind == syck_str_kind );
     CuAssertStrEquals( tc, "YAML", syck_str_read( n ) );
 
-    free( n );
+    syck_free_node( n );
 }
 
 //
@@ -47,7 +47,7 @@ TestSyckSeqAlloc( CuTest *tc )
     CuAssert( tc, "Invalid value at '1'", 11001 == syck_seq_read( n, 1 ) );
     CuAssert( tc, "Invalid value at '200'", 15801 == syck_seq_read( n, 201 ) );
 
-    free( n );
+    syck_free_node( n );
 }
 
 //
@@ -84,7 +84,7 @@ TestSyckMapAlloc( CuTest *tc )
     CuAssert( tc, "Invalid value at '6'", 24059 == syck_map_read( n, map_value, 6 ) );
     CuAssert( tc, "Invalid value at '7'", 24159 == syck_map_read( n, map_value, 7 ) );
 
-    free( n );
+    syck_free_node( n );
 }
 
 //
@@ -106,8 +106,8 @@ TestSyckMapUpdate( CuTest *tc )
     CuAssert( tc, "Invalid value at '2'", 51127 == syck_map_read( n1, map_value, 2 ) );
     CuAssert( tc, "Invalid value at '3'", 51129 == syck_map_read( n1, map_value, 3 ) );
 
-    free( n2 );
-    free( n1 );
+    syck_free_node( n2 );
+    syck_free_node( n1 );
 }
 
 CuSuite *
@@ -124,13 +124,18 @@ SyckGetSuite()
 int main(void)
 {
 	CuString *output = CuStringNew();
-	CuSuite* suite = CuSuiteNew();
+	CuSuite* suite = SyckGetSuite();
+    int count;
 	
-	CuSuiteAddSuite(suite, SyckGetSuite());
-
 	CuSuiteRun(suite);
 	CuSuiteSummary(suite, output);
 	CuSuiteDetails(suite, output);
+
 	printf("%s\n", output->buffer);
-    return suite->failCount;
+    count = suite->failCount;
+
+    CuStringFree( output );
+    CuSuiteFree( suite );
+
+    return count;
 }
