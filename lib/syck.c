@@ -32,8 +32,8 @@ char *
 syck_strndup( char *buf, long len )
 {
     char *new = S_ALLOC_N( char, len + 1 );
-    memset( new, 0, len + 1 );
-    memcpy( new, buf, len );
+    S_MEMZERO( new, char, len + 1 );
+    S_MEMCPY( new, buf, char, len );
 }
 
 //
@@ -90,7 +90,7 @@ syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
     if ( beg < str->ptr )
     {
         len = str->ptr - beg;
-        memcpy( buf + skip, beg, len );
+        S_MEMCPY( buf + skip, beg, char, len );
     }
 #if REDEBUG
     printf( "LEN: %d\n", len );
@@ -348,7 +348,7 @@ syck_move_tokens( SyckParser *p )
 
     if ( ( count = p->token - p->buffer ) )
     {
-        memmove( p->buffer, p->token, skip );
+        S_MEMMOVE( p->buffer, p->token, char, skip );
         p->token = p->buffer;
         p->marker -= count;
         p->cursor -= count;

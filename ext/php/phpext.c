@@ -18,6 +18,11 @@
 #include "ext/standard/info.h"
 #include "php_syck.h"
 
+static double zero()    { return 0.0; }
+static double one() { return 1.0; }
+static double inf() { return one() / zero(); }
+static double nan() { return zero() / zero(); }
+
 /* {{{ syck_functions[]
  *
  * Every user visible function must have an entry in syck_functions[].
@@ -175,8 +180,22 @@ php_syck_handler(p, n)
             }
             else if ( strcmp( n->type_id, "float" ) == 0 )
             {
-				//double floatVal = strtol( n->data.str->ptr );
-				ZVAL_DOUBLE( o, 3.45 );
+                double f;
+                syck_str_blow_away_commas( n );
+                f = strtod( n->data.str->ptr, NULL );
+				ZVAL_DOUBLE( o, f );
+            }
+            else if ( strcmp( n->type_id, "float#nan" ) == 0 )
+            {
+                ZVAL_DOUBLE( o, nan() );
+            }
+            else if ( strcmp( n->type_id, "float#inf" ) == 0 )
+            {
+                ZVAL_DOUBLE( o, inf() );
+            }
+            else if ( strcmp( n->type_id, "float#neginf" ) == 0 )
+            {
+                ZVAL_DOUBLE( o, -inf() );
             }
             else
             {

@@ -127,7 +127,46 @@ syck_try_implicit( SyckNode *n )
 }
 
 void 
-syck_fold_format( SyckNode *n, int blockType, int indt_len, int nlType )
+syck_fold_format( struct SyckStr *n, int blockType, int indt_len, int nlDisp )
 {
+    char *spc;
+    char *fc = n->ptr;
+    int keep_nl = 0;
+
+    //
+    // Scan the sucker for newlines and strip indent
+    //
+    while ( fc < n->ptr + n->len )
+    {
+        if ( *fc == '\n' )
+        {
+            spc = fc;
+            while ( *(++spc) == ' ' )
+            {
+                if ( spc - fc > indt_len )
+                    break;
+            }
+            S_MEMMOVE( fc + keep_nl, spc, char, n->len - ( spc - n->ptr ) ); 
+            n->len -= spc - fc - keep_nl;
+            keep_nl = 1;
+        }
+        fc++;
+    }
+
+    //
+    // Chomp or keep?
+    //
+    if ( nlDisp != NL_KEEP )
+    {
+        fc = n->ptr + n->len - 1;
+        while ( *fc == '\n' )
+            fc--;
+
+        if ( nlDisp != NL_CHOMP )
+            fc += 1;
+
+        n->len = fc - n->ptr + 1;
+    }
+    n->ptr[ n->len ] = '\0';
 }
 

@@ -187,7 +187,7 @@ void syck_taguri( SyckNode *, char *, char *, int );
 int syck_add_sym( SyckParser *, char * );
 int syck_lookup_sym( SyckParser *, SYMID, char ** );
 int syck_try_implicit( SyckNode * );
-void syck_fold_format( SyckNode *, int, int, int );
+void syck_fold_format( struct SyckStr *, int, int, int );
 void try_tag_implicit( SyckNode *, int );
 
 //

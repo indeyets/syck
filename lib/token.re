@@ -385,6 +385,10 @@ ENDSPC              {   SyckLevel *lvl;
                         }
 
                         lvl = CURRENT_LEVEL();
+
+                        //
+                        // URL Prefixing
+                        //
                         if ( *(YYTOKEN + 1) == '^' )
                         {
                             yylval->name = S_ALLOC_N( char, YYCURSOR - YYTOKEN + strlen( lvl->domain ) );
@@ -426,6 +430,7 @@ ScalarBlock:
     {
         int blockType = 0;
         int nlDoWhat = 0;
+        int forceIndent = -1;
         char *yyt = YYTOKEN;
         switch ( *yyt )
         {
@@ -445,17 +450,13 @@ ScalarBlock:
             }
             else if ( isdigit( *yyt ) )
             {
-                SyckLevel *lvl = CURRENT_LEVEL();
-                if ( lvl->status != syck_lvl_block )
-                {
-                    int indt_len = lvl->spaces + strtol( yyt, NULL, 10 );
-                    ADD_LEVEL( indt_len );
-                    lvl->status = syck_lvl_block;
-                }
+                forceIndent = strtol( yyt, NULL, 10 ) + ( YYTOKEN - YYLINEPTR );
             }
         }
 
         YYTOKEN = YYCURSOR;
+
+ScalarBlock2:
         YYTOKTMP = YYCURSOR;
 
 /*!re2c
@@ -467,31 +468,31 @@ INDENT              {   int indt_len;
 
                         if ( indt_len > lvl->spaces && lvl->status != syck_lvl_block )
                         {
-                            ADD_LEVEL( indt_len );
+                            ADD_LEVEL( forceIndent > 0 ? forceIndent : indt_len );
                             lvl = CURRENT_LEVEL();
                             lvl->status = syck_lvl_block;
                         }
                         else if ( indt_len < lvl->spaces )
                         {
-                            YYCURSOR = YYTOKTMP;
+                            YYCURSOR--;
                             yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );  
-                            syck_fold_format( yylval->nodeData, blockType, lvl->spaces, nlDoWhat );
+                            syck_fold_format( yylval->nodeData->data.str, blockType, lvl->spaces, nlDoWhat );
                             POP_LEVEL();
                             return BLOCK;
                         }
-                        goto ScalarBlock;
+                        goto ScalarBlock2;
                     }
 
 
 NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
-                        YYCURSOR = YYTOKTMP;
+                        YYCURSOR--;
                         yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );  
-                        syck_fold_format( yylval->nodeData, blockType, lvl->spaces, nlDoWhat );
+                        syck_fold_format( yylval->nodeData->data.str, blockType, lvl->spaces, nlDoWhat );
                         POP_LEVEL();
                         return BLOCK; 
                     }
 
-ANY                 {   goto ScalarBlock; }
+ANY                 {   goto ScalarBlock2; }
 
 */
     }
