@@ -171,7 +171,7 @@ class Dumper:
                 self.output(" *%d" % anchor )
                 return
         if (data is None):
-            self.output(' ~')
+            pass
         elif hasMethod(data, 'to_yaml'):
             self.dumpTransformedObject(data)            
         elif hasMethod(data, 'to_yaml_implicit'):
@@ -304,7 +304,7 @@ def sort_keys(keys,fn):
     tmp = []
     for key in keys:
         val = fn(key)
-        if val is None: val = '~'
+        if val is None: val = ''
         tmp.append((val,key))
     tmp.sort()
     return [ y for (x,y) in tmp ]
