@@ -1045,6 +1045,8 @@ syck_resolver_transfer( self, type, val )
 
     if ( ! (NIL_P(type) || !RSTRING(type)->ptr || RSTRING(type)->len == 0) )
     {
+        VALUE str_xprivate = rb_str_new2( "x-private" );
+        VALUE colon = rb_str_new2( ":" );
         VALUE tags = rb_attr_get(self, s_tags);
         VALUE target_class = rb_hash_aref( tags, type );
         VALUE subclass = target_class;
@@ -1056,9 +1058,9 @@ syck_resolver_transfer( self, type, val )
          */
         if ( NIL_P( target_class ) )
         {
-            VALUE parts = rb_str_split( type, ":" );
             VALUE subclass_parts = rb_ary_new();
-            VALUE colon = rb_str_new2( ":" );
+            VALUE parts = rb_str_split( type, ":" );
+
             while ( RARRAY(parts)->len > 1 )
             {
                 VALUE partial;
@@ -1121,6 +1123,22 @@ syck_resolver_transfer( self, type, val )
                 else if ( !NIL_P( obj ) && rb_obj_is_instance_of( val, rb_cHash ) )
                 {
                     rb_iterate( rb_each, val, syck_set_ivars, obj );
+                }
+            }
+            else 
+            {
+                VALUE parts = rb_str_split( type, ":" );
+                VALUE scheme = rb_ary_shift( parts );
+                if ( rb_str_cmp( scheme, str_xprivate ) == 0 )
+                {
+                    VALUE name = rb_ary_join( parts, colon );
+                    obj = rb_funcall( cPrivateType, s_new, 2, name, val );
+                }
+                else
+                {
+                    VALUE domain = rb_ary_shift( parts );
+                    VALUE name = rb_ary_join( parts, colon );
+                    obj = rb_funcall( cDomainType, s_new, 3, domain, name, val );
                 }
             }
         }
@@ -1215,8 +1233,8 @@ syck_genericresolver_node_import( self, node )
 
         case syck_seq_kind:
             rb_iv_set(obj, "@kind", sym_seq);
-            v = rb_ary_new2( n->data.list->idx );
-            for ( i = 0; i < n->data.list->idx; i++ )
+            v = rb_ary_new2( syck_seq_count( n ) );
+            for ( i = 0; i < syck_seq_count( n ); i++ )
             {
                 rb_ary_store( v, i, syck_seq_read( n, i ) );
             }
@@ -1226,7 +1244,7 @@ syck_genericresolver_node_import( self, node )
         case syck_map_kind:
             rb_iv_set(obj, "@kind", sym_map);
             v = rb_hash_new();
-            for ( i = 0; i < n->data.pairs->idx; i++ )
+            for ( i = 0; i < syck_map_count( n ); i++ )
             {
                 rb_hash_aset( v, syck_map_read( n, map_key, i ), syck_map_read( n, map_value, i ) );
             }
@@ -1262,7 +1280,7 @@ syck_badalias_cmp( alias1, alias2 )
 }
 
 /*
- * YAML::Syck::DomainType.initialize
+ * YAML::DomainType.initialize
  */
 VALUE
 syck_domaintype_initialize( self, domain, type_id, val )
@@ -1275,14 +1293,14 @@ syck_domaintype_initialize( self, domain, type_id, val )
 }
 
 /*
- * YAML::Syck::PrivateType.initialize
+ * YAML::PrivateType.initialize
  */
 VALUE
 syck_privatetype_initialize( self, type_id, val )
     VALUE self, type_id, val;
 {
     rb_iv_set( self, "@type_id", type_id );
-    rb_iv_set( self, "@type_id", val );
+    rb_iv_set( self, "@value", val );
     return self;
 }
 
@@ -1323,6 +1341,7 @@ rb_syck_free_node( SyckNode *n )
     {
         case syck_str_kind:
             S_FREE( n->data.str );
+            n->data.str = NULL;
         break;
 
         case syck_seq_kind:
@@ -1355,10 +1374,8 @@ VALUE
 syck_scalar_alloc( class )
     VALUE class;
 {
-    SyckNode *node;
-    VALUE obj;
-    node = syck_alloc_str();
-    obj = Data_Wrap_Struct( class, syck_node_mark, rb_syck_free_node, node );
+    SyckNode *node = syck_alloc_str();
+    VALUE obj = Data_Wrap_Struct( class, syck_node_mark, rb_syck_free_node, node );
     node->id = obj;
     return obj;
 }
@@ -2151,17 +2168,17 @@ Init_syck()
     rb_define_method( cMap, "add", syck_map_add_m, 2 );
 
     /*
-     * Define YAML::Syck::PrivateType class
+     * Define YAML::PrivateType class
      */
-    cPrivateType = rb_define_class_under( rb_syck, "PrivateType", rb_cObject );
+    cPrivateType = rb_define_class_under( rb_yaml, "PrivateType", rb_cObject );
     rb_define_attr( cPrivateType, "type_id", 1, 1 );
     rb_define_attr( cPrivateType, "value", 1, 1 );
     rb_define_method( cPrivateType, "initialize", syck_privatetype_initialize, 2);
 
     /*
-     * Define YAML::Syck::DomainType class
+     * Define YAML::DomainType class
      */
-    cDomainType = rb_define_class_under( rb_syck, "DomainType", rb_cObject );
+    cDomainType = rb_define_class_under( rb_yaml, "DomainType", rb_cObject );
     rb_define_attr( cDomainType, "domain", 1, 1 );
     rb_define_attr( cDomainType, "type_id", 1, 1 );
     rb_define_attr( cDomainType, "value", 1, 1 );

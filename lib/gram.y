@@ -15,6 +15,8 @@
 
 #include "syck.h"
 
+void apply_seq_in_map( SyckParser *parser, SyckNode *n );
+
 #define YYPARSE_PARAM   parser
 #define YYLEX_PARAM     parser
 
@@ -198,6 +200,10 @@ implicit_seq	: indent_open top_imp_seq indent_end
                 { 
                     $$ = $2;
                 }
+                | indent_open in_implicit_seq indent_end
+                { 
+                    $$ = $2;
+                }
                 ;
 
 basic_seq       : '-' atom_or_empty             
@@ -206,8 +212,7 @@ basic_seq       : '-' atom_or_empty
                 }
                 ;
 
-top_imp_seq     : in_implicit_seq
-                | YAML_TRANSFER indent_sep top_imp_seq
+top_imp_seq     : YAML_TRANSFER indent_sep in_implicit_seq
                 { 
                     syck_add_transfer( $1, $3, ((SyckParser *)parser)->taguri_expansion );
                     $$ = $3;
@@ -217,7 +222,7 @@ top_imp_seq     : in_implicit_seq
                     syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
                     $$ = $2;
                 }
-                | YAML_TAGURI indent_sep top_imp_seq
+                | YAML_TAGURI indent_sep in_implicit_seq
                 { 
                     syck_add_transfer( $1, $3, 0 );
                     $$ = $3;
@@ -227,7 +232,7 @@ top_imp_seq     : in_implicit_seq
                     syck_add_transfer( $1, $2, 0 );
                     $$ = $2;
                 }
-                | YAML_ANCHOR indent_sep top_imp_seq
+                | YAML_ANCHOR indent_sep in_implicit_seq
                 { 
                     $$ = syck_hdlr_add_anchor( (SyckParser *)parser, $1, $3 );
                 }

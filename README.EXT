@@ -398,7 +398,8 @@ become sort of unnecessary.
 === The Emitter Process ===
 
 1. Traverse the structure you will be emitting, registering all nodes
-   with the emitter using syck_emitter_mark_node().
+   with the emitter using syck_emitter_mark_node().  This step will
+   determine anchors and aliases in advance.
 
 2. Call syck_emit() to begin emitting the root node.
 

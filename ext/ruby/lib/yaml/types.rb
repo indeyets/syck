@@ -9,15 +9,15 @@ module YAML
 	# Default private type
 	#
 	class PrivateType
+        def self.tag_subclasses?; false; end
 		attr_accessor :type_id, :value
 		def initialize( type, val )
 			@type_id = type; @value = val
 		end
 		def to_yaml( opts = {} )
-			YAML::quick_emit( self.object_id, opts ) { |out|
-				out << " !!#{@type_id}"
-				value.to_yaml( :Emitter => out )
-			}
+            value = @value.dup
+            value.taguri = "x-private:#{ @type_id }"
+            value.to_yaml( opts )
 		end
 	end
 
@@ -25,22 +25,15 @@ module YAML
     # Default domain type
     #
     class DomainType
+        def self.tag_subclasses?; false; end
 		attr_accessor :domain, :type_id, :value
 		def initialize( domain, type, val )
 			@domain = domain; @type_id = type; @value = val
 		end
-        def to_yaml_type
-            dom = @domain.dup
-            if dom =~ /\.yaml\.org,2002$/
-                dom = $`
-            end
-            "#{dom}/#{@type_id}"
-        end
 		def to_yaml( opts = {} )
-			YAML::quick_emit( self.object_id, opts ) { |out|
-				out << " !#{to_yaml_type} "
-				value.to_yaml( :Emitter => out )
-			}
+            value = @value.dup
+            value.taguri = "tag:#{ @domain }:#{ @type_id }"
+            value.to_yaml( opts )
 		end
 	end
 

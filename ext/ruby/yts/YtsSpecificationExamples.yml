@@ -2474,7 +2474,7 @@ yaml: |
     - meeting: with client.
 ruby: |
   {
-    'tasks' => Pairs[
+    'tasks' => YAML::Pairs[
       'meeting', 'with team.',
       'meeting', 'with boss.',
       'break', 'lunch.',
@@ -2492,7 +2492,7 @@ yaml: |
     Ken Griffey:
 ruby: |
   {
-    'baseball players' => Set[
+    'baseball players' => YAML::Set[
       'Mark McGwire', nil,
       'Sammy Sosa', nil,
       'Ken Griffey', nil

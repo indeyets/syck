@@ -29,8 +29,8 @@ end
 # Maps: Hash#to_yaml
 #
 class Hash
-    tag_as "tag:yaml.org,2002:map"
     tag_as "tag:ruby.yaml.org,2002:hash"
+    tag_as "tag:yaml.org,2002:map"
     def yaml_initialize( tag, val )
         if Array === val
             update Hash.[]( *val )		# Convert the map to a sequence
@@ -42,13 +42,7 @@ class Hash
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
-            hash_type = 
-                if self.class == Hash or self.class == YAML::SpecialHash
-                    "tag:yaml.org,2002:map"
-                else
-                    taguri
-                end
-            out.map( hash_type ) do |map|
+            out.map( taguri ) do |map|
                 each do |k, v|
                     map.add( k, v )
                 end
@@ -118,18 +112,12 @@ end
 # Sequences: Array#to_yaml
 #
 class Array
-    tag_as "tag:yaml.org,2002:seq"
     tag_as "tag:ruby.yaml.org,2002:array"
+    tag_as "tag:yaml.org,2002:seq"
     def yaml_initialize( tag, val ); concat( val.to_a ); end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
-            array_type = 
-                if self.class == Array
-                    "tag:yaml.org,2002:seq"
-                else
-                    taguri
-                end
-            out.seq( array_type ) do |seq|
+            out.seq( taguri ) do |seq|
                 each do |x|
                     seq.add( x )
                 end
