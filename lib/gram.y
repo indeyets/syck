@@ -14,8 +14,8 @@
 
 #include "syck.h"
 
-#define YYPARSE_PARAM parser
-#define YYLEX_PARAM parser
+#define YYPARSE_PARAM   parser
+#define YYLEX_PARAM     parser
 
 %}
 

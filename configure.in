@@ -1,12 +1,9 @@
 # Process this file with autoconf to produce a configure script.
-PACKAGE=syck
-VERSION=0.01
-
-AC_INIT($PACKAGE, $VERSION)
+AC_INIT(syck, 0.09)
 AC_CONFIG_AUX_DIR(config)
 AC_PREREQ(2.50)
 
-AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
+AM_INIT_AUTOMAKE(syck, 0.09)
 AM_CONFIG_HEADER(config.h)
 
 # Checks for programs.

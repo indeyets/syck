@@ -12,22 +12,8 @@
 #include "CuTest.h"
 
 //
-// Test parsing tokens of a simple string.
+// 1. Test the buffering -- read 4 bytes at a time
 //
-SYMID
-SyckParseStringHandler( SyckParser *p, SyckNode *n )
-{
-    return 1112;
-}
-
-enum st_retval 
-ListAnchors( char *key, SyckNode *n, CuTest *tc )
-{
-    CuAssertStrEquals( tc, "test", key );
-    CuAssertStrEquals( tc, "13", syck_strndup( n->data.str->ptr, n->data.str->len ) );
-    return ST_CONTINUE;
-}
-
 void 
 TestSyckReadString( CuTest *tc )
 {
@@ -36,7 +22,6 @@ TestSyckReadString( CuTest *tc )
     int len = 0;
 
     parser = syck_new_parser();
-    syck_parser_handler( parser, SyckParseStringHandler );
     syck_parser_str_auto( parser, "test: 1\nand: 2\nalso: 3", syck_io_str_read );
 
     len = syck_parser_readlen( parser, 4 );
@@ -85,16 +70,58 @@ TestSyckReadString( CuTest *tc )
     syck_free_parser( parser );
 }
 
+//
+// 2. Test parsing a simple string and handler
+// 
+SYMID
+SyckParseStringHandler( SyckParser *p, SyckNode *n )
+{
+    if ( n->kind != syck_str_kind )
+        return 100;
+
+    if ( strcmp( syck_str_read( n ), "a_test_string" ) != 0 )
+        return 200;
+
+    return 1112;
+}
+
 void 
 TestSyckParseString( CuTest *tc )
 {
     SyckParser *parser;
+    SYMID id;
+
     parser = syck_new_parser();
     syck_parser_handler( parser, SyckParseStringHandler );
-    syck_parser_str_auto( parser, "--- {test: 1, and: 2, or: &test 13, also: *test}", NULL );
-    yyparse( parser );
-    st_foreach( parser->anchors, ListAnchors, tc );
+    syck_parser_str_auto( parser, "--- a_test_string", NULL );
+
+    id = syck_parse( parser );
+    CuAssert( tc, "Handler returned incorrect value.", 1112 == id );
+
     syck_free_parser( parser );
+}
+
+//
+// 3.  
+//
+SYMID
+SyckParseString2Handler( SyckParser *p, SyckNode *n )
+{
+    if ( n->kind != syck_str_kind )
+        return 100;
+
+    if ( strcmp( syck_str_read( n ), "a_test_string" ) != 0 )
+        return 200;
+
+    return 1112;
+}
+
+enum st_retval 
+ListAnchors( char *key, SyckNode *n, CuTest *tc )
+{
+    CuAssertStrEquals( tc, "test", key );
+    CuAssertStrEquals( tc, "13", syck_strndup( n->data.str->ptr, n->data.str->len ) );
+    return ST_CONTINUE;
 }
 
 void 
