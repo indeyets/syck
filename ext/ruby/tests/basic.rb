@@ -968,7 +968,9 @@ EOY
 		assert_equals( doc_ct, 3 )
 
         doc_ct = 0
-        yp = YAML::Syck::Parser.new( :Input => :Bytecode )
+        yp = YAML::Syck::Parser.new
+        yp.resolver = YAML.resolver
+        yp.input = :bytecode
         yp.load_documents( 
             "D\nM\nSTime\nS2001-11-23 15:01:42 -05:00\nSUser\nSed\nSWarning\nSThis is an error message for the log file\nN\nE\n" +
             "D\nM\nSTime\nS2001-11-23 15:02:31 -05:00\nSUser\nSed\nSWarning\nSA slightly different error message.\nN\nE\n" +

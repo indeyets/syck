@@ -55,7 +55,7 @@ typedef struct {
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_intern, s_yaml_new, s_yaml_initialize, s_to_yaml, s_write, s_set_resolver;
+static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_input, s_intern, s_yaml_new, s_yaml_initialize, s_to_yaml, s_write, s_set_resolver;
 static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_value;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
@@ -730,9 +730,17 @@ syck_set_model( p, input, model )
     syck_parser_implicit_typing( parser, 1 );
     syck_parser_taguri_expansion( parser, 1 );
 
+    if ( NIL_P( input ) )
+    {
+        input = rb_ivar_get( p, s_input ); 
+    }
     if ( input == sym_bytecode )
     {
         syck_parser_set_input_type( parser, syck_bytecode_utf8 );
+    }
+    else
+    {
+        syck_parser_set_input_type( parser, syck_yaml_utf8 );
     }
     syck_parser_error_handler( parser, rb_syck_err_handler );
     syck_parser_bad_anchor_handler( parser, rb_syck_bad_anchor_handler );
@@ -1745,11 +1753,11 @@ Init_syck()
     s_resolver = rb_intern("@resolver");
     s_value = rb_intern("@value");
     s_out = rb_intern("@out");
+	s_input = rb_intern("@input");
 
 	sym_model = ID2SYM(rb_intern("Model"));
 	sym_generic = ID2SYM(rb_intern("Generic"));
-	sym_input = ID2SYM(rb_intern("Input"));
-	sym_bytecode = ID2SYM(rb_intern("Bytecode"));
+	sym_bytecode = ID2SYM(rb_intern("bytecode"));
     sym_map = ID2SYM(rb_intern("map"));
     sym_scalar = ID2SYM(rb_intern("scalar"));
     sym_seq = ID2SYM(rb_intern("seq"));
@@ -1779,6 +1787,8 @@ Init_syck()
      */
     cParser = rb_define_class_under( rb_syck, "Parser", rb_cObject );
     rb_define_attr( cParser, "options", 1, 1 );
+    rb_define_attr( cParser, "resolver", 1, 1 );
+    rb_define_attr( cParser, "input", 1, 1 );
 	rb_define_singleton_method( cParser, "new", syck_parser_new, -1 );
     rb_define_method(cParser, "initialize", syck_parser_initialize, 2);
     rb_define_method(cParser, "bufsize=", syck_parser_bufsize_set, 1 );

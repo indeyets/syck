@@ -94,9 +94,9 @@ module YAML
     Emitter = YAML::Syck::Emitter
 
     # Returns a new default parser
-    def YAML.parser; Parser.new( YAML.resolver ); end
+    def YAML.parser; Parser.new.set_resolver( YAML.resolver ); end
     # Returns a new generic parser
-    def YAML.generic_parser; Parser.new( GenericResolver ); end
+    def YAML.generic_parser; Parser.new.set_resolver( GenericResolver ); end
     # Returns the default resolver
     def YAML.resolver; DefaultResolver; end
     # Returns a new default emitter

@@ -386,6 +386,7 @@ syck_emit( SyckEmitter *e, st_data_t n )
         indent = lvl->spaces + e->indent;
     }
     syck_emitter_add_level( e, indent, syck_lvl_open );
+    lvl = syck_emitter_current_level( e );
 
     /* Look for anchor */
     if ( e->anchors != NULL &&
@@ -605,6 +606,7 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
                        char keep_nl, char *str, long len )
 {
     enum block_styles favor_style = block_literal;
+    SyckLevel *parent = syck_emitter_parent_level( e );
     SyckLevel *lvl = syck_emitter_current_level( e );
     int scan;
     char *implicit;
@@ -657,6 +659,13 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
 
     if ( force_indent == 0 ) {
         force_indent = e->indent;
+    }
+
+    /* For now, all ambiguous keys are going to be double-quoted */
+    if ( parent->status == syck_lvl_map && lvl->ncount == 0 ) {
+        if ( force_style != block_plain ) {
+            force_style = block_2quote;
+        }
     }
 
     /* Fix the ending newlines */
@@ -776,7 +785,10 @@ void syck_emit_2quoted( SyckEmitter *e, int width, char *str, long len )
     char *end = str;
     syck_emitter_write( e, "\"", 1 );
     while ( mark < str + len ) {
-        if ( do_indent ) {
+        if ( do_indent > 0 ) {
+            if ( do_indent == 2 ) {
+                syck_emitter_write( e, "\\", 1 );
+            }
             syck_emit_indent( e );
             do_indent = 0;
         }
@@ -796,11 +808,12 @@ void syck_emit_2quoted( SyckEmitter *e, int width, char *str, long len )
 
             case '\n':
                 end = mark + 1;
-                if ( *start != ' ' && *start != '\n' && *end != '\n' && *end != ' ' ) {
-                    syck_emitter_write( e, "\\n\\", 3 );
-                }
-                do_indent = 1;
+                syck_emitter_write( e, "\\n", 2 );
+                do_indent = 2;
                 start = mark + 1;
+                if ( start < str + len && ( *start == ' ' || *start == '\n' ) ) {
+                    do_indent = 0;
+                }
             break;
 
             case ' ':
