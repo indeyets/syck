@@ -151,6 +151,8 @@ struct _syck_parser {
     char *buffer, *lineptr, *toktmp, *token, *cursor, *marker, *limit;
     // Line counter
     int linect;
+    // EOF flag
+    int eof;
     union {
         struct _syck_file {
             FILE *ptr;

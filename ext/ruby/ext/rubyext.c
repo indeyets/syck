@@ -420,9 +420,13 @@ syck_parser_load_documents(argc, argv, self)
 	syck_set_model( parser, model );
     parser->bonus = 0;
 
-    while ( v != NULL )
+    while ( 1 )
 	{
     	v = syck_parse( parser );
+        if ( parser->eof == 1 )
+        {
+            break;
+        }
 		rb_funcall( proc, rb_intern("call"), 1, v );
 	}
 

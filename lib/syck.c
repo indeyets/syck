@@ -123,6 +123,7 @@ syck_parser_reset_cursor( SyckParser *p )
     p->marker = NULL;
     p->limit = NULL;
     p->linect = 0;
+    p->eof = 0;
 }
 
 //

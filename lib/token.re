@@ -138,7 +138,10 @@ int
 yylex( YYSTYPE *yylval, SyckParser *parser )
 {
     syck_parser_ptr = parser;
-    if ( YYCURSOR == NULL ) syck_parser_read( parser );
+    if ( YYCURSOR == NULL ) 
+    {
+        syck_parser_read( parser );
+    }
 
 /*!re2c
 
@@ -180,6 +183,11 @@ Header:
                             YYPOS(0);
                             return 0; 
                         }
+                    }
+
+NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
+                        ENSURE_IEND(lvl, -1);
+                        return 0; 
                     }
 
 INDENT              {   int indt_len;

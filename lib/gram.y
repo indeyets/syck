@@ -49,6 +49,10 @@ doc     : struct_rep
         {
            ((SyckParser *)parser)->root = syck_hdlr_add_node( (SyckParser *)parser, $2 );
         }
+        |
+        {
+           ((SyckParser *)parser)->eof = 1;
+        }
         ;
 
 atom	: word_rep
