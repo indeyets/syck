@@ -77,12 +77,12 @@ syck_io_str_read( char *buf, SyckIoStr *str, int max_size, int skip )
         len = str->ptr - beg;
         memcpy( buf + skip, beg, len );
     }
-#ifdef REDEBUG
+#if REDEBUG
     printf( "LEN: %d\n", len );
 #endif
     len += skip;
     buf[len] = '\0';
-#ifdef REDEBUG
+#if REDEBUG
     printf( "POS: %d\n", len );
     printf( "BUFFER: %s\n", buf );
 #endif
@@ -101,7 +101,7 @@ syck_new_parser()
     p->lvl_idx = 1;
     p->levels = S_ALLOC_N( SyckLevel, p->lvl_capa ); 
     p->levels[0].spaces = -1;
-    p->levels[0].domain = "";
+    p->levels[0].domain = "yaml.org";
     p->levels[0].status = syck_lvl_implicit;
     p->io_type = syck_io_str;
     p->io.str = NULL;
@@ -235,7 +235,7 @@ syck_parser_pop_level( SyckParser *p )
     if ( p->lvl_idx < 1 ) return NULL;
 
     p->lvl_idx -= 1;
-    return &p->levels[p->lvl_idx+1];
+    return &p->levels[p->lvl_idx];
 }
 
 void 
@@ -279,6 +279,17 @@ free_any_io( SyckParser *p )
     }
 }
 
+void
+syck_check_limit( SyckParser *p, int len )
+{
+    if ( p->cursor == NULL )
+    {
+        p->cursor = p->buffer;
+        p->marker = p->buffer;
+    }
+    p->limit = p->buffer + len;
+}
+
 int
 syck_parser_readline( SyckParser *p )
 {
@@ -297,9 +308,7 @@ syck_parser_readline( SyckParser *p )
             len = (p->io.file->read)( p->buffer, p->io.file, -1, skip );
             break;
     }
-    p->cursor = p->buffer;
-    p->marker = p->buffer;
-    p->limit = p->buffer + len;
+    syck_check_limit( p, len );
     return len;
 }
 
@@ -321,9 +330,7 @@ syck_parser_read( SyckParser *p )
             len = (p->io.file->read)( p->buffer, p->io.file, SYCK_BUFFERSIZE - 1, skip );
             break;
     }
-    p->cursor = p->buffer;
-    p->marker = p->buffer;
-    p->limit = p->buffer + len;
+    syck_check_limit( p, len );
     return len;
 }
 
@@ -345,9 +352,7 @@ syck_parser_readlen( SyckParser *p, int max_size )
             len = (p->io.file->read)( p->buffer, p->io.file, max_size, skip );
             break;
     }
-    p->cursor = p->buffer;
-    p->marker = p->buffer;
-    p->limit = p->buffer + len;
+    syck_check_limit( p, len );
     return len;
 }
 
@@ -364,7 +369,7 @@ syck_move_tokens( SyckParser *p )
     if ( skip < 1 )
         return 0;
 
-#ifdef REDEBUG
+#if REDEBUG
     printf( "DIFF: %d\n", skip );
 #endif
 

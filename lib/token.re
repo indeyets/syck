@@ -14,10 +14,28 @@
 #define YYCURSOR    parser->cursor
 #define YYMARKER    parser->marker
 #define YYLIMIT     parser->limit
+#define YYTOKEN     parser->token
 #define YYFILL(n)   syck_parser_read(parser);
+#define YYPOS(n)    YYCURSOR = YYTOKEN + n;
 
 #define ADD_LEVEL(len) syck_parser_add_level( parser, len );
 #define CURRENT_LEVEL() syck_parser_current_level( parser );
+
+#define ENSURE_IOPEN(last_lvl, to_len, reset) \
+        if ( last_lvl->spaces < to_len ) \
+        { \
+            ADD_LEVEL( to_len ); \
+            if ( reset == 1 ) YYPOS(0); \
+            return IOPEN; \
+        } 
+
+#define ENSURE_IEND(last_lvl, to_len) \
+        if ( last_lvl->spaces > to_len ) \
+        { \
+            syck_parser_pop_level( parser ); \
+            YYPOS(0); \
+            return IEND; \
+        }
 
 int
 yylex( YYSTYPE *yylval, SyckParser *parser )
@@ -27,7 +45,7 @@ yylex( YYSTYPE *yylval, SyckParser *parser )
 /*!re2c
 
 WORD = [A-Za-z0-9_]+ ;
-LF = [\n] ;
+LF = [\n]+ ;
 INDENT = LF [ ]* ;
 ENDSPC = [ \n]+ ;
 NULL = [\000] ;
@@ -38,57 +56,72 @@ DELIMS = [\{\}\[\]] ;
 
 Implicit:
 
-    parser->token = YYCURSOR;
+    YYTOKEN = YYCURSOR;
 #ifdef REDEBUG
-    printf( "TOKEN: %s\n", parser->token );
+    printf( "TOKEN: %s\n", YYTOKEN );
 #endif
 
 /*!re2c
 
-"---" ENDSPC    { return DOCSEP; }
+"---" ENDSPC        {   YYPOS(3);
+                        return DOCSEP; 
+                    }
 
-INDENT      {   // Isolate spaces
-                int indt_len;
-                SyckLevel *lvl;
-                char *indent = parser->token;
-                char *endent = YYCURSOR;
-                while ( indent < endent ) { if ( *(indent++) != '\n' ) break; }
+INDENT              {   // Isolate spaces
+                        int indt_len;
+                        SyckLevel *lvl;
+                        char *indent = YYTOKEN;
+                        while ( indent < YYCURSOR ) { if ( *(++indent) != '\n' ) break; }
 
-                // Indent open?
-                lvl = CURRENT_LEVEL();
-                indt_len = endent - indent;
-                if ( lvl->spaces < indt_len )
-                {
-                    ADD_LEVEL( indt_len );
-                    return IOPEN;
-                } 
-                return INDENT;
-            }
+                        // Calculate indent length
+                        lvl = CURRENT_LEVEL();
+                        indt_len = 0;
+                        if ( *indent == ' ' ) indt_len = YYCURSOR - indent;
 
-DELIMS          { return parser->token[0]; }
-[-:,?] ENDSPC   { return parser->token[0]; }
+                        // Check for open indent
+#ifdef REDEBUG
+                        printf( "CALLING CURRENT AT INDENT: %d\n", indt_len );
+                        printf( "CURSOR: %s\n", YYCURSOR );
+#endif
+                        ENSURE_IEND(lvl, indt_len);
+                        ENSURE_IOPEN(lvl, indt_len, 0);
+                        return INDENT;
+                    }
 
-"&" WORD            {   yylval->name = syck_strndup( parser->token + 1, YYCURSOR - parser->token - 1 );
+DELIMS              {   SyckLevel *lvl = CURRENT_LEVEL();
+                        ENSURE_IOPEN(lvl, 0, 1);
+                        return YYTOKEN[0]; }
+
+[-:,?] ENDSPC       {   YYPOS(1); 
+                        return YYTOKEN[0]; 
+                    }
+
+"&" WORD            {   yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
                         return ANCHOR;
                     }
 
-"*" WORD            {   yylval->name = syck_strndup( parser->token + 1, YYCURSOR - parser->token - 1 );
+"*" WORD            {   yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
                         return ALIAS;
                     }
 
-"!" WORD            {   yylval->name = syck_strndup( parser->token + 1, YYCURSOR - parser->token - 1 );
+"!" WORD            {   yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
                         return TRANSFER;
                     }
 
-WORD                {  yylval->nodeData = syck_new_str2( parser->token, YYCURSOR - parser->token );
-                       return PLAIN;
+WORD                {   SyckLevel *lvl = CURRENT_LEVEL();
+                        ENSURE_IOPEN(lvl, 0, 1);
+                        yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );
+                        return PLAIN;
                     }
 
 [ ]+                {   goto Implicit; }
 
-NULL                {   return 0; }
+NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
+                        ENSURE_IEND(lvl, -1);
+                        return 0; 
+                    }
 
-ANY                 {   printf( "Unrecognized character: %s\n", parser->token ); }
+ANY                 {   printf( "Unrecognized character: %s\n", YYTOKEN ); }
 
 */
 

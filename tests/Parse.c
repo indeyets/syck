@@ -116,7 +116,7 @@ TestSyckParseMap( CuTest *tc )
     SyckParser *parser;
     parser = syck_new_parser();
     syck_parser_handler( parser, SyckParseStringHandler );
-    syck_parser_str_auto( parser, "\ntest: 1\nand: 2\nor: test", NULL );
+    syck_parser_str_auto( parser, "\ntest: 1\nand: 2\nor:\n  test: 1\n  and: 2\n  fourdepth:\n    deep: 1\nlast: end", NULL );
     syck_parse( parser );
     syck_free_parser( parser );
 }
@@ -128,7 +128,7 @@ SyckGetSuite()
     SUITE_ADD_TEST( suite, TestSyckReadString );
     SUITE_ADD_TEST( suite, TestSyckParseString );
     SUITE_ADD_TEST( suite, TestSyckParseString2 );
-    //SUITE_ADD_TEST( suite, TestSyckParseMap );
+    SUITE_ADD_TEST( suite, TestSyckParseMap );
     return suite;
 }
 
