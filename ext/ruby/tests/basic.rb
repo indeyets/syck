@@ -20,6 +20,13 @@ class YAML_Unit_Tests < RUNIT::TestCase
 		) )
 	end
 
+    #
+    # Test bytecode parser
+    #
+    def assert_bytecode( obj, yaml )
+		assert_equal( obj, YAML::Syck::Parser.new( :Input => :Bytecode ).load( yaml ) )
+    end
+
 	#
 	# Test parser only
 	#
@@ -55,21 +62,24 @@ class YAML_Unit_Tests < RUNIT::TestCase
 	#
 	def test_basic_map
 		# Simple map
+        map = { 'one' => 'foo', 'three' => 'baz', 'two' => 'bar' }
 		assert_parse_only(
-			{ 'one' => 'foo', 'three' => 'baz', 'two' => 'bar' }, <<EOY
+			map, <<EOY
 one: foo
 two: bar
 three: baz
 EOY
 		)
+        assert_bytecode( map, "D\nM\nSone\nSfoo\nStwo\nSbar\nSthree\nSbaz\nE\n" )
 	end
 
 	def test_basic_strings
 		# Common string types
-		assert_parse_only(
-			{ 1 => 'simple string', 2 => 42, 3 => '1 Single Quoted String',
+		basic = { 1 => 'simple string', 2 => 42, 3 => '1 Single Quoted String',
 			  4 => 'YAML\'s Double "Quoted" String', 5 => "A block\n  with several\n    lines.\n",
-			  6 => "A \"chomped\" block", 7 => "A folded\n string\n" }, <<EOY
+			  6 => "A \"chomped\" block", 7 => "A folded\n string\n" }
+		assert_parse_only(
+			basic, <<EOY
 1: simple string
 2: 42
 3: '1 Single Quoted String'
@@ -86,6 +96,9 @@ EOY
    string
 EOY
 		)
+        assert_bytecode( basic,
+            "D\nM\nS1\nSsimple string\nS2\nS42\nS3\nS1 Single Quoted String\nS4\nSYAML's Double \"Quoted\" String\n" +
+            "S5\nSA block\nN\nC  with several\nN\nC    lines.\nN\nS6\nSA \"chomped\" block\nS7\nSA folded\nN\nC string\nN\nE\n" )
 	end
 
 	#
@@ -96,33 +109,38 @@ EOY
 
 	def test_spec_simple_implicit_sequence
 	  	# Simple implicit sequence
+        seq = [ 'Mark McGwire', 'Sammy Sosa', 'Ken Griffey' ]
 		assert_to_yaml(
-			[ 'Mark McGwire', 'Sammy Sosa', 'Ken Griffey' ], <<EOY
+			seq, <<EOY
 - Mark McGwire
 - Sammy Sosa
 - Ken Griffey
 EOY
 		)
+        assert_bytecode( seq, "D\nQ\nSMark McGwire\nSSammy Sosa\nSKen Griffey\nE\n" )
 	end
 
 	def test_spec_simple_implicit_map
 		# Simple implicit map
+        map = { 'hr' => 65, 'avg' => 0.278, 'rbi' => 147 }
 		assert_to_yaml(
-			{ 'hr' => 65, 'avg' => 0.278, 'rbi' => 147 }, <<EOY
+			map, <<EOY
 avg: 0.278
 hr: 65
 rbi: 147
 EOY
 		)
+        assert_bytecode( map, "D\nM\nSavg\nS0.278\nShr\nS65\nSrbi\nS147\nE\n" )
 	end
 
 	def test_spec_simple_map_with_nested_sequences
 		# Simple mapping with nested sequences
-		assert_to_yaml(
-			{ 'american' => 
+        nest = { 'american' => 
 			  [ 'Boston Red Sox', 'Detroit Tigers', 'New York Yankees' ],
 			  'national' =>
-			  [ 'New York Mets', 'Chicago Cubs', 'Atlanta Braves' ] }, <<EOY
+			  [ 'New York Mets', 'Chicago Cubs', 'Atlanta Braves' ] }
+		assert_to_yaml(
+			nest, <<EOY
 american:
   - Boston Red Sox
   - Detroit Tigers
@@ -133,15 +151,18 @@ national:
   - Atlanta Braves
 EOY
 		)
+        assert_bytecode( nest, "D\nM\nSamerican\nQ\nSBoston Red Sox\nSDetroit Tigers\nSNew York Yankees\nE\n" +
+            "Snational\nQ\nSNew York Mets\nSChicago Cubs\nSAtlanta Braves\nE\n" )
 	end
 
 	def test_spec_simple_sequence_with_nested_map
 		# Simple sequence with nested map
-		assert_to_yaml(
-		  [
+        nest = [
 		    {'name' => 'Mark McGwire', 'hr' => 65, 'avg' => 0.278},
 			{'name' => 'Sammy Sosa', 'hr' => 63, 'avg' => 0.288}
-		  ], <<EOY
+		]
+		assert_to_yaml(
+		  nest, <<EOY
 -
   avg: 0.278
   hr: 65
@@ -152,6 +173,8 @@ EOY
   name: Sammy Sosa
 EOY
 		)
+        assert_bytecode( nest, "D\nQ\nM\nSavg\nS0.278\nShr\nS65\nSname\nSMark McGwire\nE\n" +
+            "M\nSavg\nS0.288\nShr\nS63\nSname\nSSammy Sosa\nE\nE\n" )
 	end
 
 	def test_spec_sequence_of_sequences

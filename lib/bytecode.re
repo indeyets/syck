@@ -43,6 +43,11 @@ char *get_inline( SyckParser *parser );
 #define CURRENT_LEVEL() syck_parser_current_level( parser )
 
 /*
+ * Force a token next time around sycklex()
+ */
+#define FORCE_NEXT_TOKEN(tok)    parser->force_token = tok;
+
+/*
  * Adding levels in bytecode requires us to make sure
  * we've got all our tokens worked out.
  */
@@ -129,6 +134,13 @@ sycklex_bytecode_utf8( YYSTYPE *sycklval, SyckParser *parser )
         syck_parser_read( parser );
     }
 
+    if ( parser->force_token != 0 )
+    {
+        int t = parser->force_token;
+        parser->force_token = 0;
+        return t;
+    }
+
 /*!re2c
 
 LF = ( "\n" | "\r\n" ) ;
@@ -145,7 +157,7 @@ SEQ = "Q" LF ;
 END = "E" LF ;
 SCA = "S" ;
 SCC = "C" ;
-NNL = "N" ;
+NNL = "N" [0-9]*;
 NUL = "Z" ;
 ALI = "A" ;
 REF = "R" ;
@@ -205,6 +217,23 @@ SEQ     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_seq);
         }
 
 END     {   POP_LEVEL();
+            lvl = CURRENT_LEVEL();
+            if ( lvl->status == syck_lvl_seq )
+            {
+                FORCE_NEXT_TOKEN(YAML_INDENT);   
+            }
+            else if ( lvl->status == syck_lvl_map )
+            {
+                lvl->ncount++;
+                if ( lvl->ncount % 2 == 1 )
+                {
+                    FORCE_NEXT_TOKEN(':');
+                }
+                else
+                {
+                    FORCE_NEXT_TOKEN(YAML_INDENT);
+                }
+            }
             return YAML_IEND;
         }
 
@@ -275,6 +304,10 @@ Scalar2:
 
 LF SCC  {   goto Scalar2; }
 
+LF NNL  {   CAT(str, cap, idx, '\n');
+            goto Scalar2;
+        }
+
 LF NUL  {   CAT(str, cap, idx, '\0');
             goto Scalar2; 
         }
@@ -300,6 +333,10 @@ ScalarEnd:
             n->data.str->len = idx;
             sycklval->nodeData = n;
             POP_LEVEL();
+            if ( parser->implicit_typing == 1 )
+            {
+                try_tag_implicit( sycklval->nodeData, parser->taguri_expansion );
+            }
             return YAML_PLAIN;
         }
     }
