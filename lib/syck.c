@@ -70,6 +70,13 @@ new_str_node( char *str )
     return n;
 }
 
+char *
+read_str_node( struct SyckNode *n )
+{
+    //assert( n != NULL );
+    return n->data.str;
+}
+
 struct SyckNode *
 new_map_node( struct SyckNode *key, struct SyckNode *value )
 {
@@ -97,6 +104,62 @@ add_map_pair( struct SyckNode *map, struct SyckNode *key, struct SyckNode *value
     REALLOC_N( m->values, struct SyckNode *, m->capa );
     m->keys[idx] = key;
     m->values[idx] = value;
+}
+
+struct SyckNode *
+read_map_node( struct SyckNode *map, enum map_part p, long idx )
+{
+    struct SyckMap *m;
+
+    //assert( map != NULL );
+    m = map->data.pairs;
+    //assert( m != NULL );
+    if ( p == map_key )
+    {
+        return m->keys[idx];
+    }
+    else
+    {
+        return m->values[idx];
+    }
+}
+
+struct SyckNode *
+new_seq_node( struct SyckNode *value )
+{
+    struct SyckNode *n;
+
+    n = alloc_seq_node();
+    add_seq_item( n, value );
+
+    return n;
+}
+
+void
+add_seq_item( struct SyckNode *arr, struct SyckNode *value )
+{
+    struct SyckSeq *s;
+    long idx;
+
+    //assert( arr != NULL );
+    //assert( arr->data.list != NULL );
+    
+    s = arr->data.list;
+    idx = s->capa;
+    s->capa += 1;
+    REALLOC_N( s->items, struct SyckNode *, s->capa );
+    s->items[idx] = value;
+}
+
+struct SyckNode *
+read_seq_node( struct SyckNode *seq, long idx )
+{
+    struct SyckSeq *s;
+
+    //assert( seq != NULL );
+    s = seq->data.list;
+    //assert( s != NULL );
+    return s->items[idx];
 }
 
 //static char *

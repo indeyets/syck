@@ -45,18 +45,29 @@ enum syck_kind_tag {
     str_kind
 };
 
+enum map_part {
+    map_key,
+    map_value
+};
+
 struct SyckNode {
+    // Underlying kind
     enum syck_kind_tag kind;
+    // Fully qualified tag-uri for type
+    char *type_id;
     union {
+        // Storage for map data
         struct SyckMap {
             struct SyckNode **keys;
             struct SyckNode **values;
             long capa;
         } *pairs;
+        // Storage for sequence data
         struct SyckSeq {
-            struct SyckNode **values;
+            struct SyckNode **items;
             long capa;
         } *list;
+        // Storage for string data
         char *str;
     } data;
 };
@@ -75,8 +86,13 @@ struct SyckNode {
 // API prototypes
 //
 struct SyckNode *new_str_node( char *str );
+char *read_str_node( struct SyckNode *n );
 struct SyckNode *new_map_node( struct SyckNode *key, struct SyckNode *value );
 void add_map_pair( struct SyckNode *map, struct SyckNode *key, struct SyckNode *value );
+struct SyckNode *read_map_node( struct SyckNode *map, enum map_part p, long idx );
+struct SyckNode *new_seq_node( struct SyckNode *value );
+void add_seq_item( struct SyckNode *arr, struct SyckNode *value );
+struct SyckNode *read_seq_node( struct SyckNode *seq, long idx );
 
 #if defined(__cplusplus)
 }  /* extern "C" { */
