@@ -150,6 +150,8 @@ struct _syck_parser {
     SyckErrorHandler error_handler;
     // IO type
     enum syck_io_type io_type;
+    // Custom buffer size
+    size_t bufsize;
     // Buffer pointers
     char *buffer, *lineptr, *toktmp, *token, *cursor, *marker, *limit;
     // Line counter

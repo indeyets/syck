@@ -116,12 +116,19 @@ syck_parser_reset_levels( SyckParser *p )
 void
 syck_parser_reset_cursor( SyckParser *p )
 {
+    if ( p->buffer == NULL )
+    {
+        p->buffer = S_ALLOC_N( char, p->bufsize );
+    }
+    p->buffer[0] = '\0';
+
     p->cursor = NULL;
     p->lineptr = NULL;
     p->token = NULL;
     p->toktmp = NULL;
     p->marker = NULL;
     p->limit = NULL;
+
     p->linect = 0;
     p->eof = 0;
     p->last_token = 0;
@@ -144,8 +151,8 @@ syck_new_parser()
     p->anchors = st_init_strtable();
     p->implicit_typing = 1;
     p->taguri_expansion = 0;
-    p->buffer = S_ALLOC_N( char, 16384 );
-	syck_parser_reset_cursor( p );
+    p->bufsize = SYCK_BUFFERSIZE;
+    p->buffer = NULL;
     syck_parser_reset_levels( p );
     return p;
 }
@@ -201,7 +208,10 @@ syck_free_parser( SyckParser *p )
     // Free all else
     //
     S_FREE( p->levels );
-    S_FREE( p->buffer );
+    if ( p->buffer != NULL )
+    {
+        S_FREE( p->buffer );
+    }
     free_any_io( p );
     S_FREE( p );
 }
@@ -434,8 +444,8 @@ syck_parse( SyckParser *p )
     ASSERT( p != NULL );
 
     p->root = NULL;
-    yyparse( p );
     syck_parser_reset_levels( p );
+    yyparse( p );
     return p->root;
 }
 
