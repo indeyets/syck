@@ -238,6 +238,7 @@ INLINEX = ( CDELIMS | "," ENDSPC ) ;
 ALLX = ( ":" ENDSPC ) ;
 DIR = "%" WORDC+ ":" WORDC+ ;
 BLOCK = [>|] [-+0-9]* ENDSPC ; 
+HEX = [0-9A-Fa-f] ;
 
 */
 
@@ -617,6 +618,15 @@ INDENT              {   int indt_len;
                             case 't': ch = '\t'; break;
                             case 'v': ch = '\013'; break;
                         }
+                        QUOTECAT(qstr, qcapa, qidx, ch);
+                        goto DoubleQuote2; 
+                    }
+
+"\\x" HEX HEX       {   long ch;
+                        char *chr_text = syck_strndup( YYTOKTMP, 4 );
+                        chr_text[0] = '0';
+                        ch = strtol( chr_text, NULL, 16 );
+                        free( chr_text );
                         QUOTECAT(qstr, qcapa, qidx, ch);
                         goto DoubleQuote2; 
                     }
