@@ -486,8 +486,8 @@ static PyMethodDef SyckMethods[] = {
 
     { "load",  py_syck_load, METH_VARARGS,
       "Load from a YAML string." },
-    { "parse", py_syck_parse, METH_VARARGS,
-      "Parse a YAML string into objects representing nodes." },
+/*    { "parse", py_syck_parse, METH_VARARGS,
+      "Parse a YAML string into objects representing nodes." }, */
     { "Node", py_syck_node_new2, METH_VARARGS,
       "Create a syck.Node object." },
     { NULL, NULL, 0, NULL }        /* Sentinel */
