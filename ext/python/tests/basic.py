@@ -499,7 +499,7 @@ literal: |
  single line break, but does
  not start with one.
 
-is equal to: "The \\ \' \\" characters may \\
+is equal to: "The \\\\ \' \\" characters may \\
  be\\nfreely used. Leading white\\n   space \\
  is significant.\\n\\nLine breaks are \\
  significant.\\nThus this value contains \\

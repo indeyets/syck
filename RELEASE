@@ -1,4 +1,4 @@
-released: { name: Syck, version: 0.43 }
+released: { name: Syck, version: 0.44 }
 for: [ Ruby, PHP, Python ]
 by: why the lucky stiff
 about: >
@@ -18,7 +18,7 @@ links:
   YAML Specification: http://yaml.org/spec/
   Syck: http://www.whytheluckystiff.net/syck/
   Syck Benchmarks: http://www.whytheluckystiff.net/arch/2003/03/19
-  Tarball @ SourceForge: http://aleron.dl.sourceforge.net/sourceforge/yaml4r/syck-0.43.tar.gz
+  Tarball @ SourceForge: http://aleron.dl.sourceforge.net/sourceforge/yaml4r/syck-0.44.tar.gz
 
 status: >
 
@@ -54,8 +54,8 @@ installation: >
 
   To compile libsyck, first download libsyck.
 
-    tar xzvf syck-0.43.tar.gz
-    cd syck-0.43
+    tar xzvf syck-0.44.tar.gz
+    cd syck-0.44
     ./configure
     make
     sudo make install
@@ -86,7 +86,7 @@ examples:
      ($:~)$ irb
      >> require 'yaml'
      => true
-     >> YAML::load( File.open( 'syck-0.43.yml' ) )
+     >> YAML::load( File.open( 'syck-0.44.yml' ) )
      => {"status"=>"Syck is about 60% compliant ..."}
 
   To load this document in PHP: |
@@ -94,7 +94,7 @@ examples:
      ($:~)$ php -a
      Interactive mode enabled
 
-     <? dl( 'syck.so' ); print_r( syck_load( implode( '', file( 'syck-0.43.yml' ) ) ) ); ?>
+     <? dl( 'syck.so' ); print_r( syck_load( implode( '', file( 'syck-0.44.yml' ) ) ) ); ?>
   
      .. php then outputs ..
 
@@ -106,7 +106,7 @@ examples:
          [released] => Array
              (   
                  [name] => Syck
-                 [version] => 0.43
+                 [version] => 0.44
              )
 
      .. and so on ..
@@ -118,7 +118,7 @@ examples:
      [GCC 2.95.3 20010315 (release) [FreeBSD]] on freebsd4
      Type "copyright", "credits" or "license" for more information.
      >>> import syck
-     >>> f = open( 'syck-0.43.yml' )
+     >>> f = open( 'syck-0.44.yml' )
      >>> syck.load( f.read() )
      {'by': 'why the lucky stiff', ... }
 

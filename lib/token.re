@@ -271,7 +271,7 @@ ALLX = ( ":" ENDSPC ) ;
 DIR = "%" YWORDP+ ":" YWORDP+ ;
 YBLOCK = [>|] [-+0-9]* ENDSPC ; 
 HEX = [0-9A-Fa-f] ;
-ESCSEQ = ["\\abefnrtv0 ] ;
+ESCSEQ = ["\\abefnrtv0] ;
 
 */
 
@@ -674,7 +674,7 @@ YINDENT             {   int indt_len;
                         goto DoubleQuote2; 
                     }
 
-"\\" ESCSEQ         {  char ch = *( YYCURSOR - 1 );
+"\\" ESCSEQ         {   char ch = *( YYCURSOR - 1 );
                         QUOTECAT(qstr, qcapa, qidx, escape_seq( ch ));
                         goto DoubleQuote2; 
                     }
