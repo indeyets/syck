@@ -11,7 +11,11 @@
 #define SYCK_H
 
 #include <stdio.h>
+#ifdef HAVE_ST_H
+#include <st.h>
+#else
 #include "syck_st.h"
+#endif
 
 #if defined(__cplusplus)
 extern "C" {
@@ -80,6 +84,8 @@ struct _syck_node {
     enum syck_kind_tag kind;
     // Fully qualified tag-uri for type
     char *type_id;
+    // Anchor name
+    char *anchor;
     union {
         // Storage for map data
         struct SyckMap {
@@ -158,8 +164,8 @@ struct _syck_parser {
 // Handler prototypes
 //
 SYMID syck_hdlr_add_node( SyckParser *, SyckNode * );
-SyckNode *syck_hdlr_add_anchor( SyckParser *, const char *, SyckNode * );
-SyckNode *syck_hdlr_add_alias( SyckParser *, const char * );
+SyckNode *syck_hdlr_add_anchor( SyckParser *, char *, SyckNode * );
+SyckNode *syck_hdlr_add_alias( SyckParser *, char * );
 SyckNode *syck_add_transfer( char *, SyckNode * );
 int syck_add_sym( SyckParser *, char * );
 int syck_lookup_sym( SyckParser *, SYMID, char ** );
@@ -192,6 +198,8 @@ SYMID syck_parse( SyckParser * );
 SyckNode *syck_alloc_map();
 SyckNode *syck_alloc_seq();
 SyckNode *syck_alloc_str();
+void syck_free_node( SyckNode * );
+void syck_free_members( SyckNode * );
 SyckNode *syck_new_str( char * );
 SyckNode *syck_new_str2( char *, long );
 char *syck_str_read( SyckNode * );

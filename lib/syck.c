@@ -117,14 +117,36 @@ syck_lookup_sym( SyckParser *p, SYMID id, char **data )
     return st_lookup( p->syms, id, data );
 }
 
+enum st_retval 
+syck_st_free_nodes( char *key, SyckNode *n, char *arg )
+{
+    syck_free_node( n );
+    return ST_CONTINUE;
+}
+
 void
 syck_free_parser( SyckParser *p )
 {
+    char *key;
+    SyckNode *node;
+
+    //
+    // Free the adhoc symbol table
+    // 
     if ( p->syms != NULL )
     {
         st_free_table( p->syms );
     }
+
+    //
+    // Free the anchor table
+    //
+    st_foreach( p->anchors, syck_st_free_nodes, NULL );
     st_free_table( p->anchors );
+
+    //
+    // Free all else
+    //
     free( p->levels );
     free_any_io( p );
     free( p );

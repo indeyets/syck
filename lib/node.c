@@ -24,6 +24,13 @@ syck_alloc_node( enum syck_kind_tag type )
     return s;
 }
 
+void
+syck_free_node( SyckNode *n )
+{
+    syck_free_members( n );
+    free( n );
+}
+
 SyckNode *
 syck_alloc_map()
 {

@@ -12,20 +12,24 @@
 SYMID 
 syck_hdlr_add_node( SyckParser *p, SyckNode *n )
 {
+    SYMID id;
     if ( ! n->id ) n->id = (p->handler)( p, n );
-    return n->id;
+    id = n->id;
+
+    if ( n->anchor == NULL ) syck_free_node( n );
+    return id;
 }
 
 SyckNode *
-syck_hdlr_add_anchor( SyckParser *p, const char *a, SyckNode *n )
+syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
 {
+    n->anchor = a;
     st_insert( p->anchors, a, n );
-    //st_add_direct( p->anchors, a, n );
     return n;
 }
 
 SyckNode *
-syck_hdlr_add_alias( SyckParser *p, const char *a )
+syck_hdlr_add_alias( SyckParser *p, char *a )
 {
     SyckNode *n;
 
