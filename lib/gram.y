@@ -37,7 +37,7 @@
 %type <nodeData>    top_imp_map in_implicit_map in_inline_map complex_mapping
 
 %left               '-' ':'
-%left               '+' '[' ']' '{' '}' ',' '?'
+%left               '[' ']' '{' '}' ',' '?'
 
 %%
 
