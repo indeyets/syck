@@ -170,6 +170,7 @@ enum syck_level_status {
     syck_lvl_inline,
     syck_lvl_end,
     syck_lvl_pause,
+    syck_lvl_anctag,
     syck_lvl_mapx,
     syck_lvl_seqx
 };
@@ -197,6 +198,8 @@ struct _syck_level {
     /* Counts nodes emitted at this level, useful for parsing 
      * keys and pairs in bytecode */
     int ncount;
+    /* Does node have anchors or tags? */
+    int anctag;
     /* Domain prefixing at the given level */
     char *domain;
     /* Keeps a node status */
@@ -359,7 +362,6 @@ void syck_output_handler( SyckEmitter *, SyckOutputHandler );
 void syck_emitter_handler( SyckEmitter *, SyckEmitterHandler );
 void syck_free_emitter( SyckEmitter * );
 void syck_emitter_clear( SyckEmitter * );
-void syck_emitter_simple( SyckEmitter *, char *, long );
 void syck_emitter_write( SyckEmitter *, char *, long );
 void syck_emitter_flush( SyckEmitter *, long );
 void syck_emit( SyckEmitter *, char * );

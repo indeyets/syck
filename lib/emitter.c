@@ -209,6 +209,7 @@ syck_emitter_add_level( SyckEmitter *e, int len, enum syck_level_status status )
     e->levels[e->lvl_idx].ncount = 0;
     e->levels[e->lvl_idx].domain = syck_strndup( e->levels[e->lvl_idx-1].domain, strlen( e->levels[e->lvl_idx-1].domain ) );
     e->levels[e->lvl_idx].status = status;
+    e->levels[e->lvl_idx].anctag = 0;
     e->lvl_idx += 1;
 }
 
@@ -226,6 +227,7 @@ syck_emitter_reset_levels( SyckEmitter *e )
         e->levels[0].spaces = -1;
         e->levels[0].ncount = 0;
         e->levels[0].domain = syck_strndup( "", 0 );
+        e->levels[0].anctag = 0;
     }
     e->levels[0].status = syck_lvl_header;
 }
@@ -402,6 +404,7 @@ syck_emit( SyckEmitter *e, char *n )
 
             x = 1;
             st_insert( e->anchored, (st_data_t)anchor_name, (st_data_t)x );
+            lvl->anctag = 1;
         }
         else
         {
@@ -425,10 +428,17 @@ end_emit:
     }
 }
 
+/*
+ * Determine what tag needs to be written, based on the taguri of the node
+ * and the implicit tag which would be assigned to this node.  If a tag is
+ * required, write the tag.
+ */
 void syck_emit_tag( SyckEmitter *e, char *tag, char *ignore )
 {
+    SyckLevel *lvl;
     if ( tag == NULL ) return;
     if ( ignore != NULL && strcmp( tag, ignore ) == 0 && e->explicit_typing == 0 ) return;
+    lvl = syck_emitter_current_level( e );
 
     /* global types */
     if ( strncmp( tag, "tag:", 4 ) == 0 ) {
@@ -453,6 +463,7 @@ void syck_emit_tag( SyckEmitter *e, char *tag, char *ignore )
                 }
             } else {
                 /* TODO: Invalid tag (no colon after domain) */
+                return;
             }
         }
         syck_emitter_write( e, " ", 1 );
@@ -463,8 +474,12 @@ void syck_emit_tag( SyckEmitter *e, char *tag, char *ignore )
         syck_emitter_write( e, tag + 10, strlen( tag ) - 10 );
         syck_emitter_write( e, " ", 1 );
     }
+    lvl->anctag = 1;
 }
 
+/* 
+ * Emit a newline and an appropriately spaced indent.
+ */
 void syck_emit_indent( SyckEmitter *e )
 {
     int i;
@@ -477,6 +492,10 @@ void syck_emit_indent( SyckEmitter *e )
     free( spcs );
 }
 
+/*
+ * All scalars should be emitted through this function, which determines an appropriate style,
+ * tag and indent.
+ */
 void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style, int force_indent,
                        char keep_nl, char *str, long len )
 {
@@ -508,6 +527,9 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
     }
 }
 
+/*
+ * Outputs a literal block.
+ */
 void syck_emit_literal( SyckEmitter *e, char *str, long len )
 {
     char *mark = str;
@@ -531,6 +553,9 @@ void syck_emit_literal( SyckEmitter *e, char *str, long len )
     }
 }
 
+/*
+ * Outputs a folded block.
+ */
 void syck_emit_folded( SyckEmitter *e, int width, char *str, long len )
 {
     char *mark = str;
@@ -573,6 +598,9 @@ void syck_emit_folded( SyckEmitter *e, int width, char *str, long len )
     }
 }
 
+/*
+ * Begins emission of a sequence.
+ */
 void syck_emit_seq( SyckEmitter *e, char *tag )
 {
     SyckLevel *lvl = syck_emitter_current_level( e );
@@ -580,6 +608,9 @@ void syck_emit_seq( SyckEmitter *e, char *tag )
     lvl->status = syck_lvl_seq;
 }
 
+/*
+ * Begins emission of a mapping.
+ */
 void syck_emit_map( SyckEmitter *e, char *tag )
 {
     SyckLevel *lvl = syck_emitter_current_level( e );
@@ -587,6 +618,10 @@ void syck_emit_map( SyckEmitter *e, char *tag )
     lvl->status = syck_lvl_map;
 }
 
+/*
+ * Handles emitting of a collection item (for both
+ * sequences and maps)
+ */
 void syck_emit_item( SyckEmitter *e, char *n )
 {
     SyckLevel *lvl = syck_emitter_current_level( e );
@@ -608,7 +643,7 @@ void syck_emit_item( SyckEmitter *e, char *n )
             }
 
             /* seq-in-seq shortcut */
-            else if ( parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
+            else if ( lvl->anctag == 0 && parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
                 int spcs = ( lvl->spaces - parent->spaces ) - 2;
                 if ( spcs >= 0 ) {
                     int i = 0;
@@ -630,7 +665,7 @@ void syck_emit_item( SyckEmitter *e, char *n )
             SyckLevel *parent = syck_emitter_parent_level( e );
 
             /* map-in-seq shortcut */
-            if ( parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
+            if ( lvl->anctag == 0 && parent->status == syck_lvl_seq && lvl->ncount == 0 ) {
                 int spcs = ( lvl->spaces - parent->spaces ) - 2;
                 if ( spcs >= 0 ) {
                     int i = 0;
@@ -665,6 +700,9 @@ void syck_emit_item( SyckEmitter *e, char *n )
     syck_emit( e, n );
 }
 
+/*
+ * Closes emission of a collection.
+ */
 void syck_emit_end( SyckEmitter *e )
 {
     SyckLevel *lvl = syck_emitter_current_level( e );
