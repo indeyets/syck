@@ -46,8 +46,6 @@ extern "C" {
 # define NULL (void *)0
 #endif
 
-typedef char * st_data_t;
-
 #define ALLOC_CT 8
 #define S_ALLOC_N(type,n) (type*)malloc(sizeof(type)*(n))
 #define S_ALLOC(type) (type*)malloc(sizeof(type))
@@ -262,6 +260,10 @@ SYMID syck_seq_read( SyckNode *, long );
 long syck_seq_count( SyckNode * );
 
 void apply_seq_in_map( SyckParser *, SyckNode * );
+
+#ifndef ST_DATA_T_DEFINED
+typedef long st_data_t;
+#endif
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

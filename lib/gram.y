@@ -45,7 +45,7 @@ doc     : struct_rep
         {
            ((SyckParser *)parser)->root = syck_hdlr_add_node( (SyckParser *)parser, $1 );
         }
-        | DOCSEP atom        
+        | DOCSEP atom_or_empty
         {
            ((SyckParser *)parser)->root = syck_hdlr_add_node( (SyckParser *)parser, $2 );
         }

@@ -309,7 +309,8 @@ CDELIMS             {   POP_LEVEL();
                         return ALIAS;
                     }
 
-"!"                 {   goto TransferMethod; }
+"!"                 {   ENSURE_IOPEN(lvl, 0, 1);
+                        goto TransferMethod; }
 
 "'"                 {   goto SingleQuote; }
 
