@@ -86,7 +86,7 @@ atom_or_empty   : atom
                    SyckNode *n = syck_new_str( "" ); 
                    if ( ((SyckParser *)parser)->taguri_expansion == 1 )
                    {
-                       syck_taguri( n, "yaml.org,2002", "null", 4 );
+                       n->type_id = syck_taguri( YAML_DOMAIN, "null", 4 );
                    }
                    else
                    {
@@ -132,7 +132,7 @@ word_rep	: TRANSFER word_rep
                SyckNode *n = $1;
                if ( ((SyckParser *)parser)->taguri_expansion == 1 )
                {
-                   syck_taguri( n, "yaml.org,2002", "str", 3 );
+                   n->type_id = syck_taguri( YAML_DOMAIN, "str", 3 );
                }
                else
                {

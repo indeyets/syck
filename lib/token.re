@@ -311,7 +311,12 @@ CDELIMS             {   POP_LEVEL();
 
 "\""                {   goto DoubleQuote; }
 
-BLOCK               {   YYCURSOR--; goto ScalarBlock; }
+BLOCK               {   if ( *( YYCURSOR - 1 ) == '\n' ) 
+                        {
+                            YYCURSOR--;
+                        }
+                        goto ScalarBlock; 
+                    }
 
 "#"                 {   eat_comments( parser ); 
                         goto Document;

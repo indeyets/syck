@@ -109,7 +109,7 @@ syck_parser_reset_levels( SyckParser *p )
 {
     p->lvl_idx = 1;
     p->levels[0].spaces = -1;
-    p->levels[0].domain = "yaml.org,2002/";
+    p->levels[0].domain = "";  // YAML_DOMAIN + "/";
     p->levels[0].status = syck_lvl_header;
 }
 

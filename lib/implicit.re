@@ -15,24 +15,27 @@
 #define YYLIMIT     limit
 #define YYFILL(n)
 
-#define TAG_IMPLICIT( tid ) \
-    if ( taguri == 1 ) \
-    { \
-        syck_taguri( n, "yaml.org,2002", tid, strlen( tid ) ); \
-    } else { \
-        n->type_id = syck_strndup( tid, strlen( tid ) ); \
-    } \
-    return;
-
 void
 try_tag_implicit( SyckNode *n, int taguri )
 {
-    char *cursor, *limit, *marker;
+    char *tid;
     if ( n->kind != syck_str_kind )
         return;
 
-    cursor = n->data.str->ptr;
-    limit = cursor + n->data.str->len;
+    tid = syck_match_implicit( n->data.str->ptr, n->data.str->len );
+    if ( taguri == 1 )
+    {
+        n->type_id = syck_taguri( YAML_DOMAIN, tid, strlen( tid ) );
+    } else {
+        n->type_id = syck_strndup( tid, strlen( tid ) );
+    }
+}
+
+char *syck_match_implicit( char *str, size_t len )
+{
+    char *cursor, *limit, *marker;
+    cursor = str;
+    limit = str + len;
 
 /*!re2c
 
@@ -66,37 +69,91 @@ TIMEISO = YEAR "-" MON "-" MON [Tt] MON ":" MON ":" MON ( "." DIGIT* [1-9]+ )? T
 TIMESPACED = YEAR "-" MON "-" MON [ \t]+ MON ":" MON ":" MON ( "." DIGIT* [1-9]+ )? [ \t]+ TIMEZ ;
 TIMECANON = YEAR "-" MON "-" MON "T" MON ":" MON ":" MON ( "." DIGIT* [1-9]+ )? "Z" ;
 
-NULLTYPE NULL       {   TAG_IMPLICIT( "null" ); }
+NULLTYPE NULL       {   return "null"; }
 
-BOOLYES NULL        {   TAG_IMPLICIT( "bool#yes" ); }
+BOOLYES NULL        {   return "bool#yes"; }
 
-BOOLNO NULL         {   TAG_IMPLICIT( "bool#no" ); }
+BOOLNO NULL         {   return "bool#no"; }
 
-INTHEX NULL         {   TAG_IMPLICIT( "int#hex" ); }
+INTHEX NULL         {   return "int#hex"; }
 
-INTOCT NULL         {   TAG_IMPLICIT( "int#oct" ); }
+INTOCT NULL         {   return "int#oct"; }
 
-INTCANON NULL       {   TAG_IMPLICIT( "int" ); }
+INTCANON NULL       {   return "int"; }
 
-FLOATFIX NULL       {   TAG_IMPLICIT( "float#fix" ); }
+FLOATFIX NULL       {   return "float#fix"; }
 
-FLOATEXP NULL       {   TAG_IMPLICIT( "float#exp" ); }
+FLOATEXP NULL       {   return "float#exp"; }
 
-FLOATINF NULL       {   TAG_IMPLICIT( "float#inf" ); }
+FLOATINF NULL       {   return "float#inf"; }
 
-FLOATNEGINF NULL    {   TAG_IMPLICIT( "float#neginf" ); }
+FLOATNEGINF NULL    {   return "float#neginf"; }
 
-FLOATNAN NULL       {   TAG_IMPLICIT( "float#nan" ); }
+FLOATNAN NULL       {   return "float#nan"; }
 
-TIMEYMD NULL        {   TAG_IMPLICIT( "timestamp#ymd" ); }
+TIMEYMD NULL        {   return "timestamp#ymd"; }
 
-TIMEISO NULL        {   TAG_IMPLICIT( "timestamp#iso8601" ); }
+TIMEISO NULL        {   return "timestamp#iso8601"; }
 
-TIMESPACED NULL     {   TAG_IMPLICIT( "timestamp#spaced" ); }
+TIMESPACED NULL     {   return "timestamp#spaced"; }
 
-TIMECANON NULL      {   TAG_IMPLICIT( "timestamp" ); }
+TIMECANON NULL      {   return "timestamp"; }
 
-ANY                 {   TAG_IMPLICIT( "str" ); }
+ANY                 {   return "str"; }
+
+*/
+
+}
+
+char *
+syck_type_id_to_uri( char *type_id )
+{
+    char *cursor, *limit, *marker;
+
+    cursor = type_id;
+    limit = type_id + strlen( type_id );
+
+/*!re2c
+
+TAG = "taguri" ;
+XPRIVATE = "xprivate" ;
+WD = [A-Za-z0-9_] ;
+WDD = [A-Za-z0-9_-] ;
+DNSCOMPRE = WD ( WDD* WD )? ;
+DNSNAMERE = ( ( DNSCOMPRE "." )+ DNSCOMPRE | DNSCOMPRE ) ;
+TAGDATE = YEAR ( "-" MON )? ( "-" MON )? ;
+
+TAG ":" DNSNAMERE "," TAGDATE ":"    {   return type_id; }
+
+XPRIVATE ":"    {   return type_id; }
+
+"!"             {   return syck_xprivate( type_id + 1, strlen( type_id ) - 1 ); }
+
+DNSNAMERE "/"   {   char *domain = S_ALLOC_N( char, ( YYCURSOR - type_id ) + 15 );
+                    char *uri;
+
+                    domain[0] = '\0';
+                    strncat( domain, type_id, ( YYCURSOR - type_id ) - 1 );
+                    strcat( domain, "." );
+                    strcat( domain, YAML_DOMAIN );
+                    uri = syck_taguri( domain, YYCURSOR, YYLIMIT - YYCURSOR );
+
+                    S_FREE( domain );
+                    return uri;
+                }
+
+DNSNAMERE "," TAGDATE "/"  {   char *domain = S_ALLOC_N( char, YYCURSOR - type_id );
+                               char *uri;
+
+                               domain[0] = '\0';
+                               strncat( domain, type_id, ( YYCURSOR - type_id ) - 1 );
+                               uri = syck_taguri( domain, YYCURSOR, YYLIMIT - YYCURSOR );
+
+                               S_FREE( domain );
+                               return uri;
+                            }
+
+ANY             {   return syck_taguri( YAML_DOMAIN, type_id, strlen( type_id ) ); }
 
 */
 
