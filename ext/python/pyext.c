@@ -11,14 +11,14 @@
 
 staticforward PyTypeObject SyckNodeType;
 
-static double zero()    { return 0.0; }
+static double zero() { return 0.0; }
 static double one() { return 1.0; }
 static double inf() { return one() / zero(); }
 static double i_nan() { return zero() / zero(); }
 
-SYMID py_syck_load_handler(SyckParser *p, SyckNode *n);
+SYMID py_syck_load_handler( SyckParser *p, SyckNode *n );
 static PyObject *py_syck_load( PyObject *self, PyObject *args );
-SYMID py_syck_parse_handler(SyckParser *p, SyckNode *n);
+SYMID py_syck_parse_handler( SyckParser *p, SyckNode *n );
 static PyObject *py_syck_parse( PyObject *self, PyObject *args );
 
 PyObject *
@@ -38,9 +38,9 @@ syck_PyIntMaker( long num )
  * node object
  */
 static struct PyMethodDef SyckNodeMethods[] = {
-    {"transform",  py_syck_node_transform, METH_VARARGS,
-     "Transform a node into native Python objects."},
-    {NULL, NULL, 0, NULL}        /* Sentinel */
+    { "transform",  py_syck_node_transform, METH_VARARGS,
+      "Transform a node into native Python objects." },
+    { NULL, NULL, 0, NULL }        /* Sentinel */
 };
 
 static SyckNode *
@@ -328,15 +328,15 @@ py_syck_parse( self, args )
 
 static PyMethodDef SyckMethods[] = {
 
-    {"load",  py_syck_load, METH_VARARGS,
-     "Load from a YAML string."},
-    {"parse", py_syck_parse, METH_VARARGS,
-     "Parse a YAML string into objects representing nodes."},
+    { "load",  py_syck_load, METH_VARARGS,
+      "Load from a YAML string." },
+    { "parse", py_syck_parse, METH_VARARGS,
+      "Parse a YAML string into objects representing nodes." },
 
-    {"Node", py_syck_node_new, METH_VARARGS,
-     "Create a syck.Node object."},
+    { "Node", py_syck_node_new, METH_VARARGS,
+      "Create a syck.Node object." },
 
-    {NULL, NULL, 0, NULL}        /* Sentinel */
+    { NULL, NULL, 0, NULL }        /* Sentinel */
 
 };
 
@@ -344,6 +344,6 @@ void
 initsyck(void)
 {
     PyObject *syck, *syck_node;
-    syck = Py_InitModule("syck", SyckMethods);
+    syck = Py_InitModule( "syck", SyckMethods );
 }
 
