@@ -173,6 +173,7 @@ struct _syck_parser {
     } *levels;
     int lvl_idx;
     int lvl_capa;
+    void *bonus;
 };
 
 //

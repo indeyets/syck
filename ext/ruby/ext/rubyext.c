@@ -418,6 +418,7 @@ syck_parser_load_documents(argc, argv, self)
 
 	model = rb_hash_aref( rb_iv_get( self, "@options" ), sym_model );
 	syck_set_model( parser, model );
+    parser->bonus = 0;
 
     while ( v != NULL )
 	{
@@ -425,9 +426,7 @@ syck_parser_load_documents(argc, argv, self)
 		rb_funcall( proc, rb_intern("call"), 1, v );
 	}
 
-    //v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
-
-    return v;
+    return Qnil;
 }
 
 //

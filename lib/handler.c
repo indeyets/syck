@@ -166,7 +166,10 @@ syck_fold_format( struct SyckStr *n, int blockType, int indt_len, int nlDisp )
             }
 
             fc += keep_nl;
-            S_MEMMOVE( fc, spc, char, n->len - ( spc - n->ptr ) ); 
+            if ( fc != spc && ( n->len - ( spc - n->ptr ) ) > 0 )
+            {
+                S_MEMMOVE( fc, spc, char, n->len - ( spc - n->ptr ) ); 
+            }
 
             n->len -= spc - fc;
             keep_nl = 1;

@@ -153,7 +153,7 @@ CDELIMS = [\}\]] ;
 INLINEX = ( CDELIMS | "," ENDSPC ) ;
 ALLX = ( ":" ENDSPC ) ;
 DIR = "%" WORDC+ ":" WORDC+ ;
-BLOCK = [>|] [-+0-9]* LF ; 
+BLOCK = [>|] [-+0-9]* [ ]* LF ; 
 
 */
 
