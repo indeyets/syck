@@ -37,7 +37,7 @@
 /*
  * Track line numbers
  */
-#define NEWLINE(ptr)    YYLINEPTR = ptr + 1; if ( YYLINEPTR > YYLINECTPTR ) { YYLINE++; YYLINECTPTR = YYLINEPTR; }
+#define NEWLINE(ptr)    YYLINEPTR = ptr + newline_len(ptr); if ( YYLINEPTR > YYLINECTPTR ) { YYLINE++; YYLINECTPTR = YYLINEPTR; }
 
 /*
  * I like seeing the level operations as macros...
@@ -145,7 +145,7 @@
             { \
                 char *fc = n->data.str->ptr + n->data.str->len - 1; \
                 while ( is_newline( fc ) ) fc--; \
-                if ( nlDoWhat != NL_CHOMP ) \
+                if ( nlDoWhat != NL_CHOMP && fc < n->data.str->ptr + n->data.str->len - 1 ) \
                     fc += 1; \
                 n->data.str->len = fc - n->data.str->ptr + 1; \
             } \
@@ -206,6 +206,7 @@ SyckParser *syck_parser_ptr = NULL;
 void eat_comments( SyckParser * );
 char escape_seq( char );
 int is_newline( char *ptr );
+int newline_len( char *ptr );
 int sycklex_yaml_utf8( YYSTYPE *, SyckParser * );
 int sycklex_bytecode_utf8( YYSTYPE *, SyckParser * );
 int syckwrap();
@@ -500,8 +501,12 @@ YINDENT             {   int indt_len, nl_count = 0;
 
                         while ( YYTOKEN < YYCURSOR )
                         {
-                            if ( is_newline( YYTOKEN++ ) )
+                            int nl_len = 0;
+                            if ( nl_len = newline_len( YYTOKEN++ ) )
+                            {
                                 nl_count++;
+                                YYTOKEN += nl_len - 1;
+                            }
                         }
                         if ( nl_count <= 1 )
                         {
@@ -576,8 +581,12 @@ YINDENT             {   int indt_len;
 
                         while ( YYTOKEN < YYCURSOR )
                         {
-                            if ( is_newline( YYTOKEN++ ) )
+                            int nl_len = 0;
+                            if ( nl_len = newline_len( YYTOKEN++ ) )
+                            {
                                 nl_count++;
+                                YYTOKEN += nl_len - 1;
+                            }
                         }
                         if ( nl_count <= 1 )
                         {
@@ -656,8 +665,12 @@ YINDENT             {   int indt_len;
                         {
                             while ( YYTOKEN < YYCURSOR )
                             {
-                                if ( is_newline( YYTOKEN++ ) )
+                                int nl_len = 0;
+                                if ( nl_len = newline_len( YYTOKEN++ ) )
+                                {
                                     nl_count++;
+                                    YYTOKEN += nl_len - 1;
+                                }
                             }
                             if ( nl_count <= 1 )
                             {
@@ -881,8 +894,12 @@ YINDENT             {   char *pacer;
                         pacer = YYTOKEN;
                         while ( pacer < YYCURSOR )
                         {
-                            if ( is_newline( pacer++ ) )
+                            int nl_len = 0;
+                            if ( nl_len = newline_len( pacer++ ) )
+                            {
                                 nl_count++;
+                                pacer += nl_len - 1;
+                            }
                         }
 
                         if ( fold_nl == 1 || nl_begin == 1 )
@@ -937,7 +954,7 @@ NULL                {   YYCURSOR--;
 
 "---" ENDSPC        {   if ( YYTOKEN == YYLINEPTR )
                         {
-                            if ( blockType == BLOCK_FOLD )
+                            if ( blockType == BLOCK_FOLD && qidx > 0 )
                             {
                                 qidx -= 1;
                             }
@@ -1009,11 +1026,17 @@ escape_seq( char ch )
 int
 is_newline( char *ptr )
 {
+    return newline_len( ptr );
+}
+
+int
+newline_len( char *ptr )
+{
     if ( *ptr == '\n' )
         return 1;
     
     if ( *ptr == '\r' && *( ptr + 1 ) == '\n' )
-        return 1;
+        return 2;
 
     return 0;
 }

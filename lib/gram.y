@@ -354,9 +354,7 @@ complex_mapping : basic_mapping
                         syck_hdlr_add_node( (SyckParser *)parser, $2 ), 
                         syck_hdlr_add_node( (SyckParser *)parser, $5 ) );
                 }
-                ;
-
-/* 2004-02-03
+/*
 				| '?' atom
                 {
                     NULL_NODE( parser, n );
@@ -365,6 +363,7 @@ complex_mapping : basic_mapping
                         syck_hdlr_add_node( (SyckParser *)parser, n ) );
                 }
 */
+                ;
 
 in_implicit_map : complex_mapping
 				| in_implicit_map indent_sep basic_seq

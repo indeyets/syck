@@ -1,5 +1,5 @@
 /*
- * ybext.c
+ * yaml2byte.c
  *
  * $Author$
  * $Date$
@@ -223,7 +223,7 @@ syck_yaml2byte(char *yamlstr)
     syck_parser_handler( parser, syck_yaml2byte_handler );
     syck_parser_error_handler( parser, NULL );
     syck_parser_implicit_typing( parser, 1 );
-    syck_parser_taguri_expansion( parser, 0 );
+    syck_parser_taguri_expansion( parser, 1 );
     oid = syck_parse( parser );
     syck_lookup_sym( parser, oid, (char **)&sav );
 

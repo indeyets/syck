@@ -343,8 +343,13 @@ module Okay
             
             def serve
                 catch(:exit_serve) {
-                    header = {}
-                    @ap.each_header {|key, value| header[key.capitalize] = value}
+                    header = {} 
+                    hdr_in_proc = proc {|key, value| header[key.capitalize] = value}
+                    if @ap.respond_to? :headers_in
+                        @ap.headers_in.each( &hdr_in_proc )
+                    else
+                        @ap.each_header( &hdr_in_proc )
+                    end
 
                     length = header['Content-length'].to_i
 
@@ -395,7 +400,13 @@ module Okay
                 h['Status']         ||= "200 OK"
                 h['Content-length'] ||= body.size.to_s 
 
-                h.each {|key, value| @ap[key] = value }
+                h.each do |key, value| 
+                    if @ap.respond_to? :headers_out
+                        @ap.headers_out[key] = value
+                    else
+                        @ap[key] = value
+                    end
+                end
                 @ap.content_type = h["Content-type"] 
                 @ap.status = status.to_i 
                 @ap.send_http_header 

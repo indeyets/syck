@@ -1,0 +1,35 @@
+--- %YAML:1.0
+- version: 0.45
+  date: 2004-08-02
+  changes:
+    CHANGELOG: Added.
+
+    lib/Makefile.am: re2c compiling with bit vectors now.
+
+    lib/syck.c: clear parser on init. thanks, ts. [ruby-core:02931]
+
+    lib/token.re: 
+    - using newline_len to handline CR-LFs.  
+      "\000" was showing up on folded blocks which
+      stopped at EOF. 
+
+    - buffer underflow. thanks, ts. [ruby-core:02929]
+
+    ext/ruby/lib/yaml/compat.rb: moved all ruby 1.6 -> ruby 1.8
+      handling into compat.rb.
+
+    ext/ruby/lib/yaml/baseemitter.rb: 
+    - simpler flow block code.
+
+    - was forcing a mod value of zero at times, which kept 
+      some blocks from getting indentation.
+
+    ext/ruby/lib/yaml/rubytypes.rb: exceptions were using an older
+      YAML.object_maker. [ruby-core:03080]
+       
+    ext/ruby/lib/yaml.rb: 
+    - added YAML::load_file, YAML::parse_file.
+    - added rdoc to beginning of lib.
+
+    ext/ruby/ext/syck/rubyext.c: set buffer after Data_Wrap_Struct to avoid possible GC.
+      [ruby-talk:104835]

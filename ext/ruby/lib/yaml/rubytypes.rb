@@ -272,7 +272,7 @@ end
 
 YAML.add_ruby_type( /^exception/ ) { |type, val|
     type, obj_class = YAML.read_type_class( type, Exception )
-    o = YAML.object_maker( obj_class, { 'mesg' => val.delete( 'message' ) }, true )
+    o = YAML.object_maker( obj_class, { 'mesg' => val.delete( 'message' ) } )
     val.each_pair { |k,v|
 		o.instance_variable_set("@#{k}", v)
 	}
@@ -372,7 +372,7 @@ end
 
 symbol_proc = Proc.new { |type, val|
 	if String === val
-        val = YAML::load( "--- #{val}") if val =~ /^["'].*["']$/
+        val = YAML::load( "--- #{val}") if val =~ /^["'].*['"]$/
 		val.intern
 	else
 		raise YAML::Error, "Invalid Symbol: " + val.inspect
@@ -393,7 +393,9 @@ class Range
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( self.object_id, opts ) { |out|
-            if self.begin.is_complex_yaml? or self.end.is_complex_yaml? or not to_yaml_properties.empty?
+            if self.begin.is_complex_yaml? or self.begin.respond_to? :to_str or
+              self.end.is_complex_yaml? or self.end.respond_to? :to_str or
+              not to_yaml_properties.empty?
                 out.map( to_yaml_type ) { |map|
                     map.add( 'begin', self.begin )
                     map.add( 'end', self.end )
@@ -415,9 +417,9 @@ end
 
 YAML.add_ruby_type( /^range/ ) { |type, val|
     type, obj_class = YAML.read_type_class( type, ::Range )
-    inr = '(\w+|[+-]*\d+(?:\.\d+)?|"(?:[^\\"]|\\.)*")'
+    inr = %r'(\w+|[+-]?\d+(?:\.\d+)?(?:e[+-]\d+)?|"(?:[^\\"]|\\.)*")'
     opts = {}
-	if String === val and val =~ /^#{inr}(\.{2,3})#{inr}$/
+	if String === val and val =~ /^#{inr}(\.{2,3})#{inr}$/o
         r1, rdots, r2 = $1, $2, $3
         opts = {
             'begin' => YAML.load( "--- #{r1}" ),
@@ -425,7 +427,7 @@ YAML.add_ruby_type( /^range/ ) { |type, val|
             'excl' => rdots.length == 3
         }
         val = {}
-	elsif Hash === val
+    elsif Hash === val
         opts['begin'] = val.delete('begin')
         opts['end'] = val.delete('end')
         opts['excl'] = val.delete('excl')
@@ -470,7 +472,7 @@ class Regexp
                 }
             else
                 out << "#{ to_yaml_type } "
-			self.inspect.to_yaml( :Emitter => out )
+                self.inspect.to_yaml( :Emitter => out )
             end
 		}
 	end
@@ -523,22 +525,22 @@ class Time
                     }
                 }
             else
-            tz = "Z"
-            # from the tidy Tobias Peters <t-peters@gmx.de> Thanks!
-            unless self.utc?
-                utc_same_instant = self.dup.utc
-                utc_same_writing = Time.utc(year,month,day,hour,min,sec,usec)
-                difference_to_utc = utc_same_writing - utc_same_instant
-                if (difference_to_utc < 0) 
-                    difference_sign = '-'
-                    absolute_difference = -difference_to_utc
-                else
-                    difference_sign = '+'
-                    absolute_difference = difference_to_utc
+                tz = "Z"
+                # from the tidy Tobias Peters <t-peters@gmx.de> Thanks!
+                unless self.utc?
+                    utc_same_instant = self.dup.utc
+                    utc_same_writing = Time.utc(year,month,day,hour,min,sec,usec)
+                    difference_to_utc = utc_same_writing - utc_same_instant
+                    if (difference_to_utc < 0) 
+                        difference_sign = '-'
+                        absolute_difference = -difference_to_utc
+                    else
+                        difference_sign = '+'
+                        absolute_difference = difference_to_utc
+                    end
+                    difference_minutes = (absolute_difference/60).round
+                    tz = "%s%02d:%02d" % [ difference_sign, difference_minutes / 60, difference_minutes % 60]
                 end
-                difference_minutes = (absolute_difference/60).round
-                tz = "%s%02d:%02d" % [ difference_sign, difference_minutes / 60, difference_minutes % 60]
-            end
                 standard = self.strftime( "%Y-%m-%d %H:%M:%S" )
                 standard += ".%06d" % [usec] if usec.nonzero?
                 standard += " %s" % [tz]

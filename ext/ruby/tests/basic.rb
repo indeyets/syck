@@ -23,7 +23,7 @@ class YAML_Unit_Tests < RUNIT::TestCase
         assert_equal( obj, YAML::load(
 			obj.to_yaml( :UseVersion => true, :UseHeader => true, :SortKeys => true ) 
 		) )
-        assert_equal( obj, YAML::Syck::Parser.new( :Input => :Bytecode ).load( YAML::Syck::compile( yaml ) ) )
+        # assert_equal( obj, YAML::Syck::Parser.new( :Input => :Bytecode ).load( YAML::Syck::compile( yaml ) ) )
 	end
 
     #
@@ -39,7 +39,7 @@ class YAML_Unit_Tests < RUNIT::TestCase
 	def assert_parse_only( obj, yaml )
 		assert_equal( obj, YAML::load( yaml ) )
 		assert_equal( obj, YAML::parse( yaml ).transform )
-        assert_equal( obj, YAML::Syck::Parser.new( :Input => :Bytecode ).load( YAML::Syck::compile( yaml ) ) )
+        # assert_equal( obj, YAML::Syck::Parser.new( :Input => :Bytecode ).load( YAML::Syck::compile( yaml ) ) )
 	end
 
     def assert_path_segments( path, segments )
@@ -440,14 +440,308 @@ EOY
 	def test_spec_single_folded
 		# Folded scalar block
         fold = [ "Mark McGwire's year was crippled by a knee injury.\n" ]
-		assert_parse_only(
-			fold, <<EOY
+		assert_parse_only( fold, <<EOY )
 - >
     Mark McGwire's
     year was crippled
     by a knee injury.
 EOY
-		)
+
+        # Force a few elaborate folded blocks
+		assert_parse_only( [ <<STR1, <<STR2, <<STR3 ], <<EOY )
+Here's what you're going to need:
+
+
+* Ruby 1.8.0 or higher.
+
+** Linux/FreeBSD: "Get the latest, please.":http://ruby-lang.org/en/20020102.html
+
+** Windows: "Installer for Windows.":http://rubyinstaller.sourceforge.net/
+
+** Mac: "OSX disk image.":http://homepage.mac.com/discord/Ruby/
+
+* Once Ruby is installed, open a command prompt and type:
+
+
+<pre>
+  ruby -ropen-uri -e 'eval(open("http://go.hobix.com/").read)'
+</pre>
+
+STR1
+Ok, so the idea here is that one whole weblahhg is contained
+in a single directory.  What is stored in the directory?
+
+
+<pre>
+  hobix.yaml <- configuration
+
+  entries/   <- edit and organize
+                your news items,
+                articles and so on.
+
+  skel/      <- contains your
+                templates
+
+  htdocs/    <- html is created here,
+                store all your images here,
+                this is your viewable
+                websyht
+
+  lib/       <- extra hobix libraries
+                (plugins) go here
+</pre>
+
+
+One weblahhg can be shared with many authors.  In the @hobix.yaml@
+file, you can store information about each author, as well as 
+information about others who contribute to your websyht.
+
+
+You also have a file of your own, a configuration file called
+@.hobixrc@, which contains a list of the weblahhgs you belong
+to.
+
+
+h2. Pull One From the Sky
+
+
+If you would like to create your own weblahhg from scratch:
+
+
+<pre>
+  hobix create blahhg
+</pre>
+
+
+You will be prompted for a full path where the new weblahhg can
+be created.  Don't worry if the directory doesn't yet exist,
+Hobix will take care of clearing a path for it.
+
+
+Once you give it the path, Hobix will create all the necessary
+directories, as well as the @hobix.yaml@.  You should also have
+a set of sample templates to get you started.
+
+
+In fact, if you want to generate the default site:
+
+
+<pre>
+  hobix regen blahhg
+</pre>
+
+
+h2. Joining Hands With Others
+
+
+To join an existing weblahhg:
+
+
+<pre>
+  hobix add other-blahhg /path/to/other-blahhg/hobix.yaml
+</pre>
+
+
+You don't need to be on a weblahhg's author list to join the weblahhg.
+You just need permissions to edit the file.
+
+
+h2. Leaving in a Cloud of Keystrokes
+
+
+To remove a weblahhg from your configuration:
+
+
+<pre>
+  hobix del other-blahhg
+</pre>
+
+
+Please don't be afraid to edit your configuration file yourself,
+should the commandline not suit your style.
+
+
+See, here's my @.hobixrc@:
+
+
+<pre>
+  --- 
+  weblogs: 
+    hobix: /usr/local/www/hobix.com/www/hobix.yaml
+    why: /usr/local/www/whytheluckystiff.net/www/hobix.yaml
+  username: why
+  use editor: true
+</pre>
+
+
+That's a YAML file.  Very simple to edit.  You can manually edit
+your information, safely add or edit your weblogs, and save back
+to your @.hobixrc@.
+
+
+Enough then.  Time to trick out your new Hoblahhg.
+You will be guided through an automatic installation (or upgrade) of
+Hobix.
+STR2
+NOW BUNKING together: the ruby and yaml scripts up at http://go.hobix.com/. Hey ,, the life and unity we feel is tree-mending-US!!
+
+Try:
+
+<pre>
+  ruby -ropen-uri -e'eval open("http://go.hobix.com/").read'
+</pre>
+
+No longer are curtains dropping ON the actors' arms !!  No longer are swift currents ON the actors' legs !!  The actors have a bottomless cereal container, witness.
+STR3
+--- 
+- |+
+  Here's what you're going to need:
+
+
+  * Ruby 1.8.0 or higher.
+
+  ** Linux/FreeBSD: "Get the latest, please.":http://ruby-lang.org/en/20020102.html
+
+  ** Windows: "Installer for Windows.":http://rubyinstaller.sourceforge.net/
+
+  ** Mac: "OSX disk image.":http://homepage.mac.com/discord/Ruby/
+
+  * Once Ruby is installed, open a command prompt and type:
+
+
+  <pre>
+    ruby -ropen-uri -e 'eval(open("http://go.hobix.com/").read)'
+  </pre>
+
+- |
+  Ok, so the idea here is that one whole weblahhg is contained
+  in a single directory.  What is stored in the directory?
+
+
+  <pre>
+    hobix.yaml <- configuration
+
+    entries/   <- edit and organize
+                  your news items,
+                  articles and so on.
+
+    skel/      <- contains your
+                  templates
+
+    htdocs/    <- html is created here,
+                  store all your images here,
+                  this is your viewable
+                  websyht
+
+    lib/       <- extra hobix libraries
+                  (plugins) go here
+  </pre>
+
+
+  One weblahhg can be shared with many authors.  In the @hobix.yaml@
+  file, you can store information about each author, as well as 
+  information about others who contribute to your websyht.
+
+
+  You also have a file of your own, a configuration file called
+  @.hobixrc@, which contains a list of the weblahhgs you belong
+  to.
+
+
+  h2. Pull One From the Sky
+
+
+  If you would like to create your own weblahhg from scratch:
+
+
+  <pre>
+    hobix create blahhg
+  </pre>
+
+
+  You will be prompted for a full path where the new weblahhg can
+  be created.  Don't worry if the directory doesn't yet exist,
+  Hobix will take care of clearing a path for it.
+
+
+  Once you give it the path, Hobix will create all the necessary
+  directories, as well as the @hobix.yaml@.  You should also have
+  a set of sample templates to get you started.
+
+
+  In fact, if you want to generate the default site:
+
+
+  <pre>
+    hobix regen blahhg
+  </pre>
+
+
+  h2. Joining Hands With Others
+
+
+  To join an existing weblahhg:
+
+
+  <pre>
+    hobix add other-blahhg /path/to/other-blahhg/hobix.yaml
+  </pre>
+
+
+  You don't need to be on a weblahhg's author list to join the weblahhg.
+  You just need permissions to edit the file.
+
+
+  h2. Leaving in a Cloud of Keystrokes
+
+
+  To remove a weblahhg from your configuration:
+
+
+  <pre>
+    hobix del other-blahhg
+  </pre>
+
+
+  Please don't be afraid to edit your configuration file yourself,
+  should the commandline not suit your style.
+
+
+  See, here's my @.hobixrc@:
+
+
+  <pre>
+    --- 
+    weblogs: 
+      hobix: /usr/local/www/hobix.com/www/hobix.yaml
+      why: /usr/local/www/whytheluckystiff.net/www/hobix.yaml
+    username: why
+    use editor: true
+  </pre>
+
+
+  That's a YAML file.  Very simple to edit.  You can manually edit
+  your information, safely add or edit your weblogs, and save back
+  to your @.hobixrc@.
+
+
+  Enough then.  Time to trick out your new Hoblahhg.
+  You will be guided through an automatic installation (or upgrade) of
+  Hobix.
+
+
+- |
+  NOW BUNKING together: the ruby and yaml scripts up at http://go.hobix.com/. Hey ,, the life and unity we feel is tree-mending-US!!
+
+  Try:
+
+  <pre>
+    ruby -ropen-uri -e'eval open("http://go.hobix.com/").read'
+  </pre>
+
+  No longer are curtains dropping ON the actors' arms !!  No longer are swift currents ON the actors' legs !!  The actors have a bottomless cereal container, witness.
+
+EOY
 
         assert_bytecode( fold, "D\nQ\nSMark McGwire's year was crippled by a knee injury.\nN\nE\n" )
 	end
@@ -800,7 +1094,6 @@ integer: 12
 also int: ! "12"
 string: !str 12
 EOY
-        assert_bytecode( map, "D\nM\nSinteger\nS12\nSalso int\nT!\nS12\nSstring\nT!str\nS12\nE\n" )
 	end
 
 	def test_spec_private_types
