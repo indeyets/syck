@@ -3,7 +3,7 @@
 
                              . syck .
 
-                         [ version 0.39 ]
+                         [ version 0.40 ]
 
 
 
@@ -98,6 +98,6 @@ A simple Ruby YAML::load could be built like so:
     }
   }
 
-If I can get this to work then it will be a no-brainer to bring
+For most C developers, it should be a no-brainer to bring
 basic YAML serialization to PHP, Tcl, Cocoa, etc.
 

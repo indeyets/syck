@@ -263,7 +263,7 @@ fixed: 1,230.15
 
     def testTypeMisc(self):
         self.parseOnly(
-			{ None: None, 'true': 'yes', 'false':'no', 'string': '12345' }, """
+			{ None: None, 1: 1, 0: 0, 'string': '12345' }, """
 null: ~
 true: yes
 false: no

@@ -44,7 +44,7 @@ typedef struct RVALUE {
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang;
+static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_anchors;
 static VALUE sym_model, sym_generic;
 static VALUE sym_scalar, sym_seq, sym_map;
 VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, cMergeKey, cEmitter;
@@ -368,9 +368,6 @@ yaml_org_handler( n, ref )
     long i = 0;
     VALUE obj = Qnil;
 
-    /*
-     * If prefixed with YAML_DOMAIN, skip to type name
-     */
     switch (n->kind)
     {
         case syck_str_kind:
@@ -766,6 +763,7 @@ syck_loader_initialize( self )
 
        rb_iv_set(self, "@families", rb_hash_new() );
     rb_iv_set(self, "@private_types", rb_hash_new() );
+    rb_iv_set(self, "@anchors", rb_hash_new() );
     families = rb_iv_get(self, "@families");
 
     rb_hash_aset(families, rb_str_new2( YAML_DOMAIN ), rb_hash_new());
@@ -1278,6 +1276,7 @@ Init_syck()
     s_at = rb_intern("at");
     s_to_f = rb_intern("to_f");
     s_read = rb_intern("read");
+    s_anchors = rb_intern("anchors");
     s_binmode = rb_intern("binmode");
     s_transfer = rb_intern("transfer");
     s_call = rb_intern("call");
@@ -1307,6 +1306,7 @@ Init_syck()
     cLoader = rb_define_class_under( rb_syck, "Loader", rb_cObject );
     rb_define_attr( cLoader, "families", 1, 1 );
     rb_define_attr( cLoader, "private_types", 1, 1 );
+    rb_define_attr( cLoader, "anchors", 1, 1 );
     rb_define_method( cLoader, "initialize", syck_loader_initialize, 0 );
     rb_define_method( cLoader, "add_domain_type", syck_loader_add_domain_type, -1 );
     rb_define_method( cLoader, "add_builtin_type", syck_loader_add_builtin_type, -1 );
