@@ -274,6 +274,7 @@ Header:
 
 NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
                         ENSURE_IEND(lvl, -1);
+                        YYPOS(0);
                         return 0; 
                     }
 
@@ -376,6 +377,7 @@ BLOCK               {   if ( *( YYCURSOR - 1 ) == '\n' )
 [ ]+                {   goto Document; }
 
 NULL                {   ENSURE_IEND(lvl, -1);
+                        YYPOS(0);
                         return 0; 
                     }
 
@@ -458,7 +460,10 @@ ALLX                {   RETURN_IMPLICIT(); }
 
 INLINEX             {   if ( plvl->status != syck_lvl_inline )
                         {
-                            YYCURSOR--;
+                            if ( *(YYCURSOR - 1) == ' ' || *(YYCURSOR - 1) == '\n' )
+                            {
+                                YYCURSOR--;
+                            }
                             QUOTECATS(qstr, qcapa, qidx, YYTOKTMP, YYCURSOR - YYTOKTMP);
                             goto Plain2;
                         }

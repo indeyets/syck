@@ -1,0 +1,194 @@
+--- %YAML:1.0 
+test: Symbols 
+brief: > 
+    Ruby Symbols can be simply serialized using 
+    the !ruby/symbol transfer method, or the 
+    abbreviated !ruby/sym. 
+yaml: | 
+    simple symbol: !ruby/symbol Simple 
+    shortcut syntax: !ruby/sym Simple 
+    symbols in seqs: 
+      - !ruby/symbol ValOne 
+      - !ruby/symbol ValTwo 
+      - !ruby/symbol ValThree 
+    symbols in maps: 
+      - !ruby/symbol MapKey: !ruby/symbol MapValue 
+ruby: | 
+    { 'simple symbol' => :Simple, 
+      'shortcut syntax' => :Simple, 
+      'symbols in seqs' => [ :ValOne, :ValTwo, :ValThree ], 
+      'symbols in maps' => [ { :MapKey => :MapValue } ]
+    } 
+ 
+--- 
+test: Ranges 
+brief: > 
+    Ranges are serialized with the !ruby/range 
+    type family. 
+yaml: | 
+    normal range: !ruby/range 10..20 
+    exclusive range: !ruby/range 11...20 
+    negative range: !ruby/range -1..-5 
+    ? !ruby/range 0..40 
+    : range as a map key 
+ruby: | 
+    { 'normal range' => (10..20), 
+      'exclusive range' => (11...20), 
+      'negative range' => (-1..-5), 
+      (0..40) => 'range as a map key' 
+    } 
+ 
+--- 
+test: Regexps 
+brief: > 
+    Regexps may be serialized to YAML, both its 
+    syntax and any modifiers. 
+yaml: | 
+    case-insensitive: !ruby/regexp "/George McFly/i" 
+    complex: !ruby/regexp "/\\A\"((?:[^\"]|\\\")+)\"/" 
+    simple: !ruby/regexp '/a.b/' 
+ruby: | 
+    { 'simple' => /a.b/, 'complex' => /\A"((?:[^"]|\")+)"/, 
+      'case-insensitive' => /George McFly/i } 
+ 
+--- 
+test: Perl Regexps 
+brief: > 
+    Regexps may also be imported from serialized 
+    Perl. 
+yaml: | 
+    --- !perl/regexp: 
+      REGEXP: "R[Uu][Bb][Yy]$" 
+      MODIFIERS: i 
+ruby: | 
+    /R[Uu][Bb][Yy]$/i 
+ 
+--- 
+test: Struct class 
+brief: > 
+    The Ruby Struct class is registered as a YAML 
+    builtin type through Ruby, so it can safely  
+    be serialized.  To use it, first make sure you 
+    define your Struct with Struct::new.  Then, 
+    you are able to serialize with Struct#to_yaml 
+    and unserialize from a YAML stream. 
+yaml: | 
+    --- !ruby/struct:BookStruct 
+      author: Yukihiro Matsumoto 
+      title: Ruby in a Nutshell 
+      year: 2002 
+      isbn: 0-596-00214-9 
+ruby-setup: | 
+    book_struct = Struct::new( "BookStruct", :author, :title, :year, :isbn ) 
+ruby: | 
+    book_struct.new( "Yukihiro Matsumoto", "Ruby in a Nutshell", 2002, "0-596-00214-9" ) 
+ 
+--- 
+test: Nested Structs 
+brief: > 
+    As with other YAML builtins, you may nest the 
+    Struct inside of other Structs or other data 
+    types. 
+yaml: | 
+    - !ruby/struct:FoodStruct 
+      name: Nachos 
+      ingredients: 
+        - Mission Chips 
+        - !ruby/struct:FoodStruct 
+          name: Tostitos Nacho Cheese 
+          ingredients: 
+            - Milk and Enzymes 
+            - Jack Cheese 
+            - Some Volatile Chemicals 
+          taste: Angelic 
+        - Sour Cream 
+      taste: Zesty 
+    - !ruby/struct:FoodStruct 
+      name: Banana Cream Pie 
+      ingredients: 
+        - Bananas 
+        - Creamy Stuff 
+        - And Such 
+      taste: Puffy 
+ruby-setup: | 
+    food_struct = Struct::new( "FoodStruct", :name, :ingredients, :taste ) 
+ruby: | 
+    [ 
+      food_struct.new( 'Nachos', [ 'Mission Chips', 
+        food_struct.new( 'Tostitos Nacho Cheese', [ 'Milk and Enzymes', 'Jack Cheese', 'Some Volatile Chemicals' ], 'Angelic' ), 
+        'Sour Cream' ], 'Zesty' ), 
+      food_struct.new( 'Banana Cream Pie', [ 'Bananas', 'Creamy Stuff', 'And Such' ], 'Puffy' ) 
+    ] 
+ 
+--- 
+test: Objects 
+brief: > 
+    YAML has generic support for serializing objects 
+    from any class available in Ruby.  If using the 
+    generic object serialization, no extra code is 
+    needed. 
+yaml: | 
+    --- !ruby/object:YAML::Zoolander 
+      name: Derek 
+      look: Blue Steel 
+ruby-setup: | 
+    class Zoolander 
+      attr_accessor :name, :look 
+      def initialize( look ) 
+        @name = "Derek" 
+        @look = look 
+      end 
+      def ==( z ) 
+        self.name == z.name and self.look == z.look 
+      end 
+    end 
+ruby: | 
+    Zoolander.new( "Blue Steel" ) 
+ 
+--- 
+test: Extending Kernel::Array 
+brief: >  
+    When extending the Array class, your instances 
+    of such a class will dump as YAML sequences, 
+    tagged with a class name. 
+yaml: | 
+    --- !ruby/array:YAML::MyArray 
+    - jacket 
+    - sweater 
+    - windbreaker 
+ruby-setup: | 
+    class MyArray < Kernel::Array; end 
+ruby: | 
+    outerwear = MyArray.new 
+    outerwear << 'jacket' 
+    outerwear << 'sweater' 
+    outerwear << 'windbreaker' 
+    outerwear 
+ 
+--- 
+test: Extending Kernel::Hash 
+brief: > 
+    When extending the Hash class, your instances 
+    of such a class will dump as YAML maps, tagged 
+    with a class name. 
+yaml: | 
+    --- !ruby/hash:YAML::MyHash 
+    Black Francis: Frank Black 
+    Kim Deal: Breeders 
+    Joey Santiago: Martinis 
+ruby-setup: | 
+    # Note that the @me attribute isn't dumped 
+    # because the default to_yaml is trained 
+    # to dump as a regular Hash. 
+    class MyHash < Kernel::Hash 
+      attr_accessor :me 
+      def initialize 
+        @me = "Why" 
+      end 
+    end 
+ruby: | 
+    pixies = MyHash.new 
+    pixies['Black Francis'] = 'Frank Black' 
+    pixies['Kim Deal'] = 'Breeders' 
+    pixies['Joey Santiago'] = 'Martinis' 
+    pixies 

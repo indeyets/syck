@@ -8,7 +8,7 @@ require 'net/http'
 module Okay
     module RPC
 
-        VERSION = '0.05'
+        VERSION = '0.06'
 
         class Method
             attr_accessor :methodName, :params
@@ -362,7 +362,7 @@ module Okay
                         begin
                             process(data)
                         rescue Exception => e
-                            Fault.new(101, e.message)
+                            Fault.new(101, e.message).to_yaml
                         end
                     http_write(resp, 200, "Content-type" => "text/yaml")
                 }

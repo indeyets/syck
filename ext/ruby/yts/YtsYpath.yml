@@ -1,0 +1,221 @@
+data: 
+  apple: red 
+ypath: / 
+expected: 
+ - / 
+--- 
+data: 
+  apple: red 
+ypath: . 
+expected: 
+ - / 
+--- 
+data: 
+  apple: red 
+ypath: /* 
+expected: 
+ - /apple 
+--- 
+data: 
+  apple: red 
+  lemon: yellow 
+ypath: /* 
+expected: 
+ - /apple 
+ - /lemon 
+unordered: 1 
+--- 
+data: 
+  fruit: 
+    banana: yellow 
+  vegetable: 
+    carrot: orange 
+ypath: //. 
+expected:   
+  - / 
+  - /fruit 
+  - /fruit/banana 
+  - /vegetable 
+  - /vegetable/carrot 
+unordered: 1 
+--- 
+data: 
+  one: 
+    two: xxx 
+ypath: //two/.. 
+expected: 
+ - /one 
+--- 
+data: 
+  apple: red 
+ypath: /apple 
+expected:  
+ - /apple 
+--- 
+data: 
+  apple: red 
+  lemon: yellow 
+ypath: /"lemon" 
+expected: 
+ - /lemon 
+--- 
+data: 
+  apple: red 
+  lemon: yellow 
+ypath: /'lemon' 
+expected: 
+ - /lemon 
+--- 
+data: 
+  apple: red 
+  lemon: yellow 
+ypath: /lemon 
+expected: 
+ - /lemon 
+--- 
+data: 
+  - apple 
+  - lemon 
+ypath: /0 
+expected: 
+ - /0 
+--- 
+data: 
+  apple: red 
+  lemon: yellow 
+ypath: /orange 
+expected: [] 
+--- 
+data: 
+  apple: red 
+ypath: ./. 
+expected: 
+ - / 
+--- 
+data: 
+  fruit: 
+    banana: yellow 
+  vegetable: 
+    carrot: orange 
+ypath: /fruit/banana 
+expected:  
+ - /fruit/banana 
+--- 
+data: 
+  fruit: 
+    banana: yellow 
+  vegetable: 
+    carrot: orange 
+ypath: fruit/banana 
+expected: 
+ - /fruit/banana 
+--- 
+data: 
+  names: 
+    - Steve Howell 
+    - Clark Evans 
+ypath: /names/0 
+expected: 
+ - /names/0 
+--- 
+data:  
+  names: 
+    - first: Clark 
+      last:  Evans 
+    - first: Steve 
+      last:  Howell 
+ypath: /names/1/first 
+expected: 
+  - /names/1/first 
+--- 
+data:  
+  names: 
+    - first: Clark 
+      last:  Evans 
+    - first: Steve 
+      last:  Howell 
+ypath: /names/*/first 
+expected: 
+  - /names/0/first 
+  - /names/1/first 
+--- 
+data:  
+  names: 
+    python-heads: 
+      - first: Clark 
+        last:  Evans 
+      - first: Steve 
+        last:  Howell 
+    perl-heads: 
+      - first: Brian 
+        last:  Ingerson 
+ypath: names//first 
+expected: 
+  - /names/python-heads/0/first 
+  - /names/python-heads/1/first 
+  - /names/perl-heads/0/first 
+--- 
+data: 
+    task: 
+       - name: wake 
+         foo: bar 
+       - name: eat 
+         task: 
+            - name: veggies 
+            - name: meats 
+       - name: sleep 
+ypath: //task 
+expected: 
+  - /task 
+  - /task/1/task 
+--- 
+data: 
+  - one:  
+      name: xxx 
+  - two:  
+      name: yyy 
+  - three:  
+      name: zzz 
+ypath: /*/one/name|//three/name 
+expected: 
+ - /0/one/name 
+ - /2/three/name 
+--- 
+data: 
+  apple: red 
+ypath: .|/apple|apple|/|. 
+expected: 
+ - / 
+ - /apple 
+--- 
+data: 
+  - one:  
+      name: xxx 
+  - two:  
+      name: yyy 
+  - three:  
+      name: zzz 
+ypath: /*/(one|three)/name 
+expected: 
+ - /0/one/name 
+ - /2/three/name 
+--- 
+data: 
+  - one: xxx 
+  - two: yyy 
+  - one: zzz 
+ypath: /*[one] 
+expected: 
+  - /0 
+  - /2 
+--- 
+data:  
+ - food: Hamburger 
+   calories: 900 
+ - food: Fries 
+   calories: 650 
+ - food: Soft Drink 
+   calories: 350 
+ypath: //food[.=Fries] 
+expected: 
+  - /1/food 

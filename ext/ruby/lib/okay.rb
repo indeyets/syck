@@ -22,7 +22,8 @@ module Okay
 
     # Transfer methods for okay types
     TRANSFER_TYPES = {}
-    OKAY_TYPE_REGEXP = /^([^;]+)((?:;\w+)*)$/
+    OKAY_TYPE_DOMAIN = 'okay.yaml.org,2002'
+    OKAY_TYPE_REGEXP = /^taguri:#{ Regexp::quote( OKAY_TYPE_DOMAIN ) }:([^;]+)((?:;\w+)*)$/
 
     #
     # Base class for Okay types
@@ -38,7 +39,7 @@ module Okay
 	def Okay.add_type( type_name, &transfer_proc )
 		type_re = /^(#{Regexp::quote( type_name )})((?:;\w+)*)$/
 		Okay::TRANSFER_TYPES[ type_name ] = transfer_proc
-        YAML.add_domain_type( 'okay.yaml.org,2002', type_re ) { |type, val|
+        YAML.add_domain_type( OKAY_TYPE_DOMAIN, type_re ) { |type, val|
             type, mods = OKAY_TYPE_REGEXP.match( type ).to_a[1,2]
             unless mods.to_s.empty?
                 mod_re = /^(#{ mods.slice( 1..-1 ).gsub( /;/, '|' ) });/
@@ -78,12 +79,9 @@ module Okay
     end
 
     def Okay.validate_node( node )
-        type = node.type_id
-        if node.type_id =~ /^okay\//
-            type, mods = OKAY_TYPE_REGEXP.match( node.type_id ).to_a[1,2]
-        end
+        type, mods = OKAY_TYPE_REGEXP.match( node.type_id ).to_a[1,2]
         unless @@type_registry.has_key?( type )
-            raise Okay::Error, "Type #{type} not found in loaded schema." 
+            raise Okay::Error, "Type `#{type}' not found in loaded schema." 
         end
         return true if @@type_registry[ type ].nil?
         node_vs_schema( @@type_registry[ type ], node, [], true )
@@ -140,7 +138,7 @@ module Okay
     end
 
     def Okay.make_schema_flexhash( type_root )
-        type_root = YAML.transfer_method( 'ruby/flexhash', type_root )
+        type_root = YAML::transfer( 'taguri:ruby.yaml.org,2002:flexhash', type_root )
         type_root.collect! { |e|
             if Hash === e[1]
                 e[1].each { |k,v|
