@@ -25,13 +25,13 @@
     char *name;
 };
 
-%token <name>       ANCHOR ALIAS TRANSFER ITRANSFER FOLD
-%token <nodeData>   WORD PLAIN FSTART RAWTEXT
+%token <name>       ANCHOR ALIAS TRANSFER ITRANSFER
+%token <nodeData>   WORD PLAIN BLOCK
 %token              DOCSEP IOPEN INDENT IEND
 
 %type <nodeId>      doc basic_seq
 %type <nodeData>    atom word_rep struct_rep atom_or_empty
-%type <nodeData>    scalar_block implicit_seq inline_seq implicit_map inline_map
+%type <nodeData>    implicit_seq inline_seq implicit_map inline_map
 %type <nodeData>    in_implicit_seq in_inline_seq basic_mapping basic_mapping2
 %type <nodeData>    in_implicit_map in_inline_map complex_mapping
 
@@ -114,29 +114,18 @@ struct_rep	: TRANSFER struct_rep
             { 
                 $$ = syck_add_transfer( $1, $2 );
             }
-			| scalar_block
+			| BLOCK
+			{ 
+                //SyckNode *n = $3;
+                //syck_fold_format( $1, $3 );
+                //n->type_id = "str";
+                //$$ = n;
+                $$ = $1;
+			}
 			| implicit_seq
 			| inline_seq
 			| implicit_map
 			| inline_map
-
-//
-// Folding and indentation is handled in the tokenizer.
-// We handle chomping here, though.
-//
-scalar_block	: FOLD IOPEN RAWTEXT IEND			
-			 	{ 
-                    SyckNode *n = $3;
-                    syck_fold_format( $1, $3 );
-                    n->type_id = "str";
-                    $$ = n;
-				}
-			    | FOLD FSTART
-                { 
-                    SyckNode *n = $2;
-                    n->type_id = "str";
-                    $$ = n;
-                }
 
 //
 // Implicit sequence 

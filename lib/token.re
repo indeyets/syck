@@ -26,24 +26,25 @@
 #define YYTOKTMP    parser->toktmp
 #define YYLINEPTR   parser->lineptr
 #define YYLINE      parser->linect
-#define YYFILL(n)   syck_parser_read(parser);
+#define YYFILL(n)   syck_parser_read(parser)
 
 //
 // Repositions the cursor at `n' offset from the token start.
 // Only works in `Header' and `Document' sections.
 //
-#define YYPOS(n)    YYCURSOR = YYTOKEN + n;
+#define YYPOS(n)    YYCURSOR = YYTOKEN + n
 
 //
 // Track line numbers
 //
-#define NEWLINE(ptr)    YYLINE++; YYLINEPTR = ptr + 1;
+#define NEWLINE(ptr)    YYLINE++; YYLINEPTR = ptr + 1
 
 //
 // I like seeing the level operations as macros...
 //
-#define ADD_LEVEL(len)  syck_parser_add_level( parser, len );
-#define CURRENT_LEVEL() syck_parser_current_level( parser );
+#define ADD_LEVEL(len)  syck_parser_add_level( parser, len )
+#define POP_LEVEL()     syck_parser_pop_level( parser )
+#define CURRENT_LEVEL() syck_parser_current_level( parser )
 
 //
 // Nice little macro to ensure we're IOPENed to the current level.
@@ -84,11 +85,34 @@
             s[i] = '\0'; \
         }
 
-#define CHECK_IMPLICIT() \
-    YYCURSOR = YYTOKTMP; \
-    yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN ); \
-    try_tag_implicit( yylval->nodeData ); \
-    return PLAIN;
+#define RETURN_IMPLICIT() \
+    { \
+        YYCURSOR = YYTOKTMP; \
+        yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN ); \
+        try_tag_implicit( yylval->nodeData ); \
+        return PLAIN; \
+    }
+
+#define GOBBLE_UP_INDENT( ict, start ) \
+    char *indent = start; \
+    NEWLINE(indent); \
+    while ( indent < YYCURSOR ) \
+    { \
+        if ( *(++indent) == '\n' ) \
+        { \
+            NEWLINE(indent); \
+        } \
+    } \
+    ict = 0; \
+    if ( *YYCURSOR == '\0' ) \
+    { \
+        ict = -1; \
+        start = YYCURSOR; \
+    } \
+    else if ( *YYLINEPTR == ' ' ) \
+    { \
+        ict = YYCURSOR - YYLINEPTR; \
+    }
 
 //
 // Argjh!  I hate globals!  Here for yyerror() only!
@@ -110,8 +134,8 @@ yylex( YYSTYPE *yylval, SyckParser *parser )
 
 WORDC = [A-Za-z0-9_-\.] ;
 LF = [\n]+ ;
-INDENT = LF [ ]* ;
-ENDSPC = [ \n]+ ;
+INDENT = LF [ \n]* ;
+ENDSPC = [ \n] ;
 NULL = [\000] ;
 ANY = [\001-\377] ;
 ODELIMS = [\{\[] ;
@@ -119,6 +143,7 @@ CDELIMS = [\}\]] ;
 INLINEX = ( CDELIMS | "," ENDSPC ) ;
 ALLX = ( ":" ENDSPC ) ;
 DIR = "%" WORDC+ ":" WORDC+ ;
+BLOCK = [>|] [-+0-9]* LF ; 
 
 */
 
@@ -131,7 +156,7 @@ Header:
 
 /*!re2c
 
-"---" ENDSPC        {   goto Directive; }
+"---" ENDSPC        {   return DOCSEP; }
 
 ANY                 {   YYPOS(0);
                         goto Document; 
@@ -148,26 +173,10 @@ Document:
 INDENT              {   // Isolate spaces
                         int indt_len;
                         SyckLevel *lvl;
-                        char *indent = YYTOKEN;
-                        NEWLINE(indent);
-                        while ( indent < YYCURSOR ) 
-                        { 
-                            if ( *(++indent) != '\n' ) 
-                                break; 
-                            else
-                                NEWLINE(indent);
-                        }
-
-                        // Calculate indent length
+                        GOBBLE_UP_INDENT( indt_len, YYTOKEN );
                         lvl = CURRENT_LEVEL();
-                        indt_len = 0;
-                        if ( *indent == ' ' ) indt_len = YYCURSOR - indent;
 
                         // Check for open indent
-#ifdef REDEBUG
-                        printf( "CALLING CURRENT AT INDENT: %d\n", indt_len );
-                        printf( "CURSOR: %s\n", YYCURSOR );
-#endif
                         ENSURE_IEND(lvl, indt_len);
                         ENSURE_IOPEN(lvl, indt_len, 0);
                         return INDENT;
@@ -207,12 +216,18 @@ CDELIMS             {   SyckLevel *lvl = CURRENT_LEVEL();
                         return TRANSFER;
                     }
 
-"!" ENDSPC          {   return ITRANSFER; }
+"!" ENDSPC          {   YYPOS(1);
+                        return ITRANSFER; 
+                    }
 
 "'"                 {   goto SingleQuote; 
                     }
 
 "\""                {   goto DoubleQuote; 
+                    }
+
+BLOCK               {   YYCURSOR--;
+                        goto ScalarBlock; 
                     }
 
 [ ]+                {   goto Document; }
@@ -256,16 +271,16 @@ Plain2:
 /*!re2c
 
 ALLX                {   YYCURSOR = YYTOKTMP;
-                        CHECK_IMPLICIT();
+                        RETURN_IMPLICIT();
                     }
 
 INLINEX             {   if ( plvl->status != syck_lvl_inline ) goto Plain2;
                         YYCURSOR = YYTOKTMP;
-                        CHECK_IMPLICIT();
+                        RETURN_IMPLICIT();
                     }
 
 ( LF | NULL )       {   YYCURSOR = YYTOKTMP;
-                        CHECK_IMPLICIT();
+                        RETURN_IMPLICIT();
                     }
 
 ANY                 {   goto Plain2; }
@@ -286,12 +301,14 @@ SingleQuote2:
 "''"                {   QUOTECAT(qstr, qcapa, qidx, '\'');
                         goto SingleQuote2; 
                     }
-"'"                 {   SyckNode *n = syck_alloc_str();
+
+( "'" | NULL )      {   SyckNode *n = syck_alloc_str();
                         n->data.str->ptr = qstr;
                         n->data.str->len = qidx;
                         yylval->nodeData = n;
                         return PLAIN; 
                     }
+
 ANY                 {   QUOTECAT(qstr, qcapa, qidx, *(YYCURSOR - 1)); 
                         goto SingleQuote2; 
                     }
@@ -315,7 +332,7 @@ DoubleQuote2:
                         goto DoubleQuote2; 
                     }
 
-"\""                {   SyckNode *n = syck_alloc_str();
+( "\"" | NULL )     {   SyckNode *n = syck_alloc_str();
                         n->data.str->ptr = qstr;
                         n->data.str->len = qidx;
                         yylval->nodeData = n;
@@ -327,7 +344,45 @@ ANY                 {   QUOTECAT(qstr, qcapa, qidx, *(YYCURSOR - 1));
                     }
 
 */
+    }
 
+ScalarBlock:
+    {
+        YYTOKTMP = YYCURSOR;
+
+/*!re2c
+
+INDENT              {   int indt_len;
+                        SyckLevel *lvl;
+                        GOBBLE_UP_INDENT( indt_len, YYTOKTMP );
+                        lvl = CURRENT_LEVEL();
+
+                        if ( indt_len > lvl->spaces && lvl->status != syck_lvl_block )
+                        {
+                            ADD_LEVEL( indt_len );
+                            lvl = CURRENT_LEVEL();
+                            lvl->status = syck_lvl_block;
+                        }
+                        else if ( indt_len < lvl->spaces )
+                        {
+                            POP_LEVEL();
+                            YYCURSOR = YYTOKTMP;
+                            yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );  
+                            return BLOCK;
+                        }
+                        goto ScalarBlock;
+                    }
+
+
+NULL                {   POP_LEVEL();
+                        YYCURSOR = YYTOKTMP;
+                        yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );  
+                        return BLOCK; 
+                    }
+
+ANY                 {   goto ScalarBlock; }
+
+*/
     }
 
 }
