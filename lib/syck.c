@@ -6,12 +6,29 @@
 //
 // Copyright (C) 2003 why the lucky stiff
 //
+#include <stdio.h>
 
 #include "syck.h"
 
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
+//
+// Custom assert
+//
+void 
+syck_assert( char *file_name, unsigned line_num )
+{
+    fflush( NULL );
+    fprintf( stderr, "\nAssertion failed: %s, line %u\n",
+             file_name, line_num );
+    fflush( stderr );
+    abort();
+}
+
+//
+// Node allocation functions
+//
 struct SyckNode *
 alloc_node( enum syck_kind_tag type )
 {
@@ -78,7 +95,7 @@ new_str_node( char *str )
 char *
 read_str_node( struct SyckNode *n )
 {
-    //assert( n != NULL );
+    ASSERT( n != NULL );
     return n->data.str;
 }
 
@@ -99,8 +116,8 @@ add_map_pair( struct SyckNode *map, struct SyckNode *key, struct SyckNode *value
     struct SyckMap *m;
     long idx;
 
-    //assert( map != NULL );
-    //assert( map->data.pairs != NULL );
+    ASSERT( map != NULL );
+    ASSERT( map->data.pairs != NULL );
     
     m = map->data.pairs;
     idx = m->idx;
@@ -120,9 +137,9 @@ read_map_node( struct SyckNode *map, enum map_part p, long idx )
 {
     struct SyckMap *m;
 
-    //assert( map != NULL );
+    ASSERT( map != NULL );
     m = map->data.pairs;
-    //assert( m != NULL );
+    ASSERT( m != NULL );
     if ( p == map_key )
     {
         return m->keys[idx];
@@ -150,8 +167,8 @@ add_seq_item( struct SyckNode *arr, struct SyckNode *value )
     struct SyckSeq *s;
     long idx;
 
-    //assert( arr != NULL );
-    //assert( arr->data.list != NULL );
+    ASSERT( arr != NULL );
+    ASSERT( arr->data.list != NULL );
     
     s = arr->data.list;
     idx = s->idx;
@@ -169,9 +186,9 @@ read_seq_node( struct SyckNode *seq, long idx )
 {
     struct SyckSeq *s;
 
-    //assert( seq != NULL );
+    ASSERT( seq != NULL );
     s = seq->data.list;
-    //assert( s != NULL );
+    ASSERT( s != NULL );
     return s->items[idx];
 }
 

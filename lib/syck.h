@@ -33,6 +33,17 @@ extern "C" {
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
 #define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(n))
 
+#if DEBUG
+  void syck_assert( char *, unsigned );
+# define ASSERT(f) \
+    if ( f ) \
+        {}   \
+    else     \
+        syck_assert( __FILE__, __LINE__ )
+#else
+# define ASSERT(f)
+#endif
+
 #ifndef NULL
 # define NULL (void *)0
 #endif
