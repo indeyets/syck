@@ -89,7 +89,7 @@
     { \
         YYCURSOR = YYTOKTMP; \
         yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN ); \
-        try_tag_implicit( yylval->nodeData ); \
+        if ( parser->implicit_typing == 1 ) try_tag_implicit( yylval->nodeData ); \
         return PLAIN; \
     }
 

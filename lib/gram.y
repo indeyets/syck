@@ -92,7 +92,10 @@ word_rep	: TRANSFER word_rep
             } 
             | ITRANSFER word_rep						
             { 
-               try_tag_implicit( $2 );
+               if ( ((SyckParser *)parser)->implicit_typing == 1 )
+               {
+                  try_tag_implicit( $2 );
+               }
                $$ = $2;
             }
 			| WORD

@@ -133,6 +133,8 @@ enum syck_level_status {
 struct _syck_parser {
     // Root node
     SYMID root;
+    // Implicit typing flag
+    int implicit_typing;
     // Scripting language function to handle nodes
     SyckNodeHandler handler;
     // Error handler

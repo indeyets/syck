@@ -115,6 +115,7 @@ syck_new_parser()
     p->marker = NULL;
     p->limit = NULL;
     p->linect = 0;
+    p->implicit_typing = 1;
     return p;
 }
 
@@ -179,6 +180,12 @@ syck_parser_handler( SyckParser *p, SyckNodeHandler hdlr )
 {
     ASSERT( p != NULL );
     p->handler = hdlr;
+}
+
+void
+syck_parser_implicit_typing( SyckParser *p, int flag )
+{
+    p->implicit_typing = ( flag == 0 ? 0 : 1 );
 }
 
 void
