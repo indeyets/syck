@@ -104,7 +104,7 @@ struct _syck_node {
 //
 // Parser definitions
 //
-typedef SYMID (*SyckNodeHandler)(SyckNode *);
+typedef SYMID (*SyckNodeHandler)(SyckParser *, SyckNode *);
 typedef int (*SyckIoFileRead)(char *, SyckIoFile *, int); 
 typedef int (*SyckIoStrRead)(char *, SyckIoStr *, int);
 
@@ -132,6 +132,8 @@ struct _syck_parser {
     } io;
     // Symbol table
     st_table *anchors;
+    // Optional symbol table for SYMIDs
+    st_table *syms;
 };
 
 //
@@ -141,6 +143,8 @@ SYMID syck_hdlr_add_node( SyckParser *, SyckNode * );
 SyckNode *syck_hdlr_add_anchor( SyckParser *, const char *, SyckNode * );
 SyckNode *syck_hdlr_add_alias( SyckParser *, const char * );
 SyckNode *syck_add_transfer( char *, SyckNode * );
+int syck_add_sym( SyckParser *, char * );
+int syck_lookup_sym( SyckParser *, SYMID, char ** );
 int syck_try_implicit( SyckNode * );
 void syck_fold_format( char *, SyckNode * );
 
@@ -151,6 +155,7 @@ char *syck_strndup( char *, long );
 int syck_io_file_read( char *, SyckIoFile *, int );
 int syck_io_str_read( char *, SyckIoStr *, int );
 SyckParser *syck_new_parser();
+void syck_free_parser( SyckParser * );
 void syck_parser_handler( SyckParser *, SyckNodeHandler );
 void syck_parser_file( SyckParser *, FILE *, SyckIoFileRead );
 void syck_parser_str( SyckParser *, char *, long, SyckIoStrRead );

@@ -84,13 +84,40 @@ syck_new_parser()
 {
     SyckParser *p;
     p = S_ALLOC( SyckParser );
+    p->io_type = syck_io_str;
+    p->io.str = NULL;
+    p->syms = NULL;
     p->anchors = st_init_strtable();
     return p;
+}
+
+int
+syck_add_sym( SyckParser *p, char *data )
+{
+    SYMID id = 0;
+    if ( p->syms == NULL )
+    {
+        p->syms = st_init_numtable();
+    }
+    id = p->syms->num_entries;
+    st_insert( p->syms, id, data );
+    return id;
+}
+
+int
+syck_lookup_sym( SyckParser *p, SYMID id, char **data )
+{
+    if ( p->syms == NULL ) return 0;
+    return st_lookup( p->syms, id, data );
 }
 
 void
 syck_free_parser( SyckParser *p )
 {
+    if ( p->syms != NULL )
+    {
+        st_free_table( p->syms );
+    }
     st_free_table( p->anchors );
     free_any_io( p );
     free( p );

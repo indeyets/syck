@@ -15,7 +15,7 @@
 // Test parsing tokens of a simple string.
 //
 SYMID
-SyckParseStringHandler( SyckNode *n )
+SyckParseStringHandler( SyckParser *p, SyckNode *n )
 {
     printf( "NODE: %s\n", n->type_id );
     return 1112;

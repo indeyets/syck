@@ -10,7 +10,8 @@
 #include "syck.h"
 
 SYMID
-syck_parse_handler(n)
+syck_parse_handler(p, n)
+    SyckParser *p;
     SyckNode *n;
 {
     VALUE obj;
