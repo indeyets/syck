@@ -32,9 +32,15 @@ syck_free_node( SyckNode *n )
 {
     syck_free_members( n );
     if ( n->type_id != NULL )
+    {
         S_FREE( n->type_id );
+        n->type_id = NULL;
+    }
     if ( n->anchor != NULL )
+    {
         S_FREE( n->anchor );
+        n->anchor = NULL;
+    }
     S_FREE( n );
 }
 
@@ -173,8 +179,8 @@ void
 syck_map_empty( SyckNode *n )
 {
     struct SyckMap *m;
-    ASSERT( arr != NULL );
-    ASSERT( arr->data.list != NULL );
+    ASSERT( n != NULL );
+    ASSERT( n->data.list != NULL );
 
     S_FREE( n->data.pairs->keys );
     S_FREE( n->data.pairs->values );
@@ -298,8 +304,8 @@ void
 syck_seq_empty( SyckNode *n )
 {
     struct SyckSeq *s;
-    ASSERT( arr != NULL );
-    ASSERT( arr->data.list != NULL );
+    ASSERT( n != NULL );
+    ASSERT( n->data.list != NULL );
 
     S_FREE( n->data.list->items );
     s = n->data.list;

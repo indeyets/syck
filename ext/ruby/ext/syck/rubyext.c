@@ -55,7 +55,7 @@ typedef struct {
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_input, s_intern, s_yaml_new, s_yaml_initialize, s_to_yaml, s_write, s_set_resolver;
+static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_input, s_intern, s_yaml_new, s_yaml_initialize, s_node_export, s_to_yaml, s_write, s_set_resolver;
 static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_type_id_set, s_style, s_style_set, s_value, s_value_set;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
@@ -1264,7 +1264,7 @@ syck_node_mark( n )
         case syck_seq_kind:
             for ( i = 0; i < n->data.list->idx; i++ )
             {
-                rb_gc_mark( (VALUE)syck_seq_read( n, i ) );
+                rb_gc_mark( syck_seq_read( n, i ) );
             }
         break;
 
@@ -1279,6 +1279,41 @@ syck_node_mark( n )
 }
 
 /*
+ * Don't free Ruby data, Ruby will do that
+ */
+void
+rb_syck_free_node( SyckNode *n )
+{
+    switch ( n->kind  )
+    {
+        case syck_str_kind:
+            S_FREE( n->data.str );
+        break;
+
+        case syck_seq_kind:
+            if ( n->data.list != NULL )
+            {
+                S_FREE( n->data.list->items );
+                S_FREE( n->data.list );
+                n->data.list = NULL;
+            }
+        break;
+
+        case syck_map_kind:
+            if ( n->data.pairs != NULL )
+            {
+                S_FREE( n->data.pairs->keys );
+                S_FREE( n->data.pairs->values );
+                S_FREE( n->data.pairs );
+                n->data.pairs = NULL;
+            }
+        break;
+    }
+
+    S_FREE( n );
+}
+
+/*
  * YAML::Syck::Scalar.allocate
  */
 VALUE
@@ -1288,7 +1323,7 @@ syck_scalar_alloc( class )
     SyckNode *node;
     VALUE obj;
     node = syck_alloc_str();
-    obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
+    obj = Data_Wrap_Struct( class, syck_node_mark, rb_syck_free_node, node );
     node->id = obj;
     return obj;
 }
@@ -1356,11 +1391,10 @@ syck_scalar_value_set( self, val )
     SyckNode *node;
 	Data_Get_Struct( self, SyckNode, node );
 
-    val = rb_check_string_type( val );
-    if ( !NIL_P( val ) ) {
-        StringValue( val );
-        syck_replace_str2( node, RSTRING(val)->ptr, RSTRING(val)->len, scalar_none );
-    }
+    StringValue( val );
+    node->data.str->ptr = RSTRING(val)->ptr;
+    node->data.str->len = RSTRING(val)->len;
+    node->data.str->style = scalar_none;
 
     rb_ivar_set( self, s_value, val );
     return val;
@@ -1376,7 +1410,7 @@ syck_seq_alloc( class )
     SyckNode *node;
     VALUE obj;
     node = syck_alloc_seq();
-    obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
+    obj = Data_Wrap_Struct( class, syck_node_mark, rb_syck_free_node, node );
     node->id = obj;
     return obj;
 }
@@ -1429,8 +1463,12 @@ syck_seq_add_m( self, val )
     VALUE self, val;
 {
     SyckNode *node;
+    VALUE emitter = rb_ivar_get( self, s_emitter );
 	Data_Get_Struct( self, SyckNode, node );
 
+    if ( rb_respond_to( emitter, s_node_export ) ) {
+        val = rb_funcall( emitter, s_node_export, 1, val );
+    }
     syck_seq_add( node, val );
     rb_ary_push( rb_ivar_get( self, s_value ), val );
 
@@ -1447,7 +1485,7 @@ syck_map_alloc( class )
     SyckNode *node;
     VALUE obj;
     node = syck_alloc_map();
-    obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
+    obj = Data_Wrap_Struct( class, syck_node_mark, rb_syck_free_node, node );
     node->id = obj;
     return obj;
 }
@@ -1526,8 +1564,13 @@ syck_map_add_m( self, key, val )
     VALUE self, key, val;
 {
     SyckNode *node;
+    VALUE emitter = rb_ivar_get( self, s_emitter );
 	Data_Get_Struct( self, SyckNode, node );
 
+    if ( rb_respond_to( emitter, s_node_export ) ) {
+        key = rb_funcall( emitter, s_node_export, 1, key );
+        val = rb_funcall( emitter, s_node_export, 1, val );
+    }
     syck_map_add( node, key, val );
     rb_hash_aset( rb_ivar_get( self, s_value ), key, val );
 
@@ -1548,7 +1591,7 @@ syck_node_init_copy( copy, orig )
         return copy;
 
     if ( TYPE( orig ) != T_DATA ||
-         RDATA( orig )->dfree != ( RUBY_DATA_FUNC )syck_free_node )
+         RDATA( orig )->dfree != ( RUBY_DATA_FUNC )rb_syck_free_node )
     {
         rb_raise( rb_eTypeError, "wrong argument type" );
     }
@@ -1706,6 +1749,7 @@ syck_out_mark( emitter, node )
     struct emitter_xtra *bonus;
     Data_Get_Struct(emitter, SyckEmitter, emitterPtr);
     bonus = (struct emitter_xtra *)emitterPtr->bonus;
+    rb_ivar_set( node, s_emitter, emitter );
     /* syck_emitter_mark_node( emitterPtr, (st_data_t)node ); */
     if ( !NIL_P( bonus->oid ) ) {
         rb_hash_aset( bonus->data, bonus->oid, node );
@@ -1847,6 +1891,16 @@ syck_emitter_emit( argc, argv, self )
 }
 
 /*
+ * YAML::Syck::Emitter#node_export
+ */
+VALUE
+syck_emitter_node_export( self, node )
+    VALUE self, node;
+{
+    return rb_funcall( node, s_to_yaml, 1, self );
+}
+
+/*
  * YAML::Syck::Emitter#set_resolver
  */
 VALUE
@@ -1948,6 +2002,7 @@ Init_syck()
     s_emitter = rb_intern( "emitter" );
     s_level = rb_intern( "level" );
     s_set_resolver = rb_intern( "set_resolver" );
+    s_node_export = rb_intern( "node_export" );
     s_to_yaml = rb_intern( "to_yaml" );
     s_yaml_new = rb_intern("yaml_new");
     s_yaml_initialize = rb_intern("yaml_initialize");
@@ -2034,7 +2089,7 @@ Init_syck()
     cScalar = rb_define_class_under( rb_syck, "Scalar", cNode );
     rb_define_alloc_func( cScalar, syck_scalar_alloc );
     rb_define_attr( cNode, "value", 1, 0 );
-    rb_define_method( cScalar, "initialize", syck_scalar_initialize, 2 );
+    rb_define_method( cScalar, "initialize", syck_scalar_initialize, 3 );
     rb_define_method( cScalar, "value=", syck_scalar_value_set, 1 );
     rb_define_method( cScalar, "style=", syck_scalar_style_set, 1 );
     cSeq = rb_define_class_under( rb_syck, "Seq", cNode );
@@ -2104,5 +2159,6 @@ Init_syck()
     rb_define_method( cEmitter, "reset", syck_emitter_reset, 1 );
     rb_define_method( cEmitter, "emit", syck_emitter_emit, -1 );
     rb_define_method( cEmitter, "set_resolver", syck_emitter_set_resolver, 1);
+    rb_define_method( cEmitter, "node_export", syck_emitter_node_export, 1);
 }
 
