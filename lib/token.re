@@ -590,10 +590,27 @@ ScalarBlock:
         int nlDoWhat = 0;
         int forceIndent = -1;
         char *yyt = YYTOKEN;
+        SyckLevel *lvl = CURRENT_LEVEL();
+        int parentIndent = lvl->spaces;
+
         switch ( *yyt )
         {
             case '|': blockType = BLOCK_LIT; break;
             case '>': blockType = BLOCK_FOLD; break;
+        }
+
+        //
+        // SORTOFAHACK!! We're just checking to be sure that our indentation isn't 
+        // at the exact level of the block.  We need to back it of to the previous level
+        // if so.
+        //
+        if ( parentIndent == YYTOKEN - YYLINEPTR )
+        {
+            SyckLevel *lvl2;
+            parser->lvl_idx--;
+            lvl2 = CURRENT_LEVEL();
+            parentIndent = lvl2->spaces;
+            parser->lvl_idx++;
         }
 
         while ( ++yyt <= YYCURSOR )
@@ -608,7 +625,7 @@ ScalarBlock:
             }
             else if ( isdigit( *yyt ) )
             {
-                forceIndent = strtol( yyt, NULL, 10 ) + ( YYTOKEN - YYLINEPTR );
+                forceIndent = strtol( yyt, NULL, 10 ) + parentIndent;
             }
         }
 
@@ -620,20 +637,30 @@ ScalarBlock2:
 /*!re2c
 
 INDENT              {   int indt_len;
-                        SyckLevel *lvl;
                         GOBBLE_UP_INDENT( indt_len, YYTOKTMP );
                         lvl = CURRENT_LEVEL();
 
-                        if ( lvl->status != syck_lvl_block )
+                        if ( indt_len > parentIndent && lvl->status != syck_lvl_block )
                         {
                             ADD_LEVEL( forceIndent > 0 ? forceIndent : indt_len, syck_lvl_block );
+                        }
+
+                        lvl = CURRENT_LEVEL();
+                        if ( lvl->status != syck_lvl_block )
+                        {
+                            yylval->nodeData = syck_new_str2( YYTOKEN, 0 );  
+                            YYCURSOR = YYTOKTMP;
+                            return BLOCK;
                         }
                         else if ( indt_len < lvl->spaces )
                         {
                             YYCURSOR--;
                             yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );  
                             syck_fold_format( yylval->nodeData->data.str, blockType, lvl->spaces, nlDoWhat );
-                            POP_LEVEL();
+                            if ( lvl->status == syck_lvl_block )
+                            {
+                                POP_LEVEL();
+                            }
                             YYCURSOR = YYTOKTMP;
                             return BLOCK;
                         }
@@ -641,7 +668,7 @@ INDENT              {   int indt_len;
                     }
 
 
-NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
+NULL                {   lvl = CURRENT_LEVEL();
                         YYCURSOR--;
                         yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );  
                         syck_fold_format( yylval->nodeData->data.str, blockType, lvl->spaces, nlDoWhat );
@@ -649,7 +676,7 @@ NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
                         return BLOCK; 
                     }
 
-"#"                 {   SyckLevel *lvl = CURRENT_LEVEL();
+"#"                 {   lvl = CURRENT_LEVEL();
                         if ( lvl->status != syck_lvl_block )
                         {
                             eat_comments( parser );

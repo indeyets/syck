@@ -217,6 +217,15 @@ syck_fold_format( struct SyckStr *n, int blockType, int indt_len, int nlDisp )
 
         n->len = fc - n->ptr + 1;
     }
+    else
+    {
+        //
+        // Force last line break which I gave back
+        // to the tokenizer.
+        //
+        n->len++;
+        n->ptr[n->len] = '\n';
+    }
     n->ptr[ n->len ] = '\0';
 }
 

@@ -452,6 +452,67 @@ is equal to: "this contains four  spaces"
 """
         )
 
+    def testSpecLiteralBlocks(self):
+        self.parseOnly( {"both are equal to":"  This has no newline.", "is equal to":"The \\ ' \" characters may be\nfreely used. Leading white\n   space is significant.\n\nLine breaks are significant.\nThus this value contains one\nempty line and ends with a\nsingle line break, but does\nnot start with one.\n", "also written as":"  This has no newline.", "indented and chomped":"  This has no newline.", "empty":"", "literal":"The \\ ' \" characters may be\nfreely used. Leading white\n   space is significant.\n\nLine breaks are significant.\nThus this value contains one\nempty line and ends with a\nsingle line break, but does\nnot start with one.\n"}, """
+empty: |
+
+literal: |
+ The \\ ' " characters may be
+ freely used. Leading white
+    space is significant.
+
+ Line breaks are significant.
+ Thus this value contains one
+ empty line and ends with a
+ single line break, but does
+ not start with one.
+
+is equal to: "The \\ \' \\" characters may \\
+ be\\nfreely used. Leading white\\n   space \\
+ is significant.\\n\\nLine breaks are \\
+ significant.\\nThus this value contains \\
+ one\\nempty line and ends with a\\nsingle \\
+ line break, but does\\nnot start with one.\\n"
+
+# Comments may follow a nested
+# scalar value. They must be
+# less indented.
+
+# Modifiers may be combined in any order.
+indented and chomped: |2-
+    This has no newline.
+
+also written as: |-2
+    This has no newline.
+
+both are equal to: "  This has no newline."
+"""
+        )
+        str1 = "This has one newline.\n"
+        str2 = "This has no newline."
+        str3 = "This has two newlines.\n\n"
+        self.parseOnly( 
+            { 'clipped': str1, 'same as "clipped" above': str1, 
+              'stripped': str2, 'same as "stripped" above': str2, 
+              'kept': str3, 'same as "kept" above': str3 }, """
+clipped: |
+    This has one newline.
+
+same as "clipped" above: "This has one newline.\\n"
+
+stripped: |-
+    This has no newline.
+
+same as "stripped" above: "This has no newline."
+
+kept: |+
+    This has two newlines.
+
+same as "kept" above: "This has two newlines.\\n\\n"
+
+"""
+        )
+
 class SyckTestSuite(unittest.TestSuite):
     def __init__(self):
         unittest.TestSuite.__init__(self,map(BasicTests,     
@@ -476,7 +537,8 @@ class SyckTestSuite(unittest.TestSuite):
              "testSpecBuiltinSeq",
              "testSpecBuiltinMap",
              "testSpecSingleQuote",
-             "testSpecDoubleQuote"
+             "testSpecDoubleQuote",
+             "testSpecLiteralBlocks"
              )))
 
 if __name__ == '__main__':
