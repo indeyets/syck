@@ -26,7 +26,7 @@
     char *name;
 };
 
-%token <name>       YAML_ANCHOR YAML_ALIAS YAML_TRANSFER YAML_ITRANSFER
+%token <name>       YAML_ANCHOR YAML_ALIAS YAML_TRANSFER YAML_TAGURI YAML_ITRANSFER
 %token <nodeData>   YAML_WORD YAML_PLAIN YAML_BLOCK
 %token              YAML_DOCSEP YAML_IOPEN YAML_INDENT YAML_IEND
 
@@ -135,6 +135,11 @@ word_rep	: YAML_TRANSFER word_rep
                syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
                $$ = $2;
             } 
+            | YAML_TAGURI word_rep
+            { 
+               syck_add_transfer( $1, $2, 0 );
+               $$ = $2;
+            } 
             | YAML_ITRANSFER word_rep						
             { 
                if ( ((SyckParser *)parser)->implicit_typing == 1 )
@@ -180,6 +185,11 @@ struct_rep	: YAML_TRANSFER struct_rep
                 syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
                 $$ = $2;
             }
+            | YAML_TAGURI struct_rep
+            {
+                syck_add_transfer( $1, $2, 0 );
+                $$ = $2;
+            }
 			| YAML_BLOCK
 			| implicit_seq
 			| inline_seq
@@ -211,6 +221,16 @@ top_imp_seq     : in_implicit_seq
                 | YAML_TRANSFER top_imp_seq
                 { 
                     syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
+                    $$ = $2;
+                }
+                | YAML_TAGURI indent_sep top_imp_seq
+                { 
+                    syck_add_transfer( $1, $3, 0 );
+                    $$ = $3;
+                }
+                | YAML_TAGURI top_imp_seq
+                { 
+                    syck_add_transfer( $1, $2, 0 );
                     $$ = $2;
                 }
                 | YAML_ANCHOR indent_sep top_imp_seq
@@ -285,6 +305,16 @@ top_imp_map     : YAML_TRANSFER indent_sep in_implicit_map
                 | YAML_TRANSFER top_imp_map
                 { 
                     syck_add_transfer( $1, $2, ((SyckParser *)parser)->taguri_expansion );
+                    $$ = $2;
+                }
+                | YAML_TAGURI indent_sep in_implicit_map
+                { 
+                    syck_add_transfer( $1, $3, 0 );
+                    $$ = $3;
+                }
+                | YAML_TAGURI top_imp_map
+                { 
+                    syck_add_transfer( $1, $2, 0 );
                     $$ = $2;
                 }
                 | YAML_ANCHOR indent_sep in_implicit_map

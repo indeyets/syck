@@ -179,39 +179,46 @@ EOY
 
 	def test_spec_sequence_of_sequences
 		# Simple sequence with inline sequences
-		assert_parse_only(
-		  [ 
+        seq = [ 
 		  	[ 'name', 'hr', 'avg' ],
 			[ 'Mark McGwire', 65, 0.278 ],
 			[ 'Sammy Sosa', 63, 0.288 ]
-		  ], <<EOY
+		]
+		assert_parse_only(
+		  seq, <<EOY
 - [ name         , hr , avg   ]
 - [ Mark McGwire , 65 , 0.278 ]
 - [ Sammy Sosa   , 63 , 0.288 ]
 EOY
 		)
+        assert_bytecode( seq, "D\nQ\nQ\nSname\nShr\nSavg\nE\nQ\nSMark McGwire\nS65\nS0.278\nE\n" +
+            "Q\nSSammy Sosa\nS63\nS0.288\nE\nE\n" )
 	end
 
 	def test_spec_mapping_of_mappings
 		# Simple map with inline maps
-		assert_parse_only(
-		  { 'Mark McGwire' =>
+        map = { 'Mark McGwire' =>
 		    { 'hr' => 65, 'avg' => 0.278 },
 			'Sammy Sosa' =>
 		    { 'hr' => 63, 'avg' => 0.288 }
-		  }, <<EOY
+		}
+		assert_parse_only(
+		  map, <<EOY
 Mark McGwire: {hr: 65, avg: 0.278}
 Sammy Sosa:   {hr: 63,
                avg: 0.288}
 EOY
 		)
+        assert_bytecode( map, "D\nM\nSMark McGwire\nM\nShr\nS65\nSavg\nS0.278\nE\n" +
+            "SSammy Sosa\nM\nShr\nS63\nSavg\nS0.288\nE\nE\n" )
 	end
 
 	def test_spec_nested_comments
 		# Map and sequences with comments
+        nest = { 'hr' => [ 'Mark McGwire', 'Sammy Sosa' ],
+		    'rbi' => [ 'Sammy Sosa', 'Ken Griffey' ] }
 		assert_parse_only(
-		  { 'hr' => [ 'Mark McGwire', 'Sammy Sosa' ],
-		    'rbi' => [ 'Sammy Sosa', 'Ken Griffey' ] }, <<EOY
+		  nest, <<EOY
 hr: # 1998 hr ranking
   - Mark McGwire
   - Sammy Sosa
@@ -221,15 +228,17 @@ rbi:
   - Ken Griffey
 EOY
 		)
+        assert_bytecode( nest, "D\nM\nShr\nc 1998 hr ranking\nQ\nSMark McGwire\nSSammy Sosa\nE\n" + 
+            "Srbi\nc 1998 rbi ranking\nQ\nSSammy Sosa\nSKen Griffey\nE\nE\n" )
 	end
 
 	def test_spec_anchors_and_aliases
 		# Anchors and aliases
-		assert_parse_only(
-			{ 'hr' =>
+        anc1 = { 'hr' =>
 			  [ 'Mark McGwire', 'Sammy Sosa' ],
 			  'rbi' =>
-			  [ 'Sammy Sosa', 'Ken Griffey' ] }, <<EOY
+			  [ 'Sammy Sosa', 'Ken Griffey' ] }
+		assert_parse_only( anc1, <<EOY )
 hr:
    - Mark McGwire
    # Name "Sammy Sosa" scalar SS
@@ -239,10 +248,13 @@ rbi:
    - *SS
    - Ken Griffey
 EOY
-	 	)
 
+        assert_bytecode( anc1, "D\nM\nShr\nQ\nSMark McGwire\nc Name \"Sammy Sosa\" scalar SS\n" +
+            "ASS\nSSammy Sosa\nE\nSrbi\nc So it can be referenced later\nQ\nRSS\nSKen Griffey\nE\nE\n" )
+
+        anc2 = [{"arrival"=>"EDI", "departure"=>"LAX", "fareref"=>"DOGMA", "currency"=>"GBP"}, {"arrival"=>"MEL", "departure"=>"SYD", "fareref"=>"MADF", "currency"=>"AUD"}, {"arrival"=>"MCO", "departure"=>"JFK", "fareref"=>"DFSF", "currency"=>"USD"}]
         assert_to_yaml(
-            [{"arrival"=>"EDI", "departure"=>"LAX", "fareref"=>"DOGMA", "currency"=>"GBP"}, {"arrival"=>"MEL", "departure"=>"SYD", "fareref"=>"MADF", "currency"=>"AUD"}, {"arrival"=>"MCO", "departure"=>"JFK", "fareref"=>"DFSF", "currency"=>"USD"}], <<EOY
+            anc2, <<EOY
   -   
     &F fareref: DOGMA
     &C currency: GBP
@@ -253,8 +265,15 @@ EOY
 EOY
         )
 
+        assert_bytecode( anc2, "D\nQ\nM\nAF\nSfareref\nSDOGMA\nAC\nScurrency\nSGBP\n" +
+            "AD\nSdeparture\nSLAX\nAA\nSarrival\nSEDI\nE\n" +
+            "M\nRF\nSMADF\nRC\nSAUD\nRD\nSSYD\nRA\nSMEL\nE\n" + 
+            "M\nRF\nSDFSF\nRC\nSUSD\nRD\nSJFK\nRA\nSMCO\nE\n" + 
+            "E\n" )
+
+        anc3 = {"ALIASES"=>["fareref", "currency", "departure", "arrival"], "FARES"=>[{"arrival"=>"EDI", "departure"=>"LAX", "fareref"=>"DOGMA", "currency"=>"GBP"}, {"arrival"=>"MEL", "departure"=>"SYD", "fareref"=>"MADF", "currency"=>"AUD"}, {"arrival"=>"MCO", "departure"=>"JFK", "fareref"=>"DFSF", "currency"=>"USD"}]}
         assert_to_yaml(
-            {"ALIASES"=>["fareref", "currency", "departure", "arrival"], "FARES"=>[{"arrival"=>"EDI", "departure"=>"LAX", "fareref"=>"DOGMA", "currency"=>"GBP"}, {"arrival"=>"MEL", "departure"=>"SYD", "fareref"=>"MADF", "currency"=>"AUD"}, {"arrival"=>"MCO", "departure"=>"JFK", "fareref"=>"DFSF", "currency"=>"USD"}]}, <<EOY
+            anc3, <<EOY
 ---
 ALIASES: [&f fareref, &c currency, &d departure, &a arrival]
 FARES:
@@ -275,15 +294,20 @@ FARES:
 
 EOY
         )
-
+        assert_bytecode( anc3, "D\nM\nSALIASES\nQ\nAf\nSfareref\nAc\nScurrency\nAd\nSdeparture\nAa\nSarrival\nE\n" +
+            "SFARES\nQ\nM\nRf\nSDOGMA\nRc\nSGBP\nRd\nSLAX\nRa\nSEDI\nE\n" +
+            "M\nRf\nSMADF\nRc\nSAUD\nRd\nSSYD\nRa\nSMEL\nE\n" +
+            "M\nRf\nSDFSF\nRc\nSUSD\nRd\nSJFK\nRa\nSMCO\nE\n" +
+            "E\nE\n" )
 	end
 
 	def test_spec_mapping_between_sequences
 		# Complex key #1
 		dj = Date.new( 2001, 7, 23 )
+        complex = { [ 'Detroit Tigers', 'Chicago Cubs' ] => [ Date.new( 2001, 7, 23 ) ],
+			  [ 'New York Yankees', 'Atlanta Braves' ] => [ Date.new( 2001, 7, 2 ), Date.new( 2001, 8, 12 ), Date.new( 2001, 8, 14 ) ] }
 		assert_parse_only(
-			{ [ 'Detroit Tigers', 'Chicago Cubs' ] => [ Date.new( 2001, 7, 23 ) ],
-			  [ 'New York Yankees', 'Atlanta Braves' ] => [ Date.new( 2001, 7, 2 ), Date.new( 2001, 8, 12 ), Date.new( 2001, 8, 14 ) ] }, <<EOY
+			complex, <<EOY
 ? # PLAY SCHEDULE
   - Detroit Tigers
   - Chicago Cubs
@@ -323,12 +347,13 @@ EOY
 
 	def test_spec_sequence_key_shortcut
 		# Shortcut sequence map
-		assert_parse_only(
-		  { 'invoice' => 34843, 'date' => Date.new( 2001, 1, 23 ),
+        seq = { 'invoice' => 34843, 'date' => Date.new( 2001, 1, 23 ),
 		    'bill-to' => 'Chris Dumars', 'product' =>
 			[ { 'item' => 'Super Hoop', 'quantity' => 1 },
 			  { 'item' => 'Basketball', 'quantity' => 4 },
-			  { 'item' => 'Big Shoes', 'quantity' => 1 } ] }, <<EOY
+			  { 'item' => 'Big Shoes', 'quantity' => 1 } ] }
+		assert_parse_only(
+		  seq, <<EOY
 invoice: 34843
 date   : 2001-01-23
 bill-to: Chris Dumars
@@ -341,30 +366,37 @@ product:
     quantity: 1
 EOY
 		)
+
+        # assert_bytecode( seq, "D\nM\nSinvoice\nS34843\nSdate\nS2001-01-03\nSbill-to\nSChris Dumars\nSproduct\n" + 
+        #     "Q\nM\nSitem\nSSuper Hoop\nSquantity\nS1\nE\nM\nSitem\nSBasketball\nSquantity\nS4\nE\n" +
+        #     "M\nSitem\nSBig Shoes\nSquantity\nS1\nE\nE\nE\n" )
 	end
 
     def test_spec_sequence_in_sequence_shortcut
         # Seq-in-seq
-        assert_parse_only( [ [ [ 'one', 'two', 'three' ] ] ], <<EOY )
+        seq = [ [ [ 'one', 'two', 'three' ] ] ]
+        assert_parse_only( seq, <<EOY )
 - - - one
     - two
     - three
 EOY
+
+        assert_bytecode( seq, "D\nQ\nQ\nQ\nSone\nStwo\nSthree\nE\nE\nE\n" )
     end
 
     def test_spec_sequence_shortcuts
         # Sequence shortcuts combined
-        assert_parse_only( 
-[
-  [ 
-    [ [ 'one' ] ],
-    [ 'two', 'three' ],
-    { 'four' => nil },
-    [ { 'five' => [ 'six' ] } ],
-    [ 'seven' ]
-  ],
-  [ 'eight', 'nine' ]
-], <<EOY )
+        seq = [
+          [ 
+            [ [ 'one' ] ],
+            [ 'two', 'three' ],
+            { 'four' => nil },
+            [ { 'five' => [ 'six' ] } ],
+            [ 'seven' ]
+          ],
+          [ 'eight', 'nine' ]
+        ]
+        assert_parse_only( seq, <<EOY )
 - - - - one
   - - two
     - three
@@ -375,27 +407,36 @@ EOY
 - - eight
   - nine
 EOY
+
+        assert_bytecode( seq, "D\nQ\nQ\nQ\nQ\nSone\nE\nE\nQ\nStwo\nSthree\nE\n" +
+            "M\nSfour\nS~\nE\nQ\nM\nSfive\nQ\nSsix\nE\nE\nE\n" +
+            "Q\nSseven\nE\nE\nQ\nSeight\nSnine\nE\nE\n" )
     end
 
 	def test_spec_single_literal
 		# Literal scalar block
-		assert_parse_only( [ "\\/|\\/|\n/ |  |_\n" ], <<EOY )
+        lit = [ "\\/|\\/|\n/ |  |_\n" ]
+		assert_parse_only( lit, <<EOY )
 - |
     \\/|\\/|
     / |  |_
 EOY
+        assert_bytecode( lit, "D\nQ\nS\\/|\\/|\nN\nC/ |  |_\nN\nE\n" )
 	end
 
 	def test_spec_single_folded
 		# Folded scalar block
+        fold = [ "Mark McGwire's year was crippled by a knee injury.\n" ]
 		assert_parse_only(
-			[ "Mark McGwire's year was crippled by a knee injury.\n" ], <<EOY
+			fold, <<EOY
 - >
     Mark McGwire's
     year was crippled
     by a knee injury.
 EOY
 		)
+
+        assert_bytecode( fold, "D\nQ\nSMark McGwire's year was crippled by a knee injury.\nN\nE\n" )
 	end
 
 	def test_spec_preserve_indent

@@ -106,11 +106,6 @@ char *get_inline( SyckParser *parser );
  */
 #define CAT(s, c, i, l) \
         { \
-            if ( s == NULL ) \
-            { \
-                s = S_ALLOC_N( char, QUOTELEN ); \
-                c = QUOTELEN; \
-            } \
             if ( i + 1 >= c ) \
             { \
                 c += QUOTELEN; \
@@ -159,8 +154,11 @@ SCA = "S" ;
 SCC = "C" ;
 NNL = "N" [0-9]*;
 NUL = "Z" ;
-ALI = "A" ;
+ANC = "A" ;
 REF = "R" ;
+TAG = "T" ;
+
+COM = "c" ;
 
 */
 
@@ -208,6 +206,11 @@ Document:
 
 /*!re2c
 
+DOC | PAU   {   ENSURE_YAML_IEND(lvl, -1);
+                YYPOS(0);
+                return 0;
+            }
+
 MAP     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_map); 
             return YAML_IOPEN;
         }
@@ -241,17 +244,24 @@ SCA     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_str);
             goto Scalar;
         }
 
-ALI     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_doc);
+ANC     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_open);
             sycklval->name = get_inline( parser );
+            syck_hdlr_remove_anchor( parser, sycklval->name );
+            return YAML_ANCHOR;
+        }
+
+REF     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_str);
+            sycklval->name = get_inline( parser );
+            POP_LEVEL();
+            if ( *( YYCURSOR - 1 ) == '\n' ) YYCURSOR--;
             return YAML_ALIAS;
         }
 
-REF     {   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_doc);
-            sycklval->name = get_inline( parser );
-            syck_hdlr_remove_anchor( parser, sycklval->name );
-            POP_LEVEL();
-            return YAML_ANCHOR;
+TAG     {   sycklval->name = get_inline( parser );
+            return YAML_TAGURI;
         }
+
+COM     {   goto Comment; }
 
 LF      {   if ( lvl->status == syck_lvl_seq )
             {
@@ -290,11 +300,25 @@ ANY        {   YYCURSOR = YYTOKTMP;
 
     }
 
+Comment:
+    {
+        YYTOKTMP = YYCURSOR;
+
+/*!re2c
+
+LF          {   goto Document; }
+
+ANY         {   goto Comment; }
+
+*/
+
+    }
+
 Scalar:
     {
     int idx = 0;
-    int cap = 0;
-    char *str = NULL;
+    int cap = 100;
+    char *str = S_ALLOC_N( char, cap );
     char *tok;
 
 Scalar2:
@@ -304,7 +328,20 @@ Scalar2:
 
 LF SCC  {   goto Scalar2; }
 
-LF NNL  {   CAT(str, cap, idx, '\n');
+LF NNL  {   if ( tok + 2 < YYCURSOR )
+            {
+                char *count = tok + 2;
+                int total = strtod( count, NULL );
+                int i;
+                for ( i = 0; i < total; i++ )
+                {
+                    CAT(str, cap, idx, '\n');
+                }
+            }
+            else
+            {
+                CAT(str, cap, idx, '\n');
+            }
             goto Scalar2;
         }
 
@@ -347,8 +384,8 @@ char *
 get_inline( SyckParser *parser )
 {
     int idx = 0;
-    int cap = 0;
-    char *str = NULL;
+    int cap = 100;
+    char *str = S_ALLOC_N( char, cap );
     char *tok;
 
 Inline:
