@@ -13,11 +13,11 @@ libsyck_a_SOURCES = \
             syck.c \
             syck_st.c \
             gram.y \
-            token.c
+            token.re
 
 # libsyck_a_LIBADD = $(LEXLIB)
 
 REC = re2c
-SUFFIXES = .re
-$(srcdir)/token.c: $(srcdir)/token.re
+.re.c:
 	$(REC) -b $< > $@.new && mv $@.new $@
+
