@@ -48,6 +48,7 @@ doc     : struct_rep
         {
            ((SyckParser *)parser)->root = syck_hdlr_add_node( (SyckParser *)parser, $2 );
         }
+        ;
 
 atom	: word_rep
         | struct_rep
@@ -72,6 +73,7 @@ atom	: word_rep
         {
            $$ = $2;
         }
+        ;
 
 atom_or_empty   : atom
                 |
@@ -80,6 +82,7 @@ atom_or_empty   : atom
                    n->type_id = "null";
                    $$ = n;
                 }
+                ;
 
 //
 // Words are broken out to distinguish them
@@ -108,6 +111,7 @@ word_rep	: TRANSFER word_rep
             {
                 $$ = $1;
             }
+            ;
 
 //
 // Any of these structures can be used as
@@ -129,6 +133,7 @@ struct_rep	: TRANSFER struct_rep
 			| inline_seq
 			| implicit_map
 			| inline_map
+            ;
 
 //
 // Implicit sequence 
@@ -137,11 +142,13 @@ implicit_seq	: IOPEN in_implicit_seq	IEND
                 { 
                     $$ = $2;
                 }
+                ;
 
 basic_seq       : '-' atom_or_empty             
                 { 
                     $$ = syck_hdlr_add_node( (SyckParser *)parser, $2 );
                 }
+                ;
 
 in_implicit_seq : basic_seq
                 {
@@ -152,6 +159,7 @@ in_implicit_seq : basic_seq
                     syck_seq_add( $1, $3 );
                     $$ = $1;
 				}
+                ;
 
 //
 // Inline sequences
@@ -164,6 +172,7 @@ inline_seq		: '[' in_inline_seq ']'
                 { 
                     $$ = syck_alloc_seq();
                 }
+                ;
 
 in_inline_seq   : atom
                 {
@@ -174,6 +183,7 @@ in_inline_seq   : atom
                     syck_seq_add( $1, syck_hdlr_add_node( (SyckParser *)parser, $3 ) );
                     $$ = $1;
 				}
+                ;
 
 //
 // Implicit maps
@@ -182,6 +192,7 @@ implicit_map	: IOPEN in_implicit_map IEND
                 { 
                     $$ = $2;
                 }
+                ;
 
 basic_mapping	: word_rep ':' atom_or_empty
                 {
@@ -189,6 +200,7 @@ basic_mapping	: word_rep ':' atom_or_empty
                         syck_hdlr_add_node( (SyckParser *)parser, $1 ), 
                         syck_hdlr_add_node( (SyckParser *)parser, $3 ) );
                 }
+                ;
 
 /* Default needs to be added to SyckSeq i think...
 				| '=' ':' atom
@@ -204,6 +216,7 @@ complex_mapping : basic_mapping
                         syck_hdlr_add_node( (SyckParser *)parser, $2 ), 
                         syck_hdlr_add_node( (SyckParser *)parser, $5 ) );
                 }
+                ;
 
 in_implicit_map : complex_mapping
 				{
@@ -214,6 +227,7 @@ in_implicit_map : complex_mapping
                     syck_map_update( $1, $3 );
                     $$ = $1;
                 }
+                ;
 
 //
 // Inline maps
@@ -224,6 +238,7 @@ basic_mapping2	: atom ':' atom_or_empty
                         syck_hdlr_add_node( (SyckParser *)parser, $1 ), 
                         syck_hdlr_add_node( (SyckParser *)parser, $3 ) );
                 }
+                ;
 
 inline_map		: '{' in_inline_map '}'
                 {
@@ -233,6 +248,7 @@ inline_map		: '{' in_inline_map '}'
                 {
                     $$ = syck_alloc_map();
                 }
+                ;
          
 in_inline_map	: basic_mapping2 
 				{
@@ -243,6 +259,7 @@ in_inline_map	: basic_mapping2
                     syck_map_update( $1, $3 );
                     $$ = $1;
 				}
+                ;
 
 %%
 
