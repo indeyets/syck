@@ -23,7 +23,9 @@ int yydebug;
 int
 syck_lex_read( char *buf, SyckParser *p, int max_size )
 {
-    int len = syck_parser_read(buf, syck_lex_parser, max_size); 
+    int len = syck_parser_readlen(p, max_size); 
+    memcpy( buf, p->buffer, len );
+    return len;
 }
 
 void

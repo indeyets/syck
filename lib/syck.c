@@ -13,6 +13,7 @@
 
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
+#define SYCK_BUFFERSIZE 16384
 
 //
 // Custom assert
@@ -39,14 +40,14 @@ syck_strndup( char *buf, long len )
 // Default IO functions
 //
 int
-syck_io_file_read( char *buf, SyckIoFile *file, int max_size )
+syck_io_file_read( char *buf, SyckIoFile *file, int max_size, int skip )
 {
     int len = 0;
     return len;
 }
 
 int
-syck_io_str_read( char *buf, SyckIoStr *str, int max_size )
+syck_io_str_read( char *buf, SyckIoStr *str, int max_size, int skip )
 {
     char *beg;
     int len = 0;
@@ -55,6 +56,9 @@ syck_io_str_read( char *buf, SyckIoStr *str, int max_size )
     beg = str->ptr;
     if ( max_size >= 0 )
     {
+        max_size -= skip;
+        if ( max_size < 0 ) max_size = 0;
+
         str->ptr += max_size;
         if ( str->ptr > str->end )
         {
@@ -71,8 +75,17 @@ syck_io_str_read( char *buf, SyckIoStr *str, int max_size )
     if ( beg < str->ptr )
     {
         len = str->ptr - beg;
-        memcpy( buf, beg, len );
+        memcpy( buf + skip, beg, len );
     }
+#ifdef REDEBUG
+    printf( "LEN: %d\n", len );
+#endif
+    len += skip;
+    buf[len] = '\0';
+#ifdef REDEBUG
+    printf( "POS: %d\n", len );
+    printf( "BUFFER: %s\n", buf );
+#endif
     return len;
 }
 
@@ -94,6 +107,11 @@ syck_new_parser()
     p->io.str = NULL;
     p->syms = NULL;
     p->anchors = st_init_strtable();
+    p->buffer = S_ALLOC_N( char, 16384 );
+    p->cursor = NULL;
+    p->token = NULL;
+    p->marker = NULL;
+    p->limit = NULL;
     return p;
 }
 
@@ -148,6 +166,7 @@ syck_free_parser( SyckParser *p )
     // Free all else
     //
     free( p->levels );
+    free( p->buffer );
     free_any_io( p );
     free( p );
 }
@@ -184,6 +203,7 @@ syck_parser_str( SyckParser *p, char *ptr, long len, SyckIoStrRead read )
     free_any_io( p );
     p->io_type = syck_io_str;
     p->io.str = S_ALLOC( SyckIoStr );
+    p->io.str->beg = ptr;
     p->io.str->ptr = ptr;
     p->io.str->end = ptr + len;
     if ( read != NULL )
@@ -260,31 +280,103 @@ free_any_io( SyckParser *p )
 }
 
 int
-syck_parser_readline( char *buf, SyckParser *p )
+syck_parser_readline( SyckParser *p )
 {
+    int len = 0;
+    int skip = 0;
     ASSERT( p != NULL );
     switch ( p->io_type )
     {
         case syck_io_str:
-        return (p->io.str->read)( buf, p->io.str, -1 );
+            skip = syck_move_tokens( p );
+            len = (p->io.str->read)( p->buffer, p->io.str, -1, skip );
+            break;
 
         case syck_io_file:
-        return (p->io.file->read)( buf, p->io.file, -1 );
+            skip = syck_move_tokens( p );
+            len = (p->io.file->read)( p->buffer, p->io.file, -1, skip );
+            break;
     }
+    p->cursor = p->buffer;
+    p->marker = p->buffer;
+    p->limit = p->buffer + len;
+    return len;
 }
 
 int
-syck_parser_read( char *buf, SyckParser *p, int len )
+syck_parser_read( SyckParser *p )
 {
+    int len = 0;
+    int skip = 0;
     ASSERT( p != NULL );
     switch ( p->io_type )
     {
         case syck_io_str:
-        return (p->io.str->read)( buf, p->io.str, len );
+            skip = syck_move_tokens( p );
+            len = (p->io.str->read)( p->buffer, p->io.str, SYCK_BUFFERSIZE - 1, skip );
+            break;
 
         case syck_io_file:
-        return (p->io.file->read)( buf, p->io.file, len );
+            skip = syck_move_tokens( p );
+            len = (p->io.file->read)( p->buffer, p->io.file, SYCK_BUFFERSIZE - 1, skip );
+            break;
     }
+    p->cursor = p->buffer;
+    p->marker = p->buffer;
+    p->limit = p->buffer + len;
+    return len;
+}
+
+int
+syck_parser_readlen( SyckParser *p, int max_size )
+{
+    int len = 0;
+    int skip = 0;
+    ASSERT( p != NULL );
+    switch ( p->io_type )
+    {
+        case syck_io_str:
+            skip = syck_move_tokens( p );
+            len = (p->io.str->read)( p->buffer, p->io.str, max_size, skip );
+            break;
+
+        case syck_io_file:
+            skip = syck_move_tokens( p );
+            len = (p->io.file->read)( p->buffer, p->io.file, max_size, skip );
+            break;
+    }
+    p->cursor = p->buffer;
+    p->marker = p->buffer;
+    p->limit = p->buffer + len;
+    return len;
+}
+
+int
+syck_move_tokens( SyckParser *p )
+{
+    int count, skip;
+    ASSERT( p->buffer != NULL );
+
+    if ( p->token == NULL )
+        return 0;
+
+    skip = p->limit - p->token;
+    if ( skip < 1 )
+        return 0;
+
+#ifdef REDEBUG
+    printf( "DIFF: %d\n", skip );
+#endif
+
+    if ( ( count = p->token - p->buffer ) )
+    {
+        memmove( p->buffer, p->token, skip );
+        p->token = p->buffer;
+        p->marker -= count;
+        p->cursor -= count;
+        p->limit -= count;
+    }
+    return skip;
 }
 
 SYMID
@@ -293,8 +385,6 @@ syck_parse( SyckParser *p )
     char *line;
 
     ASSERT( p != NULL );
-    syck_parser_init( p, 0 );
-    yyrestart();
     yyparse( p );
     return p->root;
 }

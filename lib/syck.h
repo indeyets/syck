@@ -112,8 +112,8 @@ struct _syck_node {
 // Parser definitions
 //
 typedef SYMID (*SyckNodeHandler)(SyckParser *, SyckNode *);
-typedef int (*SyckIoFileRead)(char *, SyckIoFile *, int); 
-typedef int (*SyckIoStrRead)(char *, SyckIoStr *, int);
+typedef int (*SyckIoFileRead)(char *, SyckIoFile *, int, int); 
+typedef int (*SyckIoStrRead)(char *, SyckIoStr *, int, int);
 
 enum syck_io_type {
     syck_io_str,
@@ -136,13 +136,15 @@ struct _syck_parser {
     SyckNodeHandler handler;
     // IO type
     enum syck_io_type io_type;
+    // Buffer pointers
+    char *buffer, *token, *cursor, *marker, *limit;
     union {
         struct _syck_file {
             FILE *ptr;
             SyckIoFileRead read;
         } *file;
         struct _syck_str {
-            char *ptr, *end;
+            char *beg, *ptr, *end;
             SyckIoStrRead read;
         } *str;
     } io;
@@ -176,8 +178,8 @@ void syck_fold_format( char *, SyckNode * );
 // API prototypes
 //
 char *syck_strndup( char *, long );
-int syck_io_file_read( char *, SyckIoFile *, int );
-int syck_io_str_read( char *, SyckIoStr *, int );
+int syck_io_file_read( char *, SyckIoFile *, int, int );
+int syck_io_str_read( char *, SyckIoStr *, int, int );
 SyckParser *syck_new_parser();
 void syck_free_parser( SyckParser * );
 void syck_parser_handler( SyckParser *, SyckNodeHandler );
@@ -187,8 +189,9 @@ void syck_parser_str_auto( SyckParser *, char *, SyckIoStrRead );
 SyckLevel *syck_parser_current_level( SyckParser * );
 void syck_parser_add_level( SyckParser *, int );
 void free_any_io( SyckParser * );
-int syck_parser_readline( char *, SyckParser * );
-int syck_parser_read( char *, SyckParser *, int );
+int syck_parser_readline( SyckParser * );
+int syck_parser_read( SyckParser * );
+int syck_parser_readlen( SyckParser *, int );
 void syck_parser_init( SyckParser *, int );
 SYMID syck_parse( SyckParser * );
 

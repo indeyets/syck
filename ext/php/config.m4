@@ -39,9 +39,14 @@ if test "$PHP_SYCK" != "no"; then
   ],[
     AC_MSG_ERROR([wrong syck lib version or lib not found])
   ],[
-    -L$SYCK_DIR/lib -lm -ldl
+    -L$SYCK_DIR/lib
   ])
   
-  PHP_NEW_EXTENSION(syck, phpext.c, $ext_shared)
+  # For PHP 4.3.0:
+  # PHP_NEW_EXTENSION(syck, phpext.c, $ext_shared)
+
+  # For PHP pre-4.3.0:
+  PHP_EXTENSION(syck, $ext_shared)
+
   PHP_SUBST(SYCK_SHARED_LIBADD)
 fi

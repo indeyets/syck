@@ -8,12 +8,14 @@
 //
 
 %start doc
+%pure-parser
 
 %{
 
 #include "syck.h"
 
 #define YYPARSE_PARAM parser
+#define YYLEX_PARAM parser
 
 %}
 
@@ -30,7 +32,7 @@
 %type <nodeId>      doc basic_seq
 %type <nodeData>    atom word_rep struct_rep atom_or_empty
 %type <nodeData>    scalar_block implicit_seq inline_seq implicit_map inline_map
-%type <nodeData>    in_implicit_seq in_inline_seq basic_mapping
+%type <nodeData>    in_implicit_seq in_inline_seq basic_mapping basic_mapping2
 %type <nodeData>    in_implicit_map in_inline_map complex_mapping
 
 %left               '-' ':'
@@ -190,6 +192,7 @@ basic_mapping	: word_rep ':' atom_or_empty
                         syck_hdlr_add_node( (SyckParser *)parser, $1 ), 
                         syck_hdlr_add_node( (SyckParser *)parser, $3 ) );
                 }
+
 /* Default needs to be added to SyckSeq i think...
 				| '=' ':' atom
 				{
@@ -218,6 +221,13 @@ in_implicit_map : complex_mapping
 //
 // Inline maps
 //
+basic_mapping2	: atom ':' atom_or_empty
+                {
+                    $$ = syck_new_map( 
+                        syck_hdlr_add_node( (SyckParser *)parser, $1 ), 
+                        syck_hdlr_add_node( (SyckParser *)parser, $3 ) );
+                }
+
 inline_map		: '{' in_inline_map '}'
                 {
                     $$ = $2;
@@ -227,11 +237,11 @@ inline_map		: '{' in_inline_map '}'
                     $$ = syck_alloc_map();
                 }
          
-in_inline_map	: basic_mapping 
+in_inline_map	: basic_mapping2 
 				{
 					$$ = $1;
 				}
-				| in_inline_map ',' basic_mapping
+				| in_inline_map ',' basic_mapping2
 				{
                     syck_map_update( $1, $3 );
                     $$ = $1;

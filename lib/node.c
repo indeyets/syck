@@ -85,13 +85,7 @@ syck_alloc_str()
 SyckNode *
 syck_new_str( char *str )
 {
-    SyckNode *n;
-
-    n = syck_alloc_str();
-    n->data.str->ptr = str;
-    n->data.str->len = strlen( str );
-
-    return n;
+    return syck_new_str2( str, strlen( str ) );
 }
 
 SyckNode *
@@ -100,8 +94,9 @@ syck_new_str2( char *str, long len )
     SyckNode *n;
 
     n = syck_alloc_str();
-    n->data.str->ptr = str;
+    n->data.str->ptr = S_ALLOC_N( char, len );
     n->data.str->len = len;
+    memcpy( n->data.str->ptr, str, len );
 
     return n;
 }
@@ -261,6 +256,15 @@ syck_free_members( SyckNode *n )
     int i;
     switch ( n->kind  )
     {
+        case syck_str_kind:
+            if ( n->data.str->ptr != NULL ) 
+            {
+                free( n->data.str->ptr );
+                n->data.str->ptr = NULL;
+                n->data.str->len = 0;
+            }
+        break;
+
         case syck_seq_kind:
             free( n->data.list->items );
             free( n->data.list );
