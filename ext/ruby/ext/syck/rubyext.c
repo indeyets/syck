@@ -209,46 +209,63 @@ syck_get_hash_aref(hsh, key)
  * creating timestamps
  */
 SYMID
-rb_syck_mktime(str)
+rb_syck_mktime(str, len)
     char *str;
+    long len;
 {
     VALUE time;
     char *ptr = str;
-    VALUE year, mon, day, hour, min, sec;
+    VALUE year = INT2FIX(0);
+    VALUE mon = INT2FIX(0);
+    VALUE day = INT2FIX(0);
+    VALUE hour = INT2FIX(0);
+    VALUE min = INT2FIX(0);
+    VALUE sec = INT2FIX(0);
     long usec;
 
     /* Year*/
-    ptr[4] = '\0';
-    year = INT2FIX(strtol(ptr, NULL, 10));
+    if ( ptr[0] != '\0' && len > 0 ) {
+        year = INT2FIX(strtol(ptr, NULL, 10));
+    }
 
     /* Month*/
     ptr += 4;
-    while ( !ISDIGIT( *ptr ) ) ptr++;
-    mon = INT2FIX(strtol(ptr, NULL, 10));
+    if ( ptr[0] != '\0' && len > ptr - str ) {
+        while ( !ISDIGIT( *ptr ) ) ptr++;
+        mon = INT2FIX(strtol(ptr, NULL, 10));
+    }
 
     /* Day*/
     ptr += 2;
-    while ( !ISDIGIT( *ptr ) ) ptr++;
-    day = INT2FIX(strtol(ptr, NULL, 10));
+    if ( ptr[0] != '\0' && len > ptr - str ) {
+        while ( !ISDIGIT( *ptr ) ) ptr++;
+        day = INT2FIX(strtol(ptr, NULL, 10));
+    }
 
     /* Hour*/
     ptr += 2;
-    while ( !ISDIGIT( *ptr ) ) ptr++;
-    hour = INT2FIX(strtol(ptr, NULL, 10));
+    if ( ptr[0] != '\0' && len > ptr - str ) {
+        while ( !ISDIGIT( *ptr ) ) ptr++;
+        hour = INT2FIX(strtol(ptr, NULL, 10));
+    }
 
     /* Minute */
     ptr += 2;
-    while ( !ISDIGIT( *ptr ) ) ptr++;
-    min = INT2FIX(strtol(ptr, NULL, 10));
+    if ( ptr[0] != '\0' && len > ptr - str ) {
+        while ( !ISDIGIT( *ptr ) ) ptr++;
+        min = INT2FIX(strtol(ptr, NULL, 10));
+    }
 
     /* Second */
     ptr += 2;
-    while ( !ISDIGIT( *ptr ) ) ptr++;
-    sec = INT2FIX(strtol(ptr, NULL, 10));
+    if ( ptr[0] != '\0' && len > ptr - str ) {
+        while ( !ISDIGIT( *ptr ) ) ptr++;
+        sec = INT2FIX(strtol(ptr, NULL, 10));
+    }
 
     /* Millisecond */
     ptr += 2;
-    if ( *ptr == '.' )
+    if ( len > ptr - str && *ptr == '.' )
     {
         char *padded = syck_strndup( "000000", 6 );
         char *end = ptr + 1;
@@ -262,8 +279,8 @@ rb_syck_mktime(str)
     }
 
     /* Time Zone*/
-    while ( *ptr != 'Z' && *ptr != '+' && *ptr != '-' && *ptr != '\0' ) ptr++;
-    if ( *ptr == '-' || *ptr == '+' )
+    while ( len > ptr - str && *ptr != 'Z' && *ptr != '+' && *ptr != '-' && *ptr != '\0' ) ptr++;
+    if ( len > ptr - str && ( *ptr == '-' || *ptr == '+' ) )
     {
         time_t tz_offset = strtol(ptr, NULL, 10) * 3600;
         time_t tmp;
@@ -546,11 +563,11 @@ yaml_org_handler( n, ref )
             }
             else if ( strcmp( type_id, "timestamp#iso8601" ) == 0 )
             {
-                obj = rb_syck_mktime( n->data.str->ptr );
+                obj = rb_syck_mktime( n->data.str->ptr, n->data.str->len );
             }
             else if ( strcmp( type_id, "timestamp#spaced" ) == 0 )
             {
-                obj = rb_syck_mktime( n->data.str->ptr );
+                obj = rb_syck_mktime( n->data.str->ptr, n->data.str->len );
             }
             else if ( strcmp( type_id, "timestamp#ymd" ) == 0 )
             {
@@ -583,7 +600,7 @@ yaml_org_handler( n, ref )
             }
             else if ( strncmp( type_id, "timestamp", 9 ) == 0 )
             {
-                obj = rb_syck_mktime( n->data.str->ptr );
+                obj = rb_syck_mktime( n->data.str->ptr, n->data.str->len );
             }
 			else if ( strncmp( type_id, "merge", 5 ) == 0 )
 			{

@@ -83,19 +83,20 @@ require 'yaml/stream'
 #
 module YAML
 
-    @@resolver = YAML::Syck::DefaultResolver
-    @@resolver.use_types_at( @@tagged_classes )
-    @@parser = YAML::Syck::Parser.new( @@resolver )
-    @@parser_generic = YAML::Syck::Parser.new( YAML::Syck::GenericResolver )
-    @@emitter = YAML::Syck::Emitter.new
-    @@emitter.set_resolver( @@resolver )
+    Resolver = YAML::Syck::DefaultResolver
+    Resolver.use_types_at( @@tagged_classes )
+    GenericResolver = YAML::Syck::GenericResolver
+    Parser = YAML::Syck::Parser
+    Emitter = YAML::Syck::Emitter
 
-    # Returns the default parser
-    def parser; @@parser; end
+    # Returns a new default parser
+    def YAML.parser; Parser.new( Resolver ); end
+    # Returns a new generic parser
+    def YAML.generic_parser; Parser.new( GenericResolver ); end
     # Returns the default resolver
-    def resolver; @@resolver; end
-    # Returns the default emitter
-    def emitter; @@emitter; end
+    def YAML.resolver; Resolver; end
+    # Returns a new default emitter
+    def YAML.emitter; Emitter.new.set_resolver( Resolver ); end
 
 	#
 	# Converts _obj_ to YAML and writes the YAML result to _io_.
@@ -127,7 +128,7 @@ module YAML
     #      #=> :locked
     #
 	def YAML.load( io )
-		yp = @@parser.load( io )
+		yp = parser.load( io )
 	end
 
     #
@@ -170,7 +171,7 @@ module YAML
     #            @value=":locked", @kind=:scalar>
     #
 	def YAML.parse( io )
-		yp = @@parser_generic.load( io )
+		yp = generic_parser.load( io )
 	end
 
     #
@@ -211,7 +212,7 @@ module YAML
     #   end
 	#
 	def YAML.each_document( io, &block )
-		yp = @@parser.load_documents( io, &block )
+		yp = parser.load_documents( io, &block )
     end
 
 	#
@@ -241,7 +242,7 @@ module YAML
     #   end
 	#
 	def YAML.each_node( io, &doc_proc )
-		yp = @@parser_generic.load_documents( io, &doc_proc )
+		yp = generic_parser.load_documents( io, &doc_proc )
     end
 
 	#
@@ -266,7 +267,7 @@ module YAML
 	#
 	def YAML.load_stream( io )
 		d = nil
-		@@parser.load_documents( io ) do |doc|
+		parser.load_documents( io ) do |doc|
 			d = YAML::Stream.new( yp.options ) if not d
 			d.add( doc ) 
         end
@@ -294,42 +295,42 @@ module YAML
 	# Add a global handler for a YAML domain type.
 	#
 	def YAML.add_domain_type( domain, type_tag, &transfer_proc )
-        @@resolver.add_type( "tag:#{ domain }:#{ type_tag }", transfer_proc )
+        resolver.add_type( "tag:#{ domain }:#{ type_tag }", transfer_proc )
 	end
 
 	#
 	# Add a transfer method for a builtin type
 	#
 	def YAML.add_builtin_type( type_tag, &transfer_proc )
-	    @@resolver.add_type( "tag:yaml.org,2002:#{ type_tag }", transfer_proc )
+	    resolver.add_type( "tag:yaml.org,2002:#{ type_tag }", transfer_proc )
 	end
 
 	#
 	# Add a transfer method for a builtin type
 	#
 	def YAML.add_ruby_type( type, &transfer_proc )
-	    @@resolver.add_type( "tag:ruby.yaml.org,2002:#{ type_tag }", transfer_proc )
+	    resolver.add_type( "tag:ruby.yaml.org,2002:#{ type_tag }", transfer_proc )
 	end
 
 	#
 	# Add a private document type
 	#
 	def YAML.add_private_type( type_re, &transfer_proc )
-	    @@resolver.add_type( type_re, transfer_proc )
+	    resolver.add_type( type_re, transfer_proc )
 	end
 
     #
     # Detect typing of a string
     #
     def YAML.detect_implicit( val )
-        @@resolver.detect_implicit( val )
+        resolver.detect_implicit( val )
     end
 
     #
     # Apply a transfer method to a Ruby object
     #
     def YAML.transfer( type_id, obj )
-        @@resolver.transfer( type_id, obj )
+        resolver.transfer( type_id, obj )
     end
 
 	#
@@ -369,10 +370,10 @@ module YAML
 	#
 	def YAML.quick_emit( oid, opts = {}, &e )
         out = 
-            if opts.is_a? @@emitter.class
+            if opts.is_a? YAML::Emitter
                 opts
             else
-                @@emitter.reset( opts )
+                emitter.reset( opts )
             end
         out.emit( oid, &e )
 	end

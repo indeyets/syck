@@ -439,7 +439,7 @@ void syck_emit_tag( SyckEmitter *e, char *tag, char *ignore )
 {
     SyckLevel *lvl;
     if ( tag == NULL ) return;
-    if ( ignore != NULL && strcmp( tag, ignore ) == 0 && e->explicit_typing == 0 ) return;
+    if ( ignore != NULL && syck_tagcmp( tag, ignore ) == 0 && e->explicit_typing == 0 ) return;
     lvl = syck_emitter_current_level( e );
 
     /* global types */
@@ -524,6 +524,8 @@ syck_scan_scalar( int req_width, char *cursor, long len )
     long i = 0, start = 0;
     int flags = SCAN_NONE;
 
+    if ( len < 1 )  return flags;
+
     /* c-indicators from the spec */
     if ( cursor[0] == '[' || cursor[0] == ']' ||
          cursor[0] == '{' || cursor[0] == '}' ||
@@ -592,8 +594,13 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
 {
     enum block_styles favor_style = block_literal;
     SyckLevel *lvl = syck_emitter_current_level( e );
-    int scan = syck_scan_scalar( force_indent, str, len );
-    char *implicit = syck_match_implicit( str, len );
+    int scan;
+    char *implicit;
+    
+    if ( str == NULL ) return;
+
+    scan = syck_scan_scalar( force_indent, str, len );
+    implicit = syck_match_implicit( str, len );
 
     implicit = syck_taguri( YAML_DOMAIN, implicit, strlen( implicit ) );
     syck_emit_tag( e, tag, implicit );

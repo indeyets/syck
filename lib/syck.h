@@ -347,6 +347,7 @@ SyckNode *syck_hdlr_get_anchor( SyckParser *, char * );
 void syck_add_transfer( char *, SyckNode *, int );
 char *syck_xprivate( char *, int );
 char *syck_taguri( char *, char *, int );
+int syck_tagcmp( char *, char * );
 int syck_add_sym( SyckParser *, char * );
 int syck_lookup_sym( SyckParser *, SYMID, char ** );
 int syck_try_implicit( SyckNode * );

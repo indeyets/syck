@@ -126,6 +126,29 @@ ANY                 {   return "str"; }
 
 }
 
+/* Remove ending fragment and compare types */
+int
+syck_tagcmp( char *tag1, char *tag2 )
+{
+    if ( tag1 == tag2 ) return 1;
+    if ( tag1 == NULL || tag2 == NULL ) return 0;
+    else {
+        int i;
+        char *othorpe;
+        char *tmp1 = syck_strndup( tag1, strlen( tag1 ) );
+        char *tmp2 = syck_strndup( tag2, strlen( tag2 ) );
+        if ( othorpe = strstr( tmp1, "#" ) ) {
+            othorpe[0] = '\0';
+        }
+        if ( othorpe = strstr( tmp2, "#" ) ) {
+            othorpe[0] = '\0';
+        }
+        i = strcmp( tmp1, tmp2 );
+        S_FREE( tmp1 ); S_FREE( tmp2 );
+        return i;
+    }
+}
+
 char *
 syck_type_id_to_uri( char *type_id )
 {
