@@ -270,7 +270,7 @@ module YAML
 	def YAML.load_stream( io )
 		d = nil
 		parser.load_documents( io ) do |doc|
-			d = YAML::Stream.new( yp.options ) if not d
+			d = YAML::Stream.new if not d
 			d.add( doc ) 
         end
 		return d

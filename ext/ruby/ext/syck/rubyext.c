@@ -55,7 +55,7 @@ typedef struct {
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_input, s_intern, s_yaml_new, s_yaml_initialize, s_node_export, s_to_yaml, s_write, s_set_resolver;
+static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_default_set, s_tag_read_class, s_tag_subclasses, s_resolver, s_push, s_block, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_input, s_intern, s_transform, s_yaml_new, s_yaml_initialize, s_node_export, s_to_yaml, s_write, s_set_resolver;
 static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_type_id_set, s_style, s_style_set, s_value, s_value_set;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
@@ -76,7 +76,6 @@ static VALUE syck_node_transform( VALUE );
 /*
  * handler prototypes
  */
-SYMID rb_syck_parse_handler _((SyckParser *, SyckNode *));
 SYMID rb_syck_load_handler _((SyckParser *, SyckNode *));
 void rb_syck_err_handler _((SyckParser *, char *));
 SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
@@ -1014,6 +1013,25 @@ syck_resolver_node_import( self, node )
 }
 
 /*
+ * Set instance variables
+ */
+VALUE
+syck_set_ivars( vars, obj )
+        VALUE vars, obj;
+{
+    VALUE ivname = rb_ary_entry( vars, 0 );
+    char *ivn;
+    StringValue( ivname );
+    ivn = S_ALLOC_N( char, RSTRING(ivname)->len + 2 );
+    ivn[0] = '@';
+    ivn[1] = '\0';
+    strncat( ivn, RSTRING(ivname)->ptr, RSTRING(ivname)->len );
+    rb_iv_set( obj, ivn, rb_ary_entry( vars, 1 ) );
+    S_FREE( ivn );
+    return Qnil;
+}
+
+/*
  * YAML::Syck::Resolver#transfer
  */
 VALUE
@@ -1029,7 +1047,8 @@ syck_resolver_transfer( self, type, val )
     {
         VALUE tags = rb_attr_get(self, s_tags);
         VALUE target_class = rb_hash_aref( tags, type );
-        VALUE subclass = Qnil;
+        VALUE subclass = target_class;
+        VALUE sym_sub = Qnil;
         VALUE obj = Qnil;
 
         /*
@@ -1057,34 +1076,30 @@ syck_resolver_transfer( self, type, val )
                  */
                 if ( ! NIL_P( target_class ) )
                 {
-                    if ( rb_respond_to( target_class, s_call ) )
-                    {
-                        break;
-                    }
-                    else if ( rb_respond_to( target_class, s_tag_subclasses ) &&
+                    subclass = target_class;
+                    if ( RARRAY(subclass_parts)->len > 0 && rb_respond_to( target_class, s_tag_subclasses ) &&
                          RTEST( rb_funcall( target_class, s_tag_subclasses, 0 ) ) )
                     {
                         subclass = rb_ary_join( subclass_parts, colon );
-                        break;
+                        subclass = rb_funcall( target_class, s_tag_read_class, 1, subclass );
+                        sym_sub = rb_to_id( subclass );
+                        if ( RTEST( rb_const_defined( rb_cObject, sym_sub ) ) )
+                        {
+                            subclass = rb_const_get( rb_cObject, sym_sub );
+                        }
+                        else
+                        {
+                            subclass = rb_define_class( rb_id2name( sym_sub ), rb_cObject );
+                        }
                     }
+                    break;
                 }
-
-                target_class = Qnil;
             }
         }
 
         /* rb_raise(rb_eTypeError, "invalid typing scheme: %s given",
          *         scheme);
          */
-
-        if ( TYPE(subclass) == T_STRING && rb_const_defined( rb_cObject, rb_funcall( subclass, s_intern, 0 ) ) )
-        {
-            subclass = rb_const_get( rb_cObject, rb_funcall( subclass, s_intern, 0 ) );
-        }
-        else
-        {
-            subclass = target_class;
-        }
 
         if ( rb_respond_to( target_class, s_call ) )
         {
@@ -1094,16 +1109,19 @@ syck_resolver_transfer( self, type, val )
         {
             if ( rb_respond_to( target_class, s_yaml_new ) )
             {
-                obj = rb_funcall( subclass, s_yaml_new, 2, type, val );
+                obj = rb_funcall( target_class, s_yaml_new, 3, subclass, type, val );
             }
-            else if ( !NIL_P( subclass ) )
+            else if ( !NIL_P( target_class ) )
             {
                 obj = rb_obj_alloc( subclass );
-            }
-
-            if ( rb_respond_to( obj, s_yaml_initialize ) )
-            {
-                rb_funcall( obj, s_yaml_initialize, 2, type, val );
+                if ( rb_respond_to( obj, s_yaml_initialize ) )
+                {
+                    rb_funcall( obj, s_yaml_initialize, 2, type, val );
+                }
+                else if ( !NIL_P( obj ) && rb_obj_is_instance_of( val, rb_cHash ) )
+                {
+                    rb_iterate( rb_each, val, syck_set_ivars, obj );
+                }
             }
         }
         val = obj;
@@ -1160,45 +1178,62 @@ syck_genericresolver_node_import( self, node )
     VALUE t = Qnil, obj = Qnil, v = Qnil;
 	Data_Get_Struct(node, SyckNode, n);
 
-    obj = rb_obj_alloc(cNode);
     if ( n->type_id != NULL )
     {
         t = rb_str_new2(n->type_id);
-        rb_ivar_set(obj, s_type_id, t);
     }
 
     switch (n->kind)
     {
         case syck_str_kind:
-            rb_ivar_set(obj, s_kind, sym_scalar);
+        {
+            VALUE style = Qnil;
             v = rb_str_new( n->data.str->ptr, n->data.str->len );
+            if ( n->data.str->style == scalar_1quote )
+            {
+                style = sym_1quote;
+            } 
+            else if ( n->data.str->style == scalar_2quote )
+            {
+                style = sym_2quote;
+            } 
+            else if ( n->data.str->style == scalar_fold )
+            {
+                style = sym_fold;
+            } 
+            else if ( n->data.str->style == scalar_literal )
+            {
+                style = sym_literal;
+            } 
+            else if ( n->data.str->style == scalar_plain )
+            {
+                style = sym_plain;
+            }
+            obj = rb_funcall( cScalar, s_new, 3, t, v, style );
+        }
         break;
 
         case syck_seq_kind:
-            rb_ivar_set(obj, s_kind, sym_seq);
+            rb_iv_set(obj, "@kind", sym_seq);
             v = rb_ary_new2( n->data.list->idx );
             for ( i = 0; i < n->data.list->idx; i++ )
             {
                 rb_ary_store( v, i, syck_seq_read( n, i ) );
             }
+            obj = rb_funcall( cSeq, s_new, 2, t, v );
         break;
 
         case syck_map_kind:
-            rb_ivar_set(obj, s_kind, sym_map);
+            rb_iv_set(obj, "@kind", sym_map);
             v = rb_hash_new();
             for ( i = 0; i < n->data.pairs->idx; i++ )
             {
-                VALUE key = syck_node_transform( syck_map_read( n, map_key, i ) );
-                VALUE val = rb_ary_new();
-                rb_ary_push(val, syck_map_read( n, map_key, i ));
-                rb_ary_push(val, syck_map_read( n, map_value, i ));
-
-                rb_hash_aset( v, key, val );
+                rb_hash_aset( v, syck_map_read( n, map_key, i ), syck_map_read( n, map_value, i ) );
             }
+            obj = rb_funcall( cMap, s_new, 2, t, v );
         break;
     }
 
-    rb_ivar_set(obj, s_value, v);
     return obj;
 }
 
@@ -1209,7 +1244,7 @@ VALUE
 syck_badalias_initialize( self, val )
     VALUE self, val;
 {
-    rb_ivar_set( self, s_name, val );
+    rb_iv_set( self, "@name", val );
     return self;
 }
 
@@ -1233,9 +1268,9 @@ VALUE
 syck_domaintype_initialize( self, domain, type_id, val )
     VALUE self, type_id, val;
 {
-    rb_ivar_set( self, s_domain, domain );
-    rb_ivar_set( self, s_type_id, type_id );
-    rb_ivar_set( self, s_value, val );
+    rb_iv_set( self, "@domain", domain );
+    rb_iv_set( self, "@type_id", type_id );
+    rb_iv_set( self, "@value", val );
     return self;
 }
 
@@ -1246,8 +1281,8 @@ VALUE
 syck_privatetype_initialize( self, type_id, val )
     VALUE self, type_id, val;
 {
-    rb_ivar_set( self, s_type_id, type_id );
-    rb_ivar_set( self, s_value, val );
+    rb_iv_set( self, "@type_id", type_id );
+    rb_iv_set( self, "@type_id", val );
     return self;
 }
 
@@ -1335,7 +1370,7 @@ VALUE
 syck_scalar_initialize( self, type_id, val, style )
     VALUE self, type_id, val, style;
 {
-    rb_ivar_set( self, s_kind, sym_scalar );
+    rb_iv_set( self, "@kind", sym_scalar );
     rb_funcall( self, s_type_id_set, 1, type_id );
     rb_funcall( self, s_value_set, 1, val );
     rb_funcall( self, s_style_set, 1, style );
@@ -1377,7 +1412,7 @@ syck_scalar_style_set( self, style )
         node->data.str->style = scalar_plain;
     }
 
-    rb_ivar_set( self, s_style, style );
+    rb_iv_set( self, "@style", style );
     return self;
 }
 
@@ -1396,7 +1431,7 @@ syck_scalar_value_set( self, val )
     node->data.str->len = RSTRING(val)->len;
     node->data.str->style = scalar_none;
 
-    rb_ivar_set( self, s_value, val );
+    rb_iv_set( self, "@value", val );
     return val;
 }
 
@@ -1425,7 +1460,7 @@ syck_seq_initialize( self, type_id, val )
     SyckNode *node;
 	Data_Get_Struct( self, SyckNode, node );
 
-    rb_ivar_set( self, s_kind, sym_seq );
+    rb_iv_set( self, "@kind", sym_seq );
     rb_funcall( self, s_type_id_set, 1, type_id );
     rb_funcall( self, s_value_set, 1, val );
     return self;
@@ -1451,7 +1486,7 @@ syck_seq_value_set( self, val )
         }
     }
 
-    rb_ivar_set( self, s_value, val );
+    rb_iv_set( self, "@value", val );
     return val;
 }
 
@@ -1518,7 +1553,7 @@ syck_map_initialize( self, type_id, val )
         }
     }
 
-    rb_ivar_set( self, s_kind, sym_seq );
+    rb_iv_set( self, "@kind", sym_seq );
     rb_funcall( self, s_type_id_set, 1, type_id );
     rb_funcall( self, s_value_set, 1, val );
     return self;
@@ -1552,7 +1587,7 @@ syck_map_value_set( self, val )
         }
     }
 
-    rb_ivar_set( self, s_value, val );
+    rb_iv_set( self, "@value", val );
     return val;
 }
 
@@ -1620,28 +1655,8 @@ syck_node_type_id_set( self, type_id )
         node->type_id = StringValuePtr( type_id );
     }
 
-    rb_ivar_set( self, s_type_id, type_id );
+    rb_iv_set( self, "@type_id", type_id );
     return type_id;
-}
-
-VALUE
-syck_node_thash( entry, t )
-    VALUE entry, t;
-{
-    VALUE key, val;
-    key = rb_ary_entry( entry, 0 );
-    val = syck_node_transform( rb_ary_entry( rb_ary_entry( entry, 1 ), 1 ) );
-    rb_hash_aset( t, key, val );
-    return Qnil;
-}
-
-VALUE
-syck_node_ahash( entry, t )
-    VALUE entry, t;
-{
-    VALUE val = syck_node_transform( entry );
-    rb_ary_push( t, val );
-    return Qnil;
 }
 
 /*
@@ -1651,24 +1666,54 @@ VALUE
 syck_node_transform( self )
     VALUE self;
 {
-    VALUE t = Qnil;
-    VALUE type_id = rb_attr_get( self, s_type_id );
-    VALUE val = rb_attr_get( self, s_value );
-    if ( rb_obj_is_instance_of( val, rb_cHash ) )
+    VALUE t;
+    SyckNode *n;
+    SyckNode *orig_n;
+	Data_Get_Struct(self, SyckNode, orig_n);
+
+    switch (orig_n->kind)
     {
-        t = rb_hash_new();
-        rb_iterate( rb_each, val, syck_node_thash, t );
+        case syck_map_kind:
+            {
+                int i;
+                n = syck_alloc_map();
+                for ( i = 0; i < orig_n->data.pairs->idx; i++ )
+                {
+                    syck_map_add( n, rb_funcall( syck_map_read( orig_n, map_key, i ), s_transform, 0 ),
+                                     rb_funcall( syck_map_read( orig_n, map_value, i ), s_transform, 0 ) );
+                }
+            }
+        break;
+
+        case syck_seq_kind:
+            {
+                int i;
+                n = syck_alloc_seq();
+                for ( i = 0; i < orig_n->data.list->idx; i++ )
+                {
+                    syck_seq_add( n, rb_funcall( syck_seq_read( orig_n, i ), s_transform, 0 ) );
+                }
+            }
+        break;
+
+        case syck_str_kind:
+            n = syck_new_str2( orig_n->data.str->ptr, orig_n->data.str->len, orig_n->data.str->style );
+        break;
     }
-    else if ( rb_obj_is_instance_of( val, rb_cArray ) )
+
+    if ( orig_n->type_id != NULL )
     {
-        t = rb_ary_new();
-        rb_iterate( rb_each, val, syck_node_ahash, t );
+        n->type_id = syck_strndup( orig_n->type_id, strlen( orig_n->type_id ) );
     }
-    else
+    if ( orig_n->anchor != NULL )
     {
-        t = val;
+        n->anchor = syck_strndup( orig_n->anchor, strlen( orig_n->anchor ) );
     }
-    return rb_funcall( oDefaultResolver, s_transfer, 2, type_id, t );
+    t = Data_Wrap_Struct( cNode, NULL, NULL, n );
+    n->id = t;
+    t = rb_funcall( oDefaultResolver, s_node_import, 1, t );
+    syck_free_node( n );
+    return t;
 }
 
 /*
@@ -1877,7 +1922,9 @@ syck_emitter_emit( argc, argv, self )
     syck_emitter_mark_node( emitter, (st_data_t)symple );
 
     /* Second pass, build emitted string */
-    if ( level == 1 ) 
+    level -= 1;
+    rb_ivar_set(self, s_level, INT2FIX(level));
+    if ( level == 0 ) 
     {
         syck_emit(emitter, (st_data_t)symple);
         syck_emitter_flush(emitter, 0);
@@ -1885,8 +1932,6 @@ syck_emitter_emit( argc, argv, self )
         return bonus->port;
     }
     
-    level -= 1;
-    rb_ivar_set(self, s_level, INT2FIX(level));
     return symple;
 }
 
@@ -1998,12 +2043,13 @@ Init_syck()
 	s_tr_bang = rb_intern("tr!");
     s_unpack = rb_intern("unpack");
 	s_write = rb_intern("write");
+    s_tag_read_class = rb_intern( "tag_read_class" );
     s_tag_subclasses = rb_intern( "tag_subclasses?" );
     s_emitter = rb_intern( "emitter" );
-    s_level = rb_intern( "level" );
     s_set_resolver = rb_intern( "set_resolver" );
     s_node_export = rb_intern( "node_export" );
     s_to_yaml = rb_intern( "to_yaml" );
+    s_transform = rb_intern( "transform" );
     s_yaml_new = rb_intern("yaml_new");
     s_yaml_initialize = rb_intern("yaml_initialize");
 
@@ -2015,6 +2061,7 @@ Init_syck()
     s_type_id = rb_intern("@type_id");
     s_type_id_set = rb_intern("type_id=");
     s_resolver = rb_intern("@resolver");
+    s_level = rb_intern( "@level" );
     s_style = rb_intern("@style");
     s_style_set = rb_intern("style=");
     s_value = rb_intern("@value");

@@ -1,10 +1,43 @@
 --- %YAML:1.0
+- version: 0.53
+  date: 2005-03-28
+  changes:
+    README.EXT: more docs.
+
+    ext/ruby/ext/syck/rubyext.c:
+    - moved Object#yaml_new into the node_import and made it the
+      default behavior.
+    - the target_class is always called wih yaml_new, prepended
+      a parameter, which is the klass.
+    - loaded nodes through GenericResolver show their style.
+    - YAML::Syck::Node#transform works.
+    - bug with YAML::Syck::Emitter#level
+
+    ext/ruby/lib/yaml.rb: reworking YAML::Stream to use the new
+      emitter.
+
+    ext/ruby/lib/yaml/stream.rb: ditto.
+
+    ext/ruby/lib/yaml/rubytypes.rb: use of new yaml_new syntax.
+
+    ext/ruby/lib/yaml/tag.rb: the tag_subclasses? method now
+      shows up in the class.
+
+    ext/ruby/yts/yts.rb: moved eval code out of the YAML
+      module.
+    ext/ruby/yts/*.yml: prepend YAML module onto all
+      code that uses Stream, Omap, etc.
+
+    lib/implicit.re: were 'y' and 'n' seriously omitted??
+
+    lib/node.c: added syck_seq_assign.
+
 - version: 0.52
   date: 2005-03-27
   changes:
     README.EXT: added detailed API docs for Syck!!
 
-    ext/syck/rubyext.c: consolidated all the diaspora of internal 
+    ext/ruby/ext/syck/rubyext.c: consolidated all the diaspora of internal 
       node types into the family below YAML::Syck::Node -- Map, 
       Seq, Scalar -- all of whom are SyckNode structs pointing to 
       Ruby data.

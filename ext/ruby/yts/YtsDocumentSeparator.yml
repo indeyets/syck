@@ -50,7 +50,7 @@ python: |
         { 'foo': 1, 'bar': 2 } 
     ] 
 ruby: | 
-    y = Stream.new 
+    y = YAML::Stream.new 
     y.add( { 'foo' => 1, 'bar' => 2 } ) 
 documents: 1 
  

@@ -55,13 +55,13 @@ class Module # :nodoc: all
     # in YAML.  See YAML::tag_class for detailed information on typing and
     # taguris.
     def tag_as( tag, sc = true )
-        module_eval <<-"end;"
+        class_eval <<-"end;"
             def taguri
                 tagstr = #{ tag.dump }
-                tagstr += ":" + self.class.tag_class_name if tag_subclasses? and self.class != YAML::tagged_classes[tagstr]
+                tagstr += ":" + self.class.tag_class_name if self.class.tag_subclasses? and self.class != YAML::tagged_classes[tagstr]
                 tagstr
             end
-            def tag_subclasses?; #{ tag ? 'true' : 'false' }; end
+            def self.tag_subclasses?; #{ sc ? 'true' : 'false' }; end
         end;
         YAML::tag_class tag, self
     end

@@ -430,6 +430,7 @@ void syck_map_update( SyckNode *, SyckNode * );
 SyckNode *syck_new_seq( SYMID );
 void syck_seq_empty( SyckNode * );
 void syck_seq_add( SyckNode *, SYMID );
+void syck_seq_assign( SyckNode *, long, SYMID );
 SYMID syck_seq_read( SyckNode *, long );
 long syck_seq_count( SyckNode * );
 

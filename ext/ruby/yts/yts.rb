@@ -51,6 +51,8 @@ class SpecialHash
 	end
 end
 
+end
+
 header = " %YAML:1.0"
 YAML::load( File.read( "index.yml" ) ).each do |yst|
 
@@ -189,5 +191,3 @@ EOY
         end
     }
 }
-
-end

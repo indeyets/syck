@@ -342,6 +342,17 @@ syck_seq_count( SyckNode *seq )
     return seq->data.list->idx;
 }
 
+void
+syck_seq_assign( SyckNode *seq, long idx, SYMID id )
+{
+    struct SyckSeq *s;
+
+    ASSERT( map != NULL );
+    s = seq->data.list;
+    ASSERT( m != NULL );
+    s->items[idx] = id;
+}
+
 SYMID
 syck_seq_read( SyckNode *seq, long idx )
 {

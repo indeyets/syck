@@ -16,7 +16,7 @@ Syck's YAML parser is extremely simple.  After setting up a
 SyckParser struct, along with callback functions for loading
 node data, use syck_parse() to start reading data.  Since
 syck_parse() only reads single documents, the stream can be
-managed between calls to syck_parse().
+managed by calling syck_parse() repeatedly for an IO source.
 
 The parser has four callbacks: one for reading from the IO
 source, one for handling errors that show up, one for
@@ -124,4 +124,34 @@ The loading process is:
  void
  syck_parser_file( SyckParser *p, FILE *f, SyckIoFileRead r )
 
-  
+   Assigns a FILE pointer as an IO source and a callback function
+   which handles buffering of that IO source.
+
+   The SyckIoFileRead signature looks like this:
+
+     long SyckIoFileRead( char *buf, SyckIoFile *file, long max_size, long skip );
+
+   Syck comes with a default FILE handler named `syck_io_file_read'.  You
+   can assign this default handler explicitly or by simply passing in NULL
+   as the `r' parameter.
+
+  void
+  syck_parser_str( SyckParser *p, char *ptr, long len, SyckIoStrRead r )
+
+    Assigns a string as the IO source with a callback function `r'
+    which handles buffering of the string.
+
+    The SyckIoStrRead signature looks like this:
+
+      long SyckIoFileRead( char *buf, SyckIoStr *str, long max_size, long skip );
+
+   Syck comes with a default string handler named `syck_io_str_read'.  You
+   can assign this default handler explicitly or by simply passing in NULL
+   as the `r' parameter.
+
+  void
+  syck_parser_str_auto( SyckParser *p, char *ptr, SyckIoStrRead r )
+
+    Same as the above, but uses strlen() to determine string size.
+
+

@@ -13,13 +13,6 @@ end
 
 class Object
     tag_as "tag:ruby.yaml.org,2002:object"
-    def Object.yaml_new( tag, val )
-        o = allocate
-        val.each_pair do |k,v|
-            o.instance_variable_set "@#{k}", v
-        end
-        o
-    end
     def to_yaml_properties; instance_variables.sort; end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
@@ -71,7 +64,7 @@ class Struct
     tag_as "tag:ruby.yaml.org,2002:struct"
     def self.tag_class_name; self.name.gsub( "Struct::", "" ); end
     def self.tag_read_class( name ); "Struct::#{ name }"; end
-    def self.yaml_new( tag, val )
+    def self.yaml_new( klass, tag, val )
         if Hash === val
             struct_type = nil
 
@@ -150,8 +143,8 @@ end
 #
 class Exception
     tag_as "tag:ruby.yaml.org,2002:exception"
-    def Exception.yaml_new( tag, val )
-        o = YAML.object_maker( self, { 'mesg' => val.delete( 'message' ) } )
+    def Exception.yaml_new( klass, tag, val )
+        o = YAML.object_maker( klass, { 'mesg' => val.delete( 'message' ) } )
         val.each_pair do |k,v|
             o.instance_variable_set("@#{k}", v)
         end
@@ -179,11 +172,10 @@ class String
     def is_binary_data?
         ( self.count( "^ -~", "^\r\n" ) / self.size > 0.3 || self.count( "\x00" ) > 0 )
     end
-    def String.yaml_new( tag, val )
-        tag, obj_class = YAML.read_type_class( tag, self )
+    def String.yaml_new( klass, tag, val )
         val = { 'str' => val } if String === val
         if Hash === val
-            s = YAML::object_maker( obj_class, {} )
+            s = klass.allocate
             # Thank you, NaHi
             String.instance_method(:initialize).
                   bind(s).
@@ -217,7 +209,7 @@ class Symbol
     tag_as "tag:ruby.yaml.org,2002:symbol"
     tag_as "tag:ruby.yaml.org,2002:sym"
 	# yaml_implicit /^:/, :yaml_new
-    def Symbol.yaml_new( tag, val )
+    def Symbol.yaml_new( klass, tag, val )
         if String === val
             val.intern
         else
@@ -237,8 +229,7 @@ end
 #
 class Range
     tag_as "tag:ruby.yaml.org,2002:range"
-    def Range.yaml_new( tag, val )
-        type, obj_class = YAML.read_type_class( tag, self )
+    def Range.yaml_new( klass, tag, val )
         inr = %r'(\w+|[+-]?\d+(?:\.\d+)?(?:e[+-]\d+)?|"(?:[^\\"]|\\.)*")'
         opts = {}
         if String === val and val =~ /^#{inr}(\.{2,3})#{inr}$/o
@@ -255,7 +246,7 @@ class Range
             opts['excl'] = val.delete('excl')
         end
         if Hash === opts
-            r = YAML::object_maker( obj_class, {} )
+            r = YAML::object_maker( klass, {} )
             # Thank you, NaHi
             Range.instance_method(:initialize).
                   bind(r).
@@ -295,8 +286,7 @@ end
 #
 class Regexp
     tag_as "tag:ruby.yaml.org,2002:regexp"
-    def Regexp.yaml_new( tag, val )
-        type, obj_class = YAML.read_type_class( tag, self )
+    def Regexp.yaml_new( klass, tag, val )
         if String === val and val =~ /^\/(.*)\/([mix]*)$/
             val = { 'regexp' => $1, 'mods' => $2 }
         end
@@ -309,7 +299,7 @@ class Regexp
                 mods |= Regexp::MULTILINE if val['mods'].include?( 'm' )
             end
             val.delete( 'mods' )
-            r = YAML::object_maker( obj_class, {} )
+            r = YAML::object_maker( klass, {} )
             Regexp.instance_method(:initialize).
                   bind(r).
                   call( val.delete( 'regexp' ), mods )
@@ -347,8 +337,7 @@ end
 class Time
     tag_as "tag:ruby.yaml.org,2002:time"
     tag_as "tag:yaml.org,2002:timestamp"
-    def Time.yaml_new( tag, val )
-        type, obj_class = YAML.read_type_class( tag, self )
+    def Time.yaml_new( klass, tag, val )
         if Hash === val
             t = val.delete( 'at' )
             val.each { |k,v| t.instance_variable_set( k, v ) }

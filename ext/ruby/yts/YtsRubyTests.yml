@@ -116,7 +116,7 @@ brief: >
     generic object serialization, no extra code is 
     needed. 
 yaml: | 
-    --- !ruby/object:YAML::Zoolander 
+    --- !ruby/object:Zoolander 
       name: Derek 
       look: Blue Steel 
 ruby-setup: | 
@@ -140,7 +140,7 @@ brief: >
     of such a class will dump as YAML sequences, 
     tagged with a class name. 
 yaml: | 
-    --- !ruby/array:YAML::MyArray 
+    --- !ruby/array:MyArray 
     - jacket 
     - sweater 
     - windbreaker 
@@ -160,7 +160,7 @@ brief: >
     of such a class will dump as YAML maps, tagged 
     with a class name. 
 yaml: | 
-    --- !ruby/hash:YAML::MyHash 
+    --- !ruby/hash:MyHash 
     Black Francis: Frank Black 
     Kim Deal: Breeders 
     Joey Santiago: Martinis 
