@@ -372,7 +372,7 @@ syck_emitter_flush( SyckEmitter *e, long check_room )
  * issue the callback to the emitter handler.
  */
 void
-syck_emit( SyckEmitter *e, char *n )
+syck_emit( SyckEmitter *e, st_data_t n )
 {
     SYMID oid;
     char *anchor_name = NULL;
@@ -387,7 +387,7 @@ syck_emit( SyckEmitter *e, char *n )
 
     /* Look for anchor */
     if ( e->anchors != NULL &&
-        st_lookup( e->markers, (st_data_t)n, (st_data_t *)&oid ) &&
+        st_lookup( e->markers, n, (st_data_t *)&oid ) &&
         st_lookup( e->anchors, (st_data_t)oid, (st_data_t *)&anchor_name ) )
     {
         if ( e->anchored == NULL )
@@ -622,7 +622,7 @@ void syck_emit_map( SyckEmitter *e, char *tag )
  * Handles emitting of a collection item (for both
  * sequences and maps)
  */
-void syck_emit_item( SyckEmitter *e, char *n )
+void syck_emit_item( SyckEmitter *e, st_data_t n )
 {
     SyckLevel *lvl = syck_emitter_current_level( e );
     switch ( lvl->status )
@@ -734,7 +734,7 @@ void syck_emit_end( SyckEmitter *e )
  * soon-to-be-emitted tree.
  */
 SYMID
-syck_emitter_mark_node( SyckEmitter *e, char *n )
+syck_emitter_mark_node( SyckEmitter *e, st_data_t n )
 {
     SYMID oid = 0;
     char *anchor_name = NULL;
@@ -752,13 +752,13 @@ syck_emitter_mark_node( SyckEmitter *e, char *n )
      * object.  Doesn't yet create an anchor, simply notes the
      * position.
      */
-    if ( ! st_lookup( e->markers, (st_data_t)n, (st_data_t *)&oid ) )
+    if ( ! st_lookup( e->markers, n, (st_data_t *)&oid ) )
     {
         /*
          * Store all markers
          */
         oid = e->markers->num_entries + 1;
-        st_insert( e->markers, (st_data_t)n, (st_data_t)oid );
+        st_insert( e->markers, n, (st_data_t)oid );
     }
     else
     {

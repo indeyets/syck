@@ -1999,12 +1999,48 @@ yaml: |
    - 
     - Subordinate sequence entry 
    - > 
-     A folded sequence entry 
+     A folded sequence entry
    - Sixth item in top sequence 
 ruby: | 
   { 'empty' => [], 'flow' => [ 'one', 'two', 'three', 'four', 'five' ], 
     'block' => [ 'First item in top sequence', [ 'Subordinate sequence entry' ], 
     "A folded sequence entry\n", 'Sixth item in top sequence' ] } 
+syck: |
+  struct test_node empty[] = {
+      end_node
+  };
+  struct test_node flow[] = {
+      { T_STR, 0, "one" },
+      { T_STR, 0, "two" },
+      { T_STR, 0, "three" },
+      { T_STR, 0, "four" },
+      { T_STR, 0, "five" },
+      end_node
+  };
+  struct test_node inblock[] = {
+      { T_STR, 0, "Subordinate sequence entry" },
+      end_node
+  };
+  struct test_node block[] = {
+      { T_STR, 0, "First item in top sequence" },
+      { T_SEQ, 0, 0, inblock },
+      { T_STR, 0, "A folded sequence entry\n" },
+      { T_STR, 0, "Sixth item in top sequence" },
+      end_node
+  };
+  struct test_node map[] = {
+      { T_STR, 0, "empty" },
+          { T_SEQ, 0, 0, empty },
+      { T_STR, 0, "flow" },
+          { T_SEQ, 0, 0, flow },
+      { T_STR, 0, "block" },
+          { T_SEQ, 0, 0, block },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
  
 --- 
 test: Complete mapping test 

@@ -1,4 +1,12 @@
 --- %YAML:1.0
+- version: 0.50
+  date: 2005-01-15
+  changes:
+    lib/emitter.c: renovated emitter, which allows an initial walk
+      of the tree to check for anchors and tag prefixing.  then, swift
+      emission of nodes with folding routines and shortcut-checking
+      built-in!
+
 - version: 0.45
   date: 2004-08-18
   changes:

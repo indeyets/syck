@@ -202,7 +202,7 @@ build_symbol_table( SyckEmitter *emitter, struct test_node *node ) {
                 i++;
             }        
         }
-        return syck_emitter_mark_node( emitter, (char *)node );
+        return syck_emitter_mark_node( emitter, (st_data_t)node );
 
         case T_STR:
         return 0;
@@ -210,7 +210,7 @@ build_symbol_table( SyckEmitter *emitter, struct test_node *node ) {
 }
 
 void
-test_emitter_handler( SyckEmitter *emitter, char *data ) {
+test_emitter_handler( SyckEmitter *emitter, st_data_t data ) {
     struct test_node *node = (struct test_node *)data;
     switch ( node->type ) {
         case T_STR:
@@ -221,7 +221,7 @@ test_emitter_handler( SyckEmitter *emitter, char *data ) {
             int i = 0;
             syck_emit_seq( emitter, node->tag );
             while ( node->value[i].type != T_END ) {
-                syck_emit_item( emitter, (char *)&node->value[i] );
+                syck_emit_item( emitter, (st_data_t)&node->value[i] );
                 i++;
             }        
             syck_emit_end( emitter );
@@ -232,7 +232,7 @@ test_emitter_handler( SyckEmitter *emitter, char *data ) {
             int i = 0;
             syck_emit_map( emitter, node->tag );
             while ( node->value[i].type != T_END ) {
-                syck_emit_item( emitter, (char *)&node->value[i] );
+                syck_emit_item( emitter, (st_data_t)&node->value[i] );
                 i++;
             }        
             syck_emit_end( emitter );
@@ -255,7 +255,7 @@ void CuRoundTrip( CuTest* tc, struct test_node *stream ) {
     emitter->bonus = cs;
     while ( stream[i].type != T_END )
     {
-        syck_emit( emitter, (char *)&stream[i] );
+        syck_emit( emitter, (st_data_t)&stream[i] );
         syck_emitter_flush( emitter, 0 );
         i++;
     }
@@ -2139,6 +2139,70 @@ struct test_node stream[] = {
     CuRoundTrip( tc, stream );
 }
 /*
+ * Example : Flow and block formatting
+ */
+void
+YtsSpecificationExamples_43( CuTest *tc )
+{
+struct test_node empty[] = {
+    end_node
+};
+struct test_node flow[] = {
+    { T_STR, 0, "one" },
+    { T_STR, 0, "two" },
+    { T_STR, 0, "three" },
+    { T_STR, 0, "four" },
+    { T_STR, 0, "five" },
+    end_node
+};
+struct test_node inblock[] = {
+    { T_STR, 0, "Subordinate sequence entry" },
+    end_node
+};
+struct test_node block[] = {
+    { T_STR, 0, "First item in top sequence" },
+    { T_SEQ, 0, 0, inblock },
+    { T_STR, 0, "A folded sequence entry\n" },
+    { T_STR, 0, "Sixth item in top sequence" },
+    end_node
+};
+struct test_node map[] = {
+    { T_STR, 0, "empty" },
+        { T_SEQ, 0, 0, empty },
+    { T_STR, 0, "flow" },
+        { T_SEQ, 0, 0, flow },
+    { T_STR, 0, "block" },
+        { T_SEQ, 0, 0, block },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"empty: [] \n"
+"flow: [ one, two, three # May span lines, \n"
+"         , four,           # indentation is \n"
+"           five ]          # mostly ignored. \n"
+"block: \n"
+" - First item in top sequence \n"
+" - \n"
+"  - Subordinate sequence entry \n"
+" - > \n"
+"   A folded sequence entry\n"
+" - Sixth item in top sequence \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
  * Example : Timestamp
  */
 void
@@ -2221,6 +2285,7 @@ SyckGetSuite()
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_39 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_40 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_42 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_43 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_62 );
     return suite;
 }

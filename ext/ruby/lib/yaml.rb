@@ -84,7 +84,7 @@ require 'yaml/stream'
 module YAML
 
     @@resolver = YAML::Syck::DefaultResolver
-    @@resolver.add_types( @@tagged_classes )
+    @@resolver.use_types_at( @@tagged_classes )
     @@parser = YAML::Syck::Parser.new( @@resolver )
     @@parser_generic = YAML::Syck::Parser.new( YAML::Syck::GenericResolver )
     @@emitter = YAML::Syck::Emitter.new
@@ -369,12 +369,12 @@ module YAML
 	#
 	def YAML.quick_emit( oid, opts = {}, &e )
         out = 
-            if opts.is_a? @@emitter
+            if opts.is_a? @@emitter.class
                 opts
             else
                 @@emitter.reset( opts )
             end
-        out.object_handler( oid, &e )
+        out.emit( oid, &e )
 	end
 	
 end
@@ -414,10 +414,10 @@ module Kernel # :nodoc:
     #
     def y( object, *objects )
         objects.unshift object
-        puts( if x.length == 1
-                  YAML::dump( *x )
+        puts( if objects.length == 1
+                  YAML::dump( *objects )
               else
-                  YAML::dump_stream( *x )
+                  YAML::dump_stream( *objects )
               end )
     end
     private :y

@@ -13,7 +13,7 @@
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
-#define SYCK_VERSION    "0.45"
+#define SYCK_VERSION    "0.50"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
@@ -73,6 +73,10 @@ extern "C" {
 /*
  * Node definitions
  */
+#ifndef ST_DATA_T_DEFINED
+typedef long st_data_t;
+#endif
+
 #define SYMID unsigned long
 
 typedef struct _syck_node SyckNode;
@@ -256,7 +260,7 @@ typedef struct _syck_emitter SyckEmitter;
 typedef struct _syck_emitter_node SyckEmitterNode;
 
 typedef void (*SyckOutputHandler)(SyckEmitter *, char *, long); 
-typedef void (*SyckEmitterHandler)(SyckEmitter *, char *); 
+typedef void (*SyckEmitterHandler)(SyckEmitter *, st_data_t); 
 
 enum doc_stage {
     doc_open,
@@ -357,6 +361,7 @@ long syck_io_str_read( char *, SyckIoStr *, long, long );
 char *syck_base64enc( char *, long );
 char *syck_base64dec( char *, long );
 SyckEmitter *syck_new_emitter();
+SYMID syck_emitter_mark_node( SyckEmitter *, st_data_t );
 void syck_emitter_ignore_id( SyckEmitter *, SYMID );
 void syck_output_handler( SyckEmitter *, SyckOutputHandler );
 void syck_emitter_handler( SyckEmitter *, SyckEmitterHandler );
@@ -364,12 +369,12 @@ void syck_free_emitter( SyckEmitter * );
 void syck_emitter_clear( SyckEmitter * );
 void syck_emitter_write( SyckEmitter *, char *, long );
 void syck_emitter_flush( SyckEmitter *, long );
-void syck_emit( SyckEmitter *, char * );
+void syck_emit( SyckEmitter *, st_data_t );
 void syck_emit_scalar( SyckEmitter *, char *, enum block_styles, int, char, char *, long );
 void syck_emit_folded( SyckEmitter *, int, char *, long );
 void syck_emit_literal( SyckEmitter *, char *, long );
 void syck_emit_seq( SyckEmitter *, char * );
-void syck_emit_item( SyckEmitter *, char * );
+void syck_emit_item( SyckEmitter *, st_data_t );
 void syck_emit_map( SyckEmitter *, char * );
 void syck_emit_end( SyckEmitter * );
 void syck_emit_tag( SyckEmitter *, char *, char * );
@@ -431,10 +436,6 @@ void apply_seq_in_map( SyckParser *, SyckNode * );
  * Lexer prototypes
  */
 void syckerror( char * );
-
-#ifndef ST_DATA_T_DEFINED
-typedef long st_data_t;
-#endif
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

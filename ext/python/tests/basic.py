@@ -4,10 +4,13 @@ import unittest
 class TestCase(unittest.TestCase):
     def parseOnly(self, obj, yaml):
         self.assertEqual(obj, syck.load(yaml))
+    def roundTrip(self, obj, yaml):
+        self.assertEqual(obj, syck.load(syck.dump(yaml)))
+        self.assertEqual(obj, syck.load(yaml))
 
 class BasicTests(TestCase):
     def testBasicMap(self):
-        self.parseOnly(
+        self.roundTrip(
             { 'one': 'foo', 'three': 'baz', 'two': 'bar' }, """
 one: foo
 two: bar

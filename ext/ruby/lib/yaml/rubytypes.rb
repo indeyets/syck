@@ -68,8 +68,8 @@ end
 #
 class Struct
     tag_as "tag:ruby.yaml.org,2002:struct"
-    def tag_class_name; self.class.name.gsub( "Struct::", "" ); end
-    def tag_read_class( name ); "Struct::#{ name }"; end
+    def self.tag_class_name; self.class.name.gsub( "Struct::", "" ); end
+    def self.tag_read_class( name ); "Struct::#{ name }"; end
     def Struct.yaml_new( tag, val )
         if Hash === val
             struct_type = nil
