@@ -10,6 +10,13 @@
 #include "syck.h"
 #include "gram.h"
 
+enum {
+    STATE_PLAIN = 0,
+    STATE_SINGLE_QUOTE,
+    STATE_DOUBLE_QUOTE
+};
+
+#define QUOTELEN    1024
 #define YYCTYPE     char
 #define YYCURSOR    parser->cursor
 #define YYMARKER    parser->marker
@@ -40,11 +47,23 @@
             return IEND; \
         }
 
+#define QUOTECAT(s, c, i, l) \
+        { \
+            if ( i + 1 >= c ) \
+            { \
+                c += QUOTELEN; \
+                S_REALLOC_N( s, char, c ); \
+            } \
+            s[i++] = l; \
+            s[i] = '\0'; \
+        }
+
 SyckParser *syck_parser_ptr = NULL;
 
 int
 yylex( YYSTYPE *yylval, SyckParser *parser )
 {
+    int state;
     syck_parser_ptr = parser;
     if ( parser->cursor == NULL ) syck_parser_read( parser );
 
@@ -56,13 +75,18 @@ INDENT = LF [ ]* ;
 ENDSPC = [ \n]+ ;
 NULL = [\000] ;
 ANY = [\001-\377] ;
-DELIMS = [\{\}\[\]] ;
+ODELIMS = [\{\[] ;
+CDELIMS = [\}\]] ;
+INLINEX = ( CDELIMS | "," ENDSPC ) ;
+ALLX = ( ":" ENDSPC ) ;
 
 */
 
-Implicit:
+Document:
 
     YYTOKEN = YYCURSOR;
+    state = STATE_PLAIN;
+
 #ifdef REDEBUG
     printf( "TOKEN: %s\n", YYTOKEN );
 #endif
@@ -101,11 +125,25 @@ INDENT              {   // Isolate spaces
                         return INDENT;
                     }
 
-DELIMS              {   SyckLevel *lvl = CURRENT_LEVEL();
+ODELIMS             {   SyckLevel *lvl = CURRENT_LEVEL();
                         ENSURE_IOPEN(lvl, 0, 1);
-                        return YYTOKEN[0]; }
+                        lvl = CURRENT_LEVEL();
+                        lvl->status = syck_lvl_inline;
+                        return YYTOKEN[0]; 
+                    }
 
-[-:,?] ENDSPC       {   YYPOS(1); 
+CDELIMS             {   SyckLevel *lvl = CURRENT_LEVEL();
+                        lvl->status = syck_lvl_implicit;
+                        return YYTOKEN[0]; 
+                    }
+
+[:,] ENDSPC         {   YYPOS(1); 
+                        return YYTOKEN[0]; 
+                    }
+
+[-?] ENDSPC         {   SyckLevel *lvl = CURRENT_LEVEL();
+                        ENSURE_IOPEN(lvl, parser->token - parser->lineptr, 1);
+                        YYPOS(1); 
                         return YYTOKEN[0]; 
                     }
 
@@ -121,22 +159,124 @@ DELIMS              {   SyckLevel *lvl = CURRENT_LEVEL();
                         return TRANSFER;
                     }
 
-WORD                {   SyckLevel *lvl = CURRENT_LEVEL();
-                        ENSURE_IOPEN(lvl, 0, 1);
-                        yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );
-                        return PLAIN;
+"'"                 {   goto SingleQuote; 
                     }
 
-[ ]+                {   goto Implicit; }
+"\""                {   goto DoubleQuote; 
+                    }
+
+[ ]+                {   goto Document; }
 
 NULL                {   SyckLevel *lvl = CURRENT_LEVEL();
                         ENSURE_IEND(lvl, -1);
                         return 0; 
                     }
 
-ANY                 {   printf( "Unrecognized character: %s\n", YYTOKEN ); }
+ANY                 {   SyckLevel *lvl = CURRENT_LEVEL();
+                        ENSURE_IOPEN(lvl, 0, 1);
+                        goto Plain; }
 
 */
+
+Plain:
+    {
+        SyckLevel *plvl;
+        char *plaintok;
+        YYCURSOR = YYTOKEN;
+        plvl = CURRENT_LEVEL();
+
+Plain2: 
+        plaintok = YYCURSOR;
+
+/*!re2c
+
+ALLX                {   YYCURSOR = plaintok;
+                        goto Implicit; }
+
+INLINEX             {   if ( plvl->status != syck_lvl_inline ) goto Plain2;
+                        YYCURSOR = plaintok;
+                        goto Implicit; 
+                    }
+
+( LF | NULL )       {   YYCURSOR = plaintok;
+                        goto Implicit; 
+                    }
+
+ANY                 {   goto Plain2; }
+
+*/
+    }
+
+Implicit:
+    {
+        char *impend = YYCURSOR;
+        YYCURSOR = YYTOKEN;
+
+Implicit2:
+
+/*!re2c
+
+ANY                 {   YYCURSOR = impend;
+                        yylval->nodeData = syck_new_str2( YYTOKEN, YYCURSOR - YYTOKEN );
+                        return PLAIN;
+                    }
+*/
+    }
+
+SingleQuote:
+    {
+        int qidx = 0;
+        int qcapa = 100;
+        char *qstr = S_ALLOC_N( char, qcapa );
+
+SingleQuote2:
+
+/*!re2c
+
+"''"                {   QUOTECAT(qstr, qcapa, qidx, '\'');
+                        goto SingleQuote2; 
+                    }
+"'"                 {   SyckNode *n = syck_alloc_str();
+                        n->data.str->ptr = qstr;
+                        n->data.str->len = qidx;
+                        yylval->nodeData = n;
+                        return PLAIN; 
+                    }
+ANY                 {   QUOTECAT(qstr, qcapa, qidx, *(YYCURSOR - 1)); 
+                        goto SingleQuote2; 
+                    }
+
+*/
+
+    }
+
+
+DoubleQuote:
+    {
+        int qidx = 0;
+        int qcapa = 100;
+        char *qstr = S_ALLOC_N( char, qcapa );
+
+DoubleQuote2:
+
+/*!re2c
+
+"\\\""              {   QUOTECAT(qstr, qcapa, qidx, '"');
+                        goto DoubleQuote2; 
+                    }
+"\""                {   SyckNode *n = syck_alloc_str();
+                        n->data.str->ptr = qstr;
+                        n->data.str->len = qidx;
+                        yylval->nodeData = n;
+                        return PLAIN; 
+                    }
+ANY                 {   QUOTECAT(qstr, qcapa, qidx, *(YYCURSOR - 1)); 
+                        goto DoubleQuote2; 
+                    }
+
+*/
+
+    }
 
 }
 
