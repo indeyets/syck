@@ -179,4 +179,3 @@ ANY             {   return syck_taguri( YAML_DOMAIN, type_id, strlen( type_id ) 
 */
 
 }
-

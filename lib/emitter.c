@@ -16,6 +16,8 @@
 
 #define DEFAULT_ANCHOR_FORMAT "id%03d"
 
+const char hex_table[] = 
+"0123456789ABCDEF";
 static char b64_table[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -492,27 +494,101 @@ void syck_emit_indent( SyckEmitter *e )
     free( spcs );
 }
 
+/* Clear the scan */
+#define SCAN_NONE       0
+/* All printable characters? */
+#define SCAN_NONPRINT   1
+/* Any indented lines? */
+#define SCAN_INDENTED   2
+/* Larger than the requested width? */
+#define SCAN_WIDE       4
+/* Opens with whitespace? */
+#define SCAN_WHITESTART 8
+/* Contains a newline */
+#define SCAN_NEWLINE    16
+/* Contains a single quote */
+#define SCAN_SINGLEQ    32
+/* Contains a double quote */
+#define SCAN_DOUBLEQ    64
+
+/*
+ * Basic printable test for LATIN-1 characters.
+ */
+int
+syck_scan_scalar( int req_width, char *cursor, long len )
+{
+    long i = 0, start = 0;
+    int flags = SCAN_NONE;
+
+    for ( i = 0; i < len; i++ ) {
+
+        if ( ! ( cursor[i] == 0x9 ||
+                 cursor[i] == 0xA ||
+                 cursor[i] == 0xD ||
+               ( cursor[i] >= 0x20 && cursor[i] <= 0x7E ) )
+        ) {
+            flags |= SCAN_NONPRINT;
+        }
+        else if ( cursor[i] == '\n' ) {
+            flags |= SCAN_NEWLINE;
+            if ( cursor[i+1] == ' ' || cursor[i+1] == '\t' ) 
+                flags |= SCAN_INDENTED;
+            if ( req_width > 0 && i - start > req_width )
+                flags |= SCAN_WIDE;
+            start = i;
+        }
+        else if ( cursor[i] == '\'' )
+        {
+            flags |= SCAN_SINGLEQ;
+        }
+        else if ( cursor[i] == '"' )
+        {
+            flags |= SCAN_DOUBLEQ;
+        }
+
+        if ( i == 0 &&
+            ( cursor[i] == ' ' || cursor[i] == '\t' || cursor[i] == '\n' ) 
+        ) {
+            flags |= SCAN_WHITESTART;
+        }
+    }
+
+    return flags;
+}
 /*
  * All scalars should be emitted through this function, which determines an appropriate style,
  * tag and indent.
  */
-void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style, int force_indent,
+void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style, int force_indent, int force_width,
                        char keep_nl, char *str, long len )
 {
-    int mark = 0, end = 0;
     SyckLevel *lvl = syck_emitter_current_level( e );
+    int scan = syck_scan_scalar( force_indent, str, len );
     char *implicit = syck_match_implicit( str, len );
     implicit = syck_taguri( YAML_DOMAIN, implicit, strlen( implicit ) );
     syck_emit_tag( e, tag, implicit );
     S_FREE( implicit );
 
     /* Determine block style */
-    if ( force_style == block_arbitrary ) {
-        force_style = e->block_style;
-    }
-    /* TODO: if arbitrary, sniff a good block style. */
-    if ( force_style == block_arbitrary ) {
+    if ( scan & SCAN_NONPRINT ) {
+        force_style = block_2quote;
+    } else if ( scan & SCAN_WHITESTART ) {
+        force_style = block_2quote;
+    } else if ( scan & SCAN_INDENTED ) {
         force_style = block_literal;
+    } else if ( force_style == block_plain && ( scan & SCAN_NEWLINE ) ) {
+        force_style = block_literal;
+    } else if ( force_style == block_fold && ( ! ( scan & SCAN_WIDE ) ) ) {
+        force_style = block_literal;
+    }
+
+    /* if still arbitrary, sniff a good block style. */
+    if ( force_style == block_arbitrary ) {
+        if ( scan & SCAN_NEWLINE ) {
+            force_style = block_literal;
+        } else {
+            force_style = block_plain;
+        }
     }
 
     if ( force_indent == 0 ) {
@@ -520,11 +596,158 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum block_styles force_style,
     }
 
     /* Write the text node */
-    if ( strchr( str, '\n' ) ) {
-        syck_emit_literal( e, str, len );
-    } else {
-        syck_emitter_write( e, str, len );
+    switch ( force_style )
+    {
+        case block_1quote:
+            syck_emit_1quoted( e, force_width, str, len );
+        break;
+
+        case block_2quote:
+            syck_emit_2quoted( e, force_width, str, len );
+        break;
+
+        case block_fold:
+            syck_emit_folded( e, force_width, str, len );
+        break;
+
+        case block_literal:
+            syck_emit_literal( e, str, len );
+        break;
+
+        case block_plain:
+            syck_emitter_write( e, str, len );
+        break;
     }
+}
+
+void
+syck_emitter_escape( SyckEmitter *e, char *src, long len )
+{
+    int i;
+    for( i = 0; i < len; i++ )
+    {
+        if( (src[i] < 0x20) || (0x7E < src[i]) )
+        {
+            syck_emitter_write( e, "\\", 1 );
+            if( '\0' == src[i] )
+                syck_emitter_write( e, "0", 1 );
+            else
+            {
+                syck_emitter_write( e, "x", 1 );
+                syck_emitter_write( e, (char *)hex_table + ((src[i] & 0xF0) >> 4), 1 );
+                syck_emitter_write( e, (char *)hex_table + (src[i] & 0x0F), 1 );
+            }
+        }
+        else
+        {
+            syck_emitter_write( e, src + i, 1 );
+            if( '\\' == src[i] )
+                syck_emitter_write( e, "\\", 1 );
+        }
+    }
+}
+
+/*
+ * Outputs a single-quoted block.
+ */
+void syck_emit_1quoted( SyckEmitter *e, int width, char *str, long len )
+{
+    char *mark = str;
+    char *start = str;
+    char *end = str;
+    syck_emitter_write( e, "'", 1 );
+    while ( mark < str + len ) {
+        switch ( *mark ) {
+            case '\'':  syck_emitter_write( e, "'", 1 ); break;
+
+            case '\n':
+                end = mark;
+                if ( *start != ' ' && *start != '\n' && *end != '\n' && *end != ' ' ) end += 1;
+                syck_emitter_write( e, mark, ( end - mark ) + 1 );
+                syck_emit_indent( e );
+                start = mark + 1;
+            break;
+
+            case ' ':
+                if ( *start != ' ' ) {
+                    if ( mark - start > width ) {
+                        if ( start >= end ) {
+                            end = mark;
+                        }
+                        syck_emit_indent( e );
+                        start = end + 1;
+                        end = end + 1;
+                        mark = end;
+                    } else {
+                        syck_emitter_write( e, " ", 1 );
+                    }
+                }
+            break;
+
+            default:
+                syck_emitter_write( e, mark, 1 );
+            break;
+        }
+        mark++;
+    }
+    syck_emitter_write( e, "'", 1 );
+}
+
+/*
+ * Outputs a double-quoted block.
+ */
+void syck_emit_2quoted( SyckEmitter *e, int width, char *str, long len )
+{
+    char *mark = str;
+    char *start = str;
+    char *end = str;
+    syck_emitter_write( e, "\"", 1 );
+    while ( mark < str + len ) {
+        switch ( *mark ) {
+
+            /* Escape sequences allowed within double quotes. */
+            case '"':  syck_emitter_write( e, "\\\"", 2 ); break;
+            case '\\': syck_emitter_write( e, "\\\\", 2 ); break;
+            case '\0': syck_emitter_write( e, "\\0",  2 ); break;
+            case '\a': syck_emitter_write( e, "\\a",  2 ); break;
+            case '\b': syck_emitter_write( e, "\\b",  2 ); break;
+            case '\f': syck_emitter_write( e, "\\f",  2 ); break;
+            case '\r': syck_emitter_write( e, "\\r",  2 ); break;
+            case '\t': syck_emitter_write( e, "\\t",  2 ); break;
+            case '\v': syck_emitter_write( e, "\\v",  2 ); break;
+            case 0x1b: syck_emitter_write( e, "\\e",  2 ); break;
+
+            case '\n':
+                end = mark;
+                if ( *start != ' ' && *start != '\n' && *end != '\n' && *end != ' ' ) end += 1;
+                syck_emitter_write( e, mark, ( end - mark ) + 1 );
+                syck_emit_indent( e );
+                start = mark + 1;
+            break;
+
+            case ' ':
+                if ( *start != ' ' ) {
+                    if ( mark - start > width ) {
+                        if ( start >= end ) {
+                            end = mark;
+                        }
+                        syck_emit_indent( e );
+                        start = end + 1;
+                        end = end + 1;
+                        mark = end;
+                    } else {
+                        syck_emitter_write( e, " ", 1 );
+                    }
+                }
+            break;
+
+            default:
+                syck_emitter_escape( e, mark, 1 );
+            break;
+        }
+        mark++;
+    }
+    syck_emitter_write( e, "\"", 1 );
 }
 
 /*

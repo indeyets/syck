@@ -2,6 +2,9 @@
 - version: 0.50
   date: 2005-01-15
   changes:
+    lib/gram.y: freed up parser to accept any structure as a headless
+      document!
+
     lib/emitter.c: renovated emitter, which allows an initial walk
       of the tree to check for anchors and tag prefixing.  then, swift
       emission of nodes with folding routines and shortcut-checking

@@ -270,9 +270,11 @@ enum doc_stage {
 
 enum block_styles {
     block_arbitrary,
-    block_quote,
+    block_1quote,
+    block_2quote,
     block_fold,
-    block_literal
+    block_literal,
+    block_plain
 };
 
 /*
@@ -368,9 +370,12 @@ void syck_emitter_handler( SyckEmitter *, SyckEmitterHandler );
 void syck_free_emitter( SyckEmitter * );
 void syck_emitter_clear( SyckEmitter * );
 void syck_emitter_write( SyckEmitter *, char *, long );
+void syck_emitter_escape( SyckEmitter *, char *, long );
 void syck_emitter_flush( SyckEmitter *, long );
 void syck_emit( SyckEmitter *, st_data_t );
-void syck_emit_scalar( SyckEmitter *, char *, enum block_styles, int, char, char *, long );
+void syck_emit_scalar( SyckEmitter *, char *, enum block_styles, int, int, char, char *, long );
+void syck_emit_1quoted( SyckEmitter *, int, char *, long );
+void syck_emit_2quoted( SyckEmitter *, int, char *, long );
 void syck_emit_folded( SyckEmitter *, int, char *, long );
 void syck_emit_literal( SyckEmitter *, char *, long );
 void syck_emit_seq( SyckEmitter *, char * );
@@ -389,6 +394,7 @@ void syck_free_parser( SyckParser * );
 void syck_parser_set_root_on_error( SyckParser *, SYMID );
 void syck_parser_implicit_typing( SyckParser *, int );
 void syck_parser_taguri_expansion( SyckParser *, int );
+int syck_scan_scalar( int, char *, long );
 void syck_parser_handler( SyckParser *, SyckNodeHandler );
 void syck_parser_error_handler( SyckParser *, SyckErrorHandler );
 void syck_parser_bad_anchor_handler( SyckParser *, SyckBadAnchorHandler );

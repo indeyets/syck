@@ -214,7 +214,7 @@ test_emitter_handler( SyckEmitter *emitter, st_data_t data ) {
     struct test_node *node = (struct test_node *)data;
     switch ( node->type ) {
         case T_STR:
-            syck_emit_scalar( emitter, node->tag, block_arbitrary, 0, 0, node->key, strlen( node->key ) );
+            syck_emit_scalar( emitter, node->tag, block_arbitrary, 0, 0, 40, node->key, strlen( node->key ) );
         break;
         case T_SEQ:
         {

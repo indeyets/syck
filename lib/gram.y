@@ -41,7 +41,7 @@
 %token              YAML_DOCSEP YAML_IOPEN YAML_INDENT YAML_IEND
 
 %type <nodeId>      doc basic_seq
-%type <nodeData>    atom word_rep ind_rep doc_struct_rep struct_rep atom_or_empty
+%type <nodeData>    atom word_rep ind_rep struct_rep atom_or_empty
 %type <nodeData>    implicit_seq inline_seq implicit_map inline_map inline_seq_atom inline_map_atom
 %type <nodeData>    top_imp_seq in_implicit_seq in_inline_seq basic_mapping basic_mapping2
 %type <nodeData>    top_imp_map in_implicit_map in_inline_map complex_mapping
@@ -51,7 +51,7 @@
 
 %%
 
-doc     : doc_struct_rep
+doc     : atom
         {
            ((SyckParser *)parser)->root = syck_hdlr_add_node( (SyckParser *)parser, $1 );
         }
@@ -67,13 +67,6 @@ doc     : doc_struct_rep
 
 atom	: word_rep
         | ind_rep
-        ;
-
-doc_struct_rep : struct_rep
-        | indent_open doc_struct_rep indent_flex_end
-        {
-           $$ = $2;
-        }
         ;
 
 ind_rep : struct_rep
