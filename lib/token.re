@@ -53,9 +53,16 @@
 #define ENSURE_IOPEN(last_lvl, to_len, reset) \
         if ( last_lvl->spaces < to_len ) \
         { \
-            ADD_LEVEL( to_len ); \
-            if ( reset == 1 ) YYPOS(0); \
-            return IOPEN; \
+            if ( last_lvl->status == syck_lvl_inline ) \
+            { \
+                goto Document; \
+            } \
+            else \
+            { \
+                ADD_LEVEL( to_len ); \
+                if ( reset == 1 ) YYPOS(0); \
+                return IOPEN; \
+            } \
         } 
 
 //
@@ -258,6 +265,8 @@ CDELIMS             {   lvl->status = syck_lvl_implicit;
 
 BLOCK               {   YYCURSOR--; goto ScalarBlock; }
 
+"#"                 {   goto Comment; }
+
 [ ]+                {   goto Document; }
 
 NULL                {   ENSURE_IEND(lvl, -1);
@@ -301,24 +310,38 @@ Plain3:
 
 /*!re2c
 
-ALLX                {   YYCURSOR = YYTOKTMP;
-                        RETURN_IMPLICIT();
-                    }
+ALLX                {   RETURN_IMPLICIT(); }
 
 INLINEX             {   if ( plvl->status != syck_lvl_inline ) goto Plain2;
-                        YYCURSOR = YYTOKTMP;
                         RETURN_IMPLICIT();
                     }
 
-( LF | NULL )       {   YYCURSOR = YYTOKTMP;
-                        RETURN_IMPLICIT();
-                    }
+NULL                {   RETURN_IMPLICIT(); }
+
+LF                  {   RETURN_IMPLICIT(); }
 
 [ ]+                {   goto Plain3; }
 
 ANY                 {   goto Plain2; }
 
 */
+    }
+
+Comment:
+    {
+        YYTOKTMP = YYCURSOR;
+
+/*!re2c
+
+( LF | NULL )       {   YYCURSOR = YYTOKTMP;
+                        goto Document; 
+                    }
+
+ANY                 {   goto Comment; 
+                    }
+
+*/
+
     }
 
 SingleQuote:

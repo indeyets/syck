@@ -13,8 +13,8 @@ libsyck_a_SOURCES = \
             syck.c \
             syck_st.c \
             gram.y \
-            token.re \
-            implicit.re
+            token.c \
+            implicit.c
 
 # libsyck_a_LIBADD = $(LEXLIB)
 

@@ -12,7 +12,7 @@
 static double zero()    { return 0.0; }
 static double one() { return 1.0; }
 static double inf() { return one() / zero(); }
-static double nan() { return zero() / zero(); }
+static double i_nan() { return zero() / zero(); }
 
 PyObject *
 syck_PyIntMaker( long num )
@@ -73,7 +73,7 @@ python_syck_handler(p, n)
             }
             else if ( strcmp( n->type_id, "float#nan" ) == 0 )
             {
-                o = PyFloat_FromDouble( nan() );
+                o = PyFloat_FromDouble( i_nan() );
             }
             else if ( strcmp( n->type_id, "float#inf" ) == 0 )
             {
@@ -127,6 +127,7 @@ syck_load( self, args )
         return NULL;
     syck_parser_str_auto( parser, yamlstr, NULL );
     syck_parser_handler( parser, python_syck_handler );
+    syck_parser_error_handler( parser, NULL );
     syck_parser_implicit_typing( parser, 1 );
     syck_parser_taguri_expansion( parser, 0 );
     v = syck_parse( parser );
