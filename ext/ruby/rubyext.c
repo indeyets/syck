@@ -10,7 +10,7 @@
 #include "syck.h"
 
 SYMID
-syck_parse_handler(p, n)
+rb_syck_parse_handler(p, n)
     SyckParser *p;
     SyckNode *n;
 {
@@ -42,6 +42,19 @@ syck_parse_handler(p, n)
     return obj;
 }
 
+void
+rb_syck_err_handler(p, msg)
+    SyckParser *p;
+    char *msg;
+{
+    p->cursor[1] = '\0';
+    rb_raise(rb_eLoadError, "%s on line %d, col %d: `%s'",
+           msg,
+           p->linect,
+           p->cursor - p->lineptr, 
+           p->lineptr); 
+}
+
 VALUE
 rb_syck_load(argc, argv)
     int argc;
@@ -59,7 +72,8 @@ rb_syck_load(argc, argv)
 	    syck_parser_str( parser, RSTRING(port)->ptr, RSTRING(port)->len, NULL );
     }
 
-    syck_parser_handler( parser, syck_parse_handler );
+    syck_parser_handler( parser, rb_syck_parse_handler );
+    syck_parser_error_handler( parser, rb_syck_err_handler );
     v = syck_parse( parser );
     syck_free_parser( parser );
 

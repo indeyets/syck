@@ -109,9 +109,11 @@ syck_new_parser()
     p->anchors = st_init_strtable();
     p->buffer = S_ALLOC_N( char, 16384 );
     p->cursor = NULL;
+    p->lineptr = NULL;
     p->token = NULL;
     p->marker = NULL;
     p->limit = NULL;
+    p->linect = 0;
     return p;
 }
 
@@ -176,6 +178,13 @@ syck_parser_handler( SyckParser *p, SyckNodeHandler hdlr )
 {
     ASSERT( p != NULL );
     p->handler = hdlr;
+}
+
+void
+syck_parser_error_handler( SyckParser *p, SyckErrorHandler hdlr )
+{
+    ASSERT( p != NULL );
+    p->error_handler = hdlr;
 }
 
 void
@@ -285,6 +294,7 @@ syck_check_limit( SyckParser *p, int len )
     if ( p->cursor == NULL )
     {
         p->cursor = p->buffer;
+        p->lineptr = p->buffer;
         p->marker = p->buffer;
     }
     p->limit = p->buffer + len;
@@ -380,6 +390,7 @@ syck_move_tokens( SyckParser *p )
         p->marker -= count;
         p->cursor -= count;
         p->limit -= count;
+        p->lineptr -= count;
     }
     return skip;
 }
@@ -392,5 +403,14 @@ syck_parse( SyckParser *p )
     ASSERT( p != NULL );
     yyparse( p );
     return p->root;
+}
+
+void
+syck_default_error_handler( SyckParser *p, char *msg )
+{
+    printf( "Error at [Line %d, Col %d]: %s\n", 
+        p->linect,
+        p->cursor - p->lineptr,
+        msg );
 }
 

@@ -15,10 +15,13 @@
 #define YYMARKER    parser->marker
 #define YYLIMIT     parser->limit
 #define YYTOKEN     parser->token
+#define YYLINEPTR   parser->lineptr
+#define YYLINE      parser->linect
 #define YYFILL(n)   syck_parser_read(parser);
 #define YYPOS(n)    YYCURSOR = YYTOKEN + n;
 
-#define ADD_LEVEL(len) syck_parser_add_level( parser, len );
+#define NEWLINE(ptr)    YYLINE++; YYLINEPTR = ptr + 1;
+#define ADD_LEVEL(len)  syck_parser_add_level( parser, len );
 #define CURRENT_LEVEL() syck_parser_current_level( parser );
 
 #define ENSURE_IOPEN(last_lvl, to_len, reset) \
@@ -37,9 +40,12 @@
             return IEND; \
         }
 
+SyckParser *syck_parser_ptr = NULL;
+
 int
 yylex( YYSTYPE *yylval, SyckParser *parser )
 {
+    syck_parser_ptr = parser;
     if ( parser->cursor == NULL ) syck_parser_read( parser );
 
 /*!re2c
@@ -71,7 +77,14 @@ INDENT              {   // Isolate spaces
                         int indt_len;
                         SyckLevel *lvl;
                         char *indent = YYTOKEN;
-                        while ( indent < YYCURSOR ) { if ( *(++indent) != '\n' ) break; }
+                        NEWLINE(indent);
+                        while ( indent < YYCURSOR ) 
+                        { 
+                            if ( *(++indent) != '\n' ) 
+                                break; 
+                            else
+                                NEWLINE(indent);
+                        }
 
                         // Calculate indent length
                         lvl = CURRENT_LEVEL();
@@ -136,6 +149,9 @@ yywrap()
 void 
 yyerror( char *msg )
 {
-    printf( "Parse error: %s\n", msg );
+    if ( syck_parser_ptr->error_handler == NULL )
+        syck_parser_ptr->error_handler = syck_default_error_handler;
+
+    (syck_parser_ptr->error_handler)(syck_parser_ptr, msg);
 }
 
