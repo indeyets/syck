@@ -270,6 +270,7 @@ in_implicit_map : complex_mapping
                 { 
                     apply_seq_in_map( (SyckParser *)parser, $1 );
                     syck_map_update( $1, $3 );
+                    syck_free_node( $3 );
                     $$ = $1;
                 }
 				| in_implicit_map indent_sep
@@ -304,6 +305,7 @@ in_inline_map	: basic_mapping2
 				| in_inline_map ',' basic_mapping2
 				{
                     syck_map_update( $1, $3 );
+                    syck_free_node( $3 );
                     $$ = $1;
 				}
                 ;
