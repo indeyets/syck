@@ -6,7 +6,7 @@ require 'runit/cui/testrunner'
 require 'yaml'
 
 # [ruby-core:01946]
-module Test
+module YAML_Tests
     StructTest = Struct::new( :c )
 end
 
@@ -219,6 +219,12 @@ EOY
         assert_bytecode( map, "D\nM\nSMark McGwire\nM\nShr\nS65\nSavg\nS0.278\nE\n" +
             "SSammy Sosa\nM\nShr\nS63\nSavg\nS0.288\nE\nE\n" )
 	end
+
+    def test_ambiguous_comments
+        assert_to_yaml( "Call the method #dave", <<EOY )
+--- "Call the method #dave"
+EOY
+    end
 
 	def test_spec_nested_comments
 		# Map and sequences with comments
@@ -516,6 +522,17 @@ octal: 014
 hexadecimal: 0xC
 EOY
         assert_bytecode( map, "D\nM\nScanonical\nS12345\nSdecimal\nS+12,345\nSoctal\nS014\nShexadecimal\nS0xC\nE\n" )
+
+        map = { 'canonical' => 685230, 'decimal' => 685230, 'octal' => '02472256'.oct, 'hexadecimal' => '0x0A74AE'.hex, 'sexagesimal' => 685230 }
+		assert_parse_only( map, <<EOY )
+canonical: 685230
+decimal: +685,230
+octal: 02472256
+hexadecimal: 0x0A,74,AE
+sexagesimal: 190:20:30
+EOY
+        assert_bytecode( map, "D\nM\nScanonical\nS685230\nSdecimal\nS+685,230\nSoctal\nS02472256\nShexadecimal\nS0x0A,74,AE\nSsexagesimal\nS190:20:30\nE\n" )
+
 	end
 
 	def test_spec_type_float
@@ -1215,8 +1232,8 @@ EOY
 EOY
 		)
 
-        assert_to_yaml( Test::StructTest.new( 123 ), <<EOY )
---- !ruby/struct:Test::StructTest
+        assert_to_yaml( YAML_Tests::StructTest.new( 123 ), <<EOY )
+--- !ruby/struct:YAML_Tests::StructTest
 c: 123
 EOY
 

@@ -61,6 +61,7 @@ HEX = [0-9a-fA-F,] ;
 OCT = [0-7,] ;
 INTHEX = SIGN? "0x" HEX+ ; 
 INTOCT = SIGN? "0" OCT+ ;
+INTSIXTY = SIGN? DIGIT DIGITSC* ( ":" [0-5]? DIGIT )+ ;
 INTCANON = SIGN? ( "0" | [1-9] DIGITSC* ) ;
 FLOATFIX = SIGN? DIGIT DIGITSC* "." DIGITSC* ;
 FLOATEXP = SIGN? DIGIT DIGITSC* "." DIGITSP* [eE] SIGN DIGIT+ ;
@@ -88,6 +89,8 @@ BOOLNO NULL         {   return "bool#no"; }
 INTHEX NULL         {   return "int#hex"; }
 
 INTOCT NULL         {   return "int#oct"; }
+
+INTSIXTY NULL       {   return "int#base60"; }
 
 INTCANON NULL       {   return "int"; }
 
