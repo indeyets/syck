@@ -65,9 +65,9 @@ syck_load( self, args )
     syck_parser_str_auto( parser, yamlstr, NULL );
     syck_parser_handler( parser, python_syck_handler );
     v = syck_parse( parser );
+    syck_lookup_sym( parser, v, &obj );
     syck_free_parser( parser );
 
-    syck_lookup_sym( parser, v, &obj );
     return obj;
 }
 
