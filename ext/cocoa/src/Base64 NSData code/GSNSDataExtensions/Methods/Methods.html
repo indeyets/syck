@@ -1,0 +1,77 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
+    "http://www.w3.org/TR/1998/REC-html40-19980424/loose.dtd">
+<html><head>
+    <title>Methods</title>
+	<meta name="generator" content="HeaderDoc">
+</head><body bgcolor="#ffffff"><h1><font face="Geneva,Arial,Helvtica">Methods</font></h1><hr><br>
+<a name="//apple_ref/occ/clm/GSNSDataExtensions.h/+dataWithBase64EncodedString:"></a>
+<h3><a name="+dataWithBase64EncodedString:">+dataWithBase64EncodedString:</a></h3>
+<blockquote><pre><tt>+ (NSData *)<B>dataWithBase64EncodedString:</B>(NSString *)<I>inBase64String;</I> </tt><br>
+</pre></blockquote>
+<p>This method returns an autoreleased NSData object.  The NSData object is initialized with the
+contents of the Base 64 encoded string.  This is a convenience function for
+-initWithBase64EncodedString:.
+</p>
+<h4>Parameters</h4>
+<blockquote>
+<table border="1"  width="90%">
+<thead><tr><th>Name</th><th>Description</th></tr></thead>
+<tr><td align="center"><tt>inBase64String</tt></td><td>An NSString object that contains only Base 64 encoded data.</td></tr>
+</table>
+</blockquote>
+<b>Result:</b> The NSData object.
+
+<hr>
+<a name="//apple_ref/occ/clm/GSNSDataExtensions.h/+isCharacterPartOfBase64Encoding:"></a>
+<h3><a name="+isCharacterPartOfBase64Encoding:">+isCharacterPartOfBase64Encoding:</a></h3>
+<blockquote><pre><tt>+ (BOOL)<B>isCharacterPartOfBase64Encoding:</B>(char)<I>inChar;</I> </tt><br>
+</pre></blockquote>
+<p>This method returns YES or NO depending on whether the given character is a part of the
+Base64 encoding table.
+</p>
+<h4>Parameters</h4>
+<blockquote>
+<table border="1"  width="90%">
+<thead><tr><th>Name</th><th>Description</th></tr></thead>
+<tr><td align="center"><tt>inChar</tt></td><td>An character in ASCII encoding.</td></tr>
+</table>
+</blockquote>
+<b>Result:</b> YES if the character is a part of the Base64 encoding table.
+
+<hr>
+<a name="//apple_ref/occ/instm/GSNSDataExtensions.h/-base64EncodingWithLineLength:"></a>
+<h3><a name="-base64EncodingWithLineLength:">-base64EncodingWithLineLength:</a></h3>
+<blockquote><pre><tt>- (NSString *)<B>base64EncodingWithLineLength:</B>(unsigned int)<I>inLineLength;</I> </tt><br>
+</pre></blockquote>
+<p>This method returns a Base 64 encoded string representation of the data object.
+</p>
+<h4>Parameters</h4>
+<blockquote>
+<table border="1"  width="90%">
+<thead><tr><th>Name</th><th>Description</th></tr></thead>
+<tr><td align="center"><tt>inLineLength</tt></td><td>A value of zero means no line breaks.  This is crunched to a multiple of 4 (the next
+one greater than inLineLength).</td></tr>
+</table>
+</blockquote>
+<b>Result:</b> The base 64 encoded data.
+
+<hr>
+<a name="//apple_ref/occ/instm/GSNSDataExtensions.h/-initWithBase64EncodedString:"></a>
+<h3><a name="-initWithBase64EncodedString:">-initWithBase64EncodedString:</a></h3>
+<blockquote><pre><tt>- (id)<B>initWithBase64EncodedString:</B>(NSString *)<I>inBase64String;</I> </tt><br>
+</pre></blockquote>
+<p>The NSData object is initialized with the contents of the Base 64 encoded string.
+This method returns self as a convenience.
+</p>
+<h4>Parameters</h4>
+<blockquote>
+<table border="1"  width="90%">
+<thead><tr><th>Name</th><th>Description</th></tr></thead>
+<tr><td align="center"><tt>inBase64String</tt></td><td>An NSString object that contains only Base 64 encoded data.</td></tr>
+</table>
+</blockquote>
+<b>Result:</b> This method returns self.
+
+<hr>
+<p><p>&#169; 2001, 2005 Kyle Hammond (Last Updated 1/12/2005)
+</p></body></html>
