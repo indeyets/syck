@@ -1,4 +1,27 @@
 --- %YAML:1.0
+- version: 0.54
+  date: 2005-04-07
+  changes:
+    lib/emitter.c: scale back double-quoting of strings.  get empty nulls working.
+
+    lib/gram.y: allowing transfers, anchors on an empty.
+
+    lib/implicit.re: removing 'y' and 'n' again!!
+
+    lib/yaml.rb: repair YAML.transfer to work with taguris.
+
+    lib/yaml/tag.rb:
+    - allow taguri to be set using an accessor.
+    - continue support of Object#to_yaml_type.
+
+    ext/ruby/ext/syck/rubyext.c:
+    - fixing PrivateType and DomainType objects.
+    - new Resolver#tagurize converts type ids to taguris.
+      (for backwards compatibility, since the new stuff uses strictly taguri.)
+    - merging nobu's changes from Ruby trunk.
+
+    ext/ruby/lib/yaml/rubytypes.rb: simplify taguri display.
+
 - version: 0.53
   date: 2005-03-28
   changes:
