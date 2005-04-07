@@ -329,10 +329,17 @@ module YAML
     end
 
     #
+    # Convert a type_id to a taguri
+    #
+    def YAML.tagurize( val )
+        resolver.tagurize( val )
+    end
+
+    #
     # Apply a transfer method to a Ruby object
     #
     def YAML.transfer( type_id, obj )
-        resolver.transfer( type_id, obj )
+        resolver.transfer( YAML.tagurize( type_id ), obj )
     end
 
 	#

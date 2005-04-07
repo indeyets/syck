@@ -593,7 +593,7 @@ syck_scan_scalar( int req_width, char *cursor, long len )
         }
 
         if ( i == 0 &&
-            ( cursor[i] == ' ' || cursor[i] == '\t' || cursor[i] == '\n' ) 
+            ( cursor[i] == ' ' || cursor[i] == '\t' ) 
         ) {
             flags |= SCAN_WHITESTART;
         }
@@ -618,7 +618,9 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
     if ( str == NULL ) str = "";
 
     /* No empty nulls as map keys */
-    if ( len == 0 && parent->status == syck_lvl_map && lvl->ncount == 0 && syck_tagcmp( tag, "tag:yaml.org,2002:null" ) == 0 ) {
+    if ( len == 0 && parent->status == syck_lvl_map && 
+         parent->ncount % 2 == 1 && syck_tagcmp( tag, "tag:yaml.org,2002:null" ) == 0 ) 
+    {
         str = "~";
         len = 1;
     }
@@ -672,7 +674,7 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
     }
 
     /* For now, all ambiguous keys are going to be double-quoted */
-    if ( parent->status == syck_lvl_map && lvl->ncount == 0 ) {
+    if ( parent->status == syck_lvl_map && parent->ncount % 2 == 1 ) {
         if ( force_style != scalar_plain ) {
             force_style = scalar_2quote;
         }

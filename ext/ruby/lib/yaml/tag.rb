@@ -58,12 +58,16 @@ class Module # :nodoc: all
         class_eval <<-"end;"
             attr_accessor :taguri
             def taguri
-                return @taguri if @taguri
-                tag = #{ tag.dump }
-                if self.class.tag_subclasses? and self.class != YAML::tagged_classes[tag]
-                    tag = "\#{ tag }:\#{ self.class.tag_class_name }"
+                if respond_to? :to_yaml_type
+                    YAML::tagurize( to_yaml_type[1..-1] )
+                else
+                    return @taguri if @taguri
+                    tag = #{ tag.dump }
+                    if self.class.tag_subclasses? and self.class != YAML::tagged_classes[tag]
+                        tag = "\#{ tag }:\#{ self.class.tag_class_name }"
+                    end
+                    tag
                 end
-                tag
             end
             def self.tag_subclasses?; #{ sc ? 'true' : 'false' }; end
         end;

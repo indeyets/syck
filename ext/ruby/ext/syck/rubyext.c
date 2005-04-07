@@ -1157,6 +1157,26 @@ syck_resolver_transfer( self, type, val )
 }
 
 /*
+ * YAML::Syck::Resolver#tagurize
+ */
+VALUE
+syck_resolver_tagurize( self, val )
+    VALUE self, val;
+{
+    VALUE tmp = rb_check_string_type(val);
+
+    if ( !NIL_P(tmp) )
+    {
+        char *taguri;
+        val = tmp;
+        taguri = syck_type_id_to_uri( RSTRING(val)->ptr );
+        return rb_str_new2( taguri );
+    }
+
+    return val;
+}
+
+/*
  * YAML::Syck::DefaultResolver#detect_implicit 
  */
 VALUE
@@ -2123,6 +2143,7 @@ Init_syck()
     rb_define_method( cResolver, "detect_implicit", syck_resolver_detect_implicit, 1 );
     rb_define_method( cResolver, "transfer", syck_resolver_transfer, 2 );
     rb_define_method( cResolver, "node_import", syck_resolver_node_import, 1 );
+    rb_define_method( cResolver, "tagurize", syck_resolver_tagurize, 1 );
 
     oDefaultResolver = rb_funcall( cResolver, rb_intern( "new" ), 0 );
     rb_define_singleton_method( oDefaultResolver, "node_import", syck_defaultresolver_node_import, 1 );
