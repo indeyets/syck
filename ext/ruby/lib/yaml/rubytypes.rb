@@ -13,10 +13,11 @@ end
 
 class Object
     tag_as "tag:ruby.yaml.org,2002:object"
+    def to_yaml_style; end
     def to_yaml_properties; instance_variables.sort; end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
-            out.map( taguri ) do |map|
+            out.map( taguri, to_yaml_style ) do |map|
 				to_yaml_properties.each do |m|
                     map.add( m[1..-1], instance_variable_get( m ) )
                 end
@@ -42,7 +43,7 @@ class Hash
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
-            out.map( taguri ) do |map|
+            out.map( taguri, to_yaml_style ) do |map|
                 each do |k, v|
                     map.add( k, v )
                 end
@@ -96,7 +97,7 @@ class Struct
 			#
 			# Basic struct is passed as a YAML map
 			#
-            out.map( taguri ) do |map|
+            out.map( taguri, to_yaml_style ) do |map|
 				self.members.each do |m|
                     map.add( m, self[m] )
                 end
@@ -117,7 +118,7 @@ class Array
     def yaml_initialize( tag, val ); concat( val.to_a ); end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
-            out.seq( taguri ) do |seq|
+            out.seq( taguri, to_yaml_style ) do |seq|
                 each do |x|
                     seq.add( x )
                 end
@@ -140,7 +141,7 @@ class Exception
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
-            out.map( taguri ) do |map|
+            out.map( taguri, to_yaml_style ) do |map|
                 map.add( 'message', message )
 				to_yaml_properties.each do |m|
                     map.add( m[1..-1], instance_variable_get( m ) )
@@ -174,13 +175,13 @@ class String
             raise YAML::TypeError, "Invalid String: " + val.inspect
         end
     end
-    def to_yaml_fold; nil; end
+    def to_yaml_style; nil; end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
             if to_yaml_properties.empty?
-                out.scalar( taguri, self, to_yaml_fold )
+                out.scalar( taguri, self, to_yaml_style )
             else
-                out.map( taguri ) do |map|
+                out.map( taguri, to_yaml_style ) do |map|
                     map.add( 'str', "#{self}" )
                     to_yaml_properties.each do |m|
                         map.add( m, instance_variable_get( m ) )
@@ -250,7 +251,7 @@ class Range
             # if self.begin.is_complex_yaml? or self.begin.respond_to? :to_str or
             #   self.end.is_complex_yaml? or self.end.respond_to? :to_str or
             #   not to_yaml_properties.empty?
-                out.map( taguri ) do |map|
+                out.map( taguri, to_yaml_style ) do |map|
                     map.add( 'begin', self.begin )
                     map.add( 'end', self.end )
                     map.add( 'excl', self.exclude_end? )
@@ -302,7 +303,7 @@ class Regexp
             if to_yaml_properties.empty?
                 out.scalar( taguri, self.inspect, :plain )
             else
-                out.map( taguri ) do |map|
+                out.map( taguri, to_yaml_style ) do |map|
                     src = self.inspect
                     if src =~ /\A\/(.*)\/([a-z]*)\Z/
                         map.add( 'regexp', $1 )
@@ -358,7 +359,7 @@ class Time
             if to_yaml_properties.empty?
                 out.scalar( taguri, standard, :plain )
             else
-                out.map( taguri ) do |map|
+                out.map( taguri, to_yaml_style ) do |map|
                     map.add( 'at', standard )
                     to_yaml_properties.each do |m|
                         map.add( m, instance_variable_get( m ) )

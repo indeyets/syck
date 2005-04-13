@@ -86,7 +86,7 @@ char *get_inline( SyckParser *parser );
 #define ENSURE_YAML_IOPEN(last_lvl, lvl_type, to_len, reset) \
         if ( last_lvl->spaces < to_len ) \
         { \
-            if ( last_lvl->status == syck_lvl_inline ) \
+            if ( last_lvl->status == syck_lvl_iseq || last_lvl->status == syck_lvl_imap ) \
             { \
                 goto Document; \
             } \

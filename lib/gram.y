@@ -45,7 +45,7 @@ void apply_seq_in_map( SyckParser *parser, SyckNode *n );
 %type <nodeId>      doc basic_seq
 %type <nodeData>    atom word_rep ind_rep struct_rep atom_or_empty empty
 %type <nodeData>    implicit_seq inline_seq implicit_map inline_map inline_seq_atom inline_map_atom
-%type <nodeData>    top_imp_seq in_implicit_seq in_inline_seq basic_mapping basic_mapping2
+%type <nodeData>    top_imp_seq in_implicit_seq in_inline_seq basic_mapping complex_key complex_value
 %type <nodeData>    top_imp_map in_implicit_map in_inline_map complex_mapping
 
 %left               '-' ':'
@@ -311,7 +311,7 @@ in_inline_seq   : inline_seq_atom
                 ;
 
 inline_seq_atom : atom
-                | basic_mapping2
+                | basic_mapping
                 ;
 
 /*
@@ -359,12 +359,14 @@ top_imp_map     : YAML_TRANSFER indent_sep in_implicit_map
                 }
                 ;
 
-basic_mapping	: word_rep ':' atom_or_empty
+complex_key     : word_rep
+                | '?' atom indent_sep
                 {
-                    $$ = syck_new_map( 
-                        syck_hdlr_add_node( (SyckParser *)parser, $1 ), 
-                        syck_hdlr_add_node( (SyckParser *)parser, $3 ) );
+                    $$ = $2;
                 }
+                ;
+
+complex_value   : atom_or_empty
                 ;
 
 /* Default needs to be added to SyckSeq i think...
@@ -374,12 +376,11 @@ basic_mapping	: word_rep ':' atom_or_empty
 				}
 */
 
-complex_mapping : basic_mapping
-				| '?' atom indent_sep ':' atom_or_empty
+complex_mapping : complex_key ':' complex_value
                 {
                     $$ = syck_new_map( 
-                        syck_hdlr_add_node( (SyckParser *)parser, $2 ), 
-                        syck_hdlr_add_node( (SyckParser *)parser, $5 ) );
+                        syck_hdlr_add_node( (SyckParser *)parser, $1 ), 
+                        syck_hdlr_add_node( (SyckParser *)parser, $3 ) );
                 }
 /*
 				| '?' atom
@@ -422,7 +423,7 @@ in_implicit_map : complex_mapping
 /*
  * Inline maps
  */
-basic_mapping2	: atom ':' atom_or_empty
+basic_mapping	: atom ':' atom_or_empty
                 {
                     $$ = syck_new_map( 
                         syck_hdlr_add_node( (SyckParser *)parser, $1 ), 
@@ -457,7 +458,7 @@ inline_map_atom : atom
                         syck_hdlr_add_node( (SyckParser *)parser, $1 ), 
                         syck_hdlr_add_node( (SyckParser *)parser, n ) );
                 }
-                | basic_mapping2
+                | basic_mapping
                 ;
 
 %%

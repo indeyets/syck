@@ -58,7 +58,7 @@
 #define ENSURE_YAML_IOPEN(last_lvl, to_len, reset) \
         if ( last_lvl->spaces < to_len ) \
         { \
-            if ( last_lvl->status == syck_lvl_inline ) \
+            if ( last_lvl->status == syck_lvl_iseq || last_lvl->status == syck_lvl_imap ) \
             { \
                 goto Document; \
             } \
@@ -126,6 +126,25 @@
             try_tag_implicit( sycklval->nodeData, parser->taguri_expansion ); \
         } \
         return YAML_PLAIN; \
+    }
+
+/* concat the inline characters to the plain scalar */
+#define PLAIN_NOT_INL() \
+    if ( *(YYCURSOR - 1) == ' ' || is_newline( YYCURSOR - 1 ) ) \
+    { \
+        YYCURSOR--; \
+    } \
+    QUOTECATS(qstr, qcapa, qidx, YYTOKEN, YYCURSOR - YYTOKEN); \
+    goto Plain2;
+
+/* trim spaces off the end in case of indent */
+#define PLAIN_IS_INL() \
+    char *walker = qstr + qidx - 1; \
+    while ( walker > qstr && ( *walker == '\n' || *walker == ' ' ) ) \
+    { \
+        qidx--; \
+        walker[0] = '\0'; \
+        walker--; \
     }
 
 /*
@@ -278,9 +297,12 @@ ENDSPC = ( SPC+ | LF );
 YINDENT = LF ( SPC | LF )* ;
 NULL = [\000] ;
 ANY = [\001-\377] ;
-ODELIMS = [\{\[] ;
-CDELIMS = [\}\]] ;
-INLINEX = ( CDELIMS | "," ENDSPC ) ;
+ISEQO = "[" ;
+ISEQC = "]" ;
+IMAPO = "{" ;
+IMAPC = "}" ;
+CDELIMS = ( ISEQC | IMAPC ) ;
+ICOMMA = ( "," ENDSPC ) ;
 ALLX = ( ":" ENDSPC ) ;
 DIR = "%" YWORDP+ ":" YWORDP+ ;
 YBLOCK = [>|] [-+0-9]* ENDSPC ; 
@@ -377,7 +399,7 @@ YINDENT             {   /* Isolate spaces */
                         }
 
                         /* Ignore indentation inside inlines */
-                        if ( lvl->status == syck_lvl_inline )
+                        if ( lvl->status == syck_lvl_iseq || lvl->status == syck_lvl_imap )
                         {
                             goto Document;
                         }
@@ -392,9 +414,15 @@ YINDENT             {   /* Isolate spaces */
                         return YAML_INDENT;
                     }
 
-ODELIMS             {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
+ISEQO               {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
                         lvl = CURRENT_LEVEL();
-                        ADD_LEVEL(lvl->spaces + 1, syck_lvl_inline);
+                        ADD_LEVEL(lvl->spaces + 1, syck_lvl_iseq);
+                        return YYTOKEN[0]; 
+                    }
+
+IMAPO               {   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
+                        lvl = CURRENT_LEVEL();
+                        ADD_LEVEL(lvl->spaces + 1, syck_lvl_imap);
                         return YYTOKEN[0]; 
                     }
 
@@ -543,25 +571,35 @@ YINDENT             {   int indt_len, nl_count = 0;
 
 ALLX                {   RETURN_IMPLICIT(); }
 
-INLINEX             {   if ( plvl->status != syck_lvl_inline )
+ICOMMA              {   if ( plvl->status != syck_lvl_iseq && plvl->status != syck_lvl_imap )
                         {
-                            if ( *(YYCURSOR - 1) == ' ' || is_newline( YYCURSOR - 1 ) )
-                            {
-                                YYCURSOR--;
-                            }
-                            QUOTECATS(qstr, qcapa, qidx, YYTOKEN, YYCURSOR - YYTOKEN);
-                            goto Plain2;
+                            PLAIN_NOT_INL();
                         }
                         else
                         {
-                            /* trim spaces off the end in case of indent */
-                            char *walker = qstr + qidx - 1;
-                            while ( walker > qstr && ( *walker == '\n' || *walker == ' ' ) )
-                            {
-                                qidx--;
-                                walker[0] = '\0';
-                                walker--;
-                            }
+                            PLAIN_IS_INL();
+                        }
+                        RETURN_IMPLICIT();
+                    }
+
+IMAPC               {   if ( plvl->status != syck_lvl_imap )
+                        {
+                            PLAIN_NOT_INL();
+                        }
+                        else
+                        {
+                            PLAIN_IS_INL();
+                        }
+                        RETURN_IMPLICIT();
+                    }
+
+ISEQC               {   if ( plvl->status != syck_lvl_iseq )
+                        {
+                            PLAIN_NOT_INL();
+                        }
+                        else
+                        {
+                            PLAIN_IS_INL();
                         }
                         RETURN_IMPLICIT();
                     }

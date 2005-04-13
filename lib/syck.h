@@ -13,7 +13,7 @@
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
-#define SYCK_VERSION    "0.54"
+#define SYCK_VERSION    "0.55"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
@@ -92,6 +92,16 @@ enum map_part {
     map_value
 };
 
+enum map_style {
+    map_none,
+    map_inline
+};
+
+enum seq_style {
+    seq_none,
+    seq_inline
+};
+
 enum scalar_style {
     scalar_none,
     scalar_1quote,
@@ -116,6 +126,7 @@ struct _syck_node {
     union {
         /* Storage for map data */
         struct SyckMap {
+            enum map_style style;
             SYMID *keys;
             SYMID *values;
             long capa;
@@ -123,6 +134,7 @@ struct _syck_node {
         } *pairs;
         /* Storage for sequence data */
         struct SyckSeq {
+            enum seq_style style;
             SYMID *items;
             long capa;
             long idx;
@@ -172,7 +184,8 @@ enum syck_level_status {
     syck_lvl_map,
     syck_lvl_block,
     syck_lvl_str,
-    syck_lvl_inline,
+    syck_lvl_iseq,
+    syck_lvl_imap,
     syck_lvl_end,
     syck_lvl_pause,
     syck_lvl_anctag,
@@ -371,9 +384,9 @@ void syck_emit_1quoted( SyckEmitter *, int, char *, long );
 void syck_emit_2quoted( SyckEmitter *, int, char *, long );
 void syck_emit_folded( SyckEmitter *, int, char, char *, long );
 void syck_emit_literal( SyckEmitter *, char, char *, long );
-void syck_emit_seq( SyckEmitter *, char * );
+void syck_emit_seq( SyckEmitter *, char *, enum seq_style );
 void syck_emit_item( SyckEmitter *, st_data_t );
-void syck_emit_map( SyckEmitter *, char * );
+void syck_emit_map( SyckEmitter *, char *, enum map_style );
 void syck_emit_end( SyckEmitter * );
 void syck_emit_tag( SyckEmitter *, char *, char * );
 void syck_emit_indent( SyckEmitter * );

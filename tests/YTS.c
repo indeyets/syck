@@ -219,7 +219,7 @@ test_emitter_handler( SyckEmitter *emitter, st_data_t data ) {
         case T_SEQ:
         {
             int i = 0;
-            syck_emit_seq( emitter, node->tag );
+            syck_emit_seq( emitter, node->tag, 1 );
             while ( node->value[i].type != T_END ) {
                 syck_emit_item( emitter, (st_data_t)&node->value[i] );
                 i++;
@@ -230,7 +230,7 @@ test_emitter_handler( SyckEmitter *emitter, st_data_t data ) {
         case T_MAP:
         {
             int i = 0;
-            syck_emit_map( emitter, node->tag );
+            syck_emit_map( emitter, node->tag, 1 );
             while ( node->value[i].type != T_END ) {
                 syck_emit_item( emitter, (st_data_t)&node->value[i] );
                 i++;

@@ -523,6 +523,10 @@ void syck_emit_indent( SyckEmitter *e )
 #define SCAN_NONL_E     512
 /* Ends with many newlines */
 #define SCAN_MANYNL_E   1024
+/* Contains flow map indicators */
+#define SCAN_FLOWMAP    2048
+/* Contains flow seq indicators */
+#define SCAN_FLOWSEQ    4096
 
 /*
  * Basic printable test for LATIN-1 characters.
@@ -585,11 +589,24 @@ syck_scan_scalar( int req_width, char *cursor, long len )
         {
             flags |= SCAN_DOUBLEQ;
         }
+        else if ( cursor[i] == ']' )
+        {
+            flags |= SCAN_FLOWSEQ;
+        }
+        else if ( cursor[i] == '}' )
+        {
+            flags |= SCAN_FLOWMAP;
+        }
         /* remember, if plain collections get implemented, to add nb-plain-flow-char */
         else if ( ( cursor[i] == ' ' && cursor[i+1] == '#' ) ||
                   ( cursor[i] == ':' && cursor[i+1] == ' ' ) )
         {
             flags |= SCAN_INDIC_C;
+        }
+        else if ( cursor[i] == ',' && cursor[i+1] == ' ' )
+        {
+            flags |= SCAN_FLOWMAP;
+            flags |= SCAN_FLOWSEQ;
         }
 
         if ( i == 0 &&
@@ -618,7 +635,7 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
     if ( str == NULL ) str = "";
 
     /* No empty nulls as map keys */
-    if ( len == 0 && parent->status == syck_lvl_map && 
+    if ( len == 0 && ( parent->status == syck_lvl_map || parent->status == syck_lvl_imap ) && 
          parent->ncount % 2 == 1 && syck_tagcmp( tag, "tag:yaml.org,2002:null" ) == 0 ) 
     {
         str = "~";
@@ -655,12 +672,16 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
         force_style = scalar_2quote;
     } else if ( scan & SCAN_WHITESTART ) {
         force_style = scalar_2quote;
-    } else if ( scan & SCAN_INDENTED ) {
+    } else if ( force_style != scalar_fold && ( scan & SCAN_INDENTED ) ) {
         force_style = scalar_literal;
     } else if ( force_style == scalar_plain && ( scan & SCAN_NEWLINE ) ) {
         force_style = favor_style;
-    } else if ( force_style == scalar_fold && ( ! ( scan & SCAN_WIDE ) ) ) {
-        force_style = scalar_literal;
+    } else if ( force_style == scalar_plain && parent->status == syck_lvl_iseq && ( scan & SCAN_FLOWSEQ ) ) {
+        force_style = scalar_2quote;
+    } else if ( force_style == scalar_plain && parent->status == syck_lvl_imap && ( scan & SCAN_FLOWMAP ) ) {
+        force_style = scalar_2quote;
+    /* } else if ( force_style == scalar_fold && ( ! ( scan & SCAN_WIDE ) ) ) {
+        force_style = scalar_literal; */
     } else if ( force_style == scalar_plain && ( scan & SCAN_INDIC_S || scan & SCAN_INDIC_C ) ) {
         if ( scan & SCAN_NEWLINE ) {
             force_style = favor_style;
@@ -676,6 +697,13 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
     /* For now, all ambiguous keys are going to be double-quoted */
     if ( parent->status == syck_lvl_map && parent->ncount % 2 == 1 ) {
         if ( force_style != scalar_plain ) {
+            force_style = scalar_2quote;
+        }
+    }
+
+    /* If the parent is an inline, double quote anything complex */
+    if ( parent->status == syck_lvl_imap || parent->status == syck_lvl_iseq ) {
+        if ( force_style != scalar_plain && force_style != scalar_1quote ) {
             force_style = scalar_2quote;
         }
     }
@@ -933,21 +961,33 @@ void syck_emit_folded( SyckEmitter *e, int width, char keep_nl, char *str, long 
 /*
  * Begins emission of a sequence.
  */
-void syck_emit_seq( SyckEmitter *e, char *tag )
+void syck_emit_seq( SyckEmitter *e, char *tag, enum seq_style style )
 {
+    SyckLevel *parent = syck_emitter_parent_level( e );
     SyckLevel *lvl = syck_emitter_current_level( e );
     syck_emit_tag( e, tag, "tag:yaml.org,2002:seq" );
-    lvl->status = syck_lvl_seq;
+    if ( style == seq_inline || ( parent->status == syck_lvl_imap || parent->status == syck_lvl_iseq ) ) {
+        syck_emitter_write( e, "[", 1 );
+        lvl->status = syck_lvl_iseq;
+    } else {
+        lvl->status = syck_lvl_seq;
+    }
 }
 
 /*
  * Begins emission of a mapping.
  */
-void syck_emit_map( SyckEmitter *e, char *tag )
+void syck_emit_map( SyckEmitter *e, char *tag, enum map_style style )
 {
+    SyckLevel *parent = syck_emitter_parent_level( e );
     SyckLevel *lvl = syck_emitter_current_level( e );
     syck_emit_tag( e, tag, "tag:yaml.org,2002:map" );
-    lvl->status = syck_lvl_map;
+    if ( style == map_inline || ( parent->status == syck_lvl_imap || parent->status == syck_lvl_iseq ) ) {
+        syck_emitter_write( e, "{", 1 );
+        lvl->status = syck_lvl_imap;
+    } else {
+        lvl->status = syck_lvl_map;
+    }
 }
 
 /*
@@ -989,6 +1029,14 @@ void syck_emit_item( SyckEmitter *e, st_data_t n )
 
             syck_emit_indent( e );
             syck_emitter_write( e, "- ", 2 );
+        }
+        break;
+
+        case syck_lvl_iseq:
+        {
+            if ( lvl->ncount > 0 ) {
+                syck_emitter_write( e, ", ", 2 );
+            }
         }
         break;
 
@@ -1044,6 +1092,18 @@ void syck_emit_item( SyckEmitter *e, st_data_t n )
             }
         }
         break;
+
+        case syck_lvl_imap:
+        {
+            if ( lvl->ncount > 0 ) {
+                if ( lvl->ncount % 2 == 0 ) {
+                    syck_emitter_write( e, ", ", 2 );
+                } else {
+                    syck_emitter_write( e, ": ", 2 );
+                }
+            }
+        }
+        break;
     }
     lvl->ncount++;
 
@@ -1067,6 +1127,10 @@ void syck_emit_end( SyckEmitter *e )
             }
         break;
 
+        case syck_lvl_iseq:
+            syck_emitter_write( e, "]\n", 1 );
+        break;
+
         case syck_lvl_map:
             if ( lvl->ncount == 0 ) {
                 syck_emitter_write( e, "{}\n", 3 );
@@ -1075,6 +1139,10 @@ void syck_emit_end( SyckEmitter *e )
             } else if ( parent->status == syck_lvl_mapx ) {
                 syck_emitter_write( e, "\n", 1 );
             }
+        break;
+
+        case syck_lvl_imap:
+            syck_emitter_write( e, "}\n", 1 );
         break;
     }
 }

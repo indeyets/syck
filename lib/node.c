@@ -51,6 +51,7 @@ syck_alloc_map()
     struct SyckMap *m;
 
     m = S_ALLOC( struct SyckMap );
+    m->style = map_none;
     m->idx = 0;
     m->capa = ALLOC_CT;
     m->keys = S_ALLOC_N( SYMID, m->capa );
@@ -69,6 +70,7 @@ syck_alloc_seq()
     struct SyckSeq *s;
 
     s = S_ALLOC( struct SyckSeq );
+    s->style = seq_none;
     s->idx = 0;
     s->capa = ALLOC_CT;
     s->items = S_ALLOC_N( SYMID, s->capa );
