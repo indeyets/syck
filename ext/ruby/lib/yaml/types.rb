@@ -13,11 +13,10 @@ module YAML
 		attr_accessor :type_id, :value
 		def initialize( type, val )
 			@type_id = type; @value = val
+            @value.taguri = "x-private:#{ @type_id }"
 		end
 		def to_yaml( opts = {} )
-            value = @value.dup
-            value.taguri = "x-private:#{ @type_id }"
-            value.to_yaml( opts )
+            @value.to_yaml( opts )
 		end
 	end
 
@@ -29,18 +28,33 @@ module YAML
 		attr_accessor :domain, :type_id, :value
 		def initialize( domain, type, val )
 			@domain = domain; @type_id = type; @value = val
+            @value.taguri = "tag:#{ @domain }:#{ @type_id }"
 		end
 		def to_yaml( opts = {} )
-            value = @value.dup
-            value.taguri = "tag:#{ @domain }:#{ @type_id }"
-            value.to_yaml( opts )
+            @value.to_yaml( opts )
+		end
+	end
+
+    #
+    # Unresolved objects
+    #
+    class Object
+        def self.tag_subclasses?; false; end
+		def to_yaml( opts = {} )
+            YAML::quick_emit( object_id, opts ) do |out|
+                out.map( "tag:ruby.yaml.org,2002:object:#{ @class }", to_yaml_style ) do |map|
+                    @ivars.each do |k,v|
+                        map.add( k, v )
+                    end
+                end
+            end
 		end
 	end
 
 	#
 	# YAML Hash class to support comments and defaults
 	#
-	class SpecialHash < Object::Hash 
+	class SpecialHash < ::Hash 
 		attr_accessor :default
         def inspect
             self.default.to_s
@@ -63,7 +77,7 @@ module YAML
     #
     # Builtin collection: !omap
     #
-    class Omap < Array
+    class Omap < ::Array
         tag_as "tag:yaml.org,2002:omap"
         def yaml_initialize( tag, val )
             if Array === val
@@ -106,7 +120,7 @@ module YAML
         end
         def to_yaml( opts = {} )
             YAML::quick_emit( self.object_id, opts ) do |out|
-                out.seq( taguri ) do |seq|
+                out.seq( taguri, to_yaml_style ) do |seq|
                     self.each do |v|
                         seq.add( Hash[ *v ] )
                     end
@@ -118,7 +132,7 @@ module YAML
     #
     # Builtin collection: !pairs
     #
-    class Pairs < Array
+    class Pairs < ::Array
         tag_as "tag:yaml.org,2002:pairs"
         def yaml_initialize( tag, val )
             if Array === val
@@ -156,7 +170,7 @@ module YAML
         end
         def to_yaml( opts = {} )
             YAML::quick_emit( self.object_id, opts ) do |out|
-                out.seq( taguri ) do |seq|
+                out.seq( taguri, to_yaml_style ) do |seq|
                     self.each do |v|
                         seq.add( Hash[ *v ] )
                     end
@@ -168,7 +182,7 @@ module YAML
     #
     # Builtin collection: !set
     #
-    class Set < Hash
+    class Set < ::Hash
         tag_as "tag:yaml.org,2002:set"
     end
 end

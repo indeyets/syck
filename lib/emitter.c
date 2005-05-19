@@ -491,12 +491,14 @@ void syck_emit_indent( SyckEmitter *e )
 {
     int i;
     SyckLevel *lvl = syck_emitter_current_level( e );
-    char *spcs = S_ALLOC_N( char, lvl->spaces + 2 );
+    if ( lvl->spaces >= 0 ) {
+        char *spcs = S_ALLOC_N( char, lvl->spaces + 2 );
 
-    spcs[0] = '\n'; spcs[lvl->spaces + 1] = '\0';
-    for ( i = 0; i < lvl->spaces; i++ ) spcs[i+1] = ' ';
-    syck_emitter_write( e, spcs, lvl->spaces + 1 );
-    free( spcs );
+        spcs[0] = '\n'; spcs[lvl->spaces + 1] = '\0';
+        for ( i = 0; i < lvl->spaces; i++ ) spcs[i+1] = ' ';
+        syck_emitter_write( e, spcs, lvl->spaces + 1 );
+        free( spcs );
+    }
 }
 
 /* Clear the scan */
@@ -527,6 +529,8 @@ void syck_emit_indent( SyckEmitter *e )
 #define SCAN_FLOWMAP    2048
 /* Contains flow seq indicators */
 #define SCAN_FLOWSEQ    4096
+/* Contains a valid doc separator */
+#define SCAN_DOCSEP     8192
 
 /*
  * Basic printable test for LATIN-1 characters.
@@ -563,6 +567,10 @@ syck_scan_scalar( int req_width, char *cursor, long len )
         flags |= SCAN_MANYNL_E;
     }
 
+    /* opening doc sep */
+    if ( len >= 3 && strncmp( cursor, "---", 3 ) == 0 )
+        flags |= SCAN_DOCSEP;
+
     /* scan string */
     for ( i = 0; i < len; i++ ) {
 
@@ -575,6 +583,8 @@ syck_scan_scalar( int req_width, char *cursor, long len )
         }
         else if ( cursor[i] == '\n' ) {
             flags |= SCAN_NEWLINE;
+            if ( len - i >= 3 && strncmp( &cursor[i+1], "---", 3 ) == 0 )
+                flags |= SCAN_DOCSEP;
             if ( cursor[i+1] == ' ' || cursor[i+1] == '\t' ) 
                 flags |= SCAN_INDENTED;
             if ( req_width > 0 && i - start > req_width )
@@ -642,7 +652,7 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
         len = 1;
     }
 
-    scan = syck_scan_scalar( force_indent, str, len );
+    scan = syck_scan_scalar( force_width, str, len );
     implicit = syck_match_implicit( str, len );
 
     /* quote strings which default to implicits */
@@ -690,8 +700,10 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
         }
     }
 
-    if ( force_indent == 0 ) {
-        force_indent = e->indent;
+    if ( force_indent > 0 ) {
+        lvl->spaces = parent->spaces + force_indent;
+    } else if ( scan & SCAN_DOCSEP ) {
+        lvl->spaces = parent->spaces + e->indent;
     }
 
     /* For now, all ambiguous keys are going to be double-quoted */

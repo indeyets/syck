@@ -5,7 +5,7 @@ This is the documentation for libsyck and describes how to extend it.
 = Overview =
 
 Syck is designed to take a YAML stream and a symbol table and move
-data between the two.  Simply provide callback functions which
+data between the two.  Your job is to simply provide callback functions which
 understand the symbol table you are keeping.
 
 Syck also includes a simple symbol table implementation.
@@ -407,4 +407,38 @@ become sort of unnecessary.
    to build the document.
 
 4. Call syck_emit_flush() to end the document and push the remaining
-   document to the IO stream.
+   document to the IO stream.  Or continue to add documents to the output
+   stream with syck_emit().
+
+=== Emitter API ===
+
+ See <syck.h> for the layout of SyckEmitter.
+
+ SyckEmitter * 
+ syck_new_emitter()
+
+  Creates a new Syck emitter.
+
+ SYMID
+ syck_emitter_mark_node( SyckEmitter *e, st_data_t node )
+
+  Adds an outgoing node to the symbol table, allocating an anchor
+  for it if it has repeated in the document and scanning the type
+  tag for auto-shortcut.
+
+ void
+ syck_output_handler( SyckEmitter *e, SyckOutputHandler out )
+
+  Assigns a callback as the output handler.
+
+    void *out_handler( SyckEmitter *e, char * ptr, long len ); 
+
+  Receives the emitter object, pointer to the buffer and a count
+  of bytes which should be read from the buffer.
+
+ void
+ syck_emitter_handler( SyckEmitter *e, SyckEmitterHandler
+
+
+ void
+ syck_free_emitter

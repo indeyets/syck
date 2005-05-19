@@ -158,6 +158,9 @@ end
 class String
     tag_as "tag:ruby.yaml.org,2002:string"
     tag_as "tag:yaml.org,2002:str"
+    def is_complex_yaml?
+        to_yaml_style or not to_yaml_properties.empty? or self =~ /\n.+/
+    end
     def is_binary_data?
         ( self.count( "^ -~", "^\r\n" ) / self.size > 0.3 || self.count( "\x00" ) > 0 )
     end
@@ -175,9 +178,8 @@ class String
             raise YAML::TypeError, "Invalid String: " + val.inspect
         end
     end
-    def to_yaml_style; nil; end
 	def to_yaml( opts = {} )
-		YAML::quick_emit( object_id, opts ) do |out|
+		YAML::quick_emit( is_complex_yaml? ? object_id : nil, opts ) do |out|
             if to_yaml_properties.empty?
                 out.scalar( taguri, self, to_yaml_style )
             else

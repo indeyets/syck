@@ -60,7 +60,7 @@ static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_type_id_set,
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
 static VALUE sym_1quote, sym_2quote, sym_fold, sym_literal, sym_plain, sym_inline;
-static VALUE cDate, cNode, cMap, cSeq, cScalar, cOut, cParser, cResolver, cPrivateType, cDomainType, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
+static VALUE cDate, cNode, cMap, cSeq, cScalar, cOut, cParser, cResolver, cPrivateType, cDomainType, cYObject, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
 static VALUE oDefaultResolver, oGenericResolver;
 
 /*
@@ -1040,6 +1040,24 @@ syck_set_ivars( vars, obj )
 }
 
 /*
+ * YAML::Syck::Resolver#const_find
+ */
+VALUE
+syck_const_find( const_name )
+    VALUE const_name;
+{
+    VALUE tclass = rb_cObject;
+    VALUE tparts = rb_str_split( const_name, "::" );
+    int i = 0;
+    for ( i = 0; i < RARRAY(tparts)->len; i++ ) {
+        VALUE tpart = rb_to_id( rb_ary_entry( tparts, i ) );
+        if ( !rb_const_defined( tclass, tpart ) ) return Qnil;
+        tclass = rb_const_get( tclass, tpart );
+    }
+    return tclass;
+}
+
+/*
  * YAML::Syck::Resolver#transfer
  */
 VALUE
@@ -1058,7 +1076,6 @@ syck_resolver_transfer( self, type, val )
         VALUE tags = rb_attr_get(self, s_tags);
         VALUE target_class = rb_hash_aref( tags, type );
         VALUE subclass = target_class;
-        VALUE sym_sub = Qnil;
         VALUE obj = Qnil;
 
         /*
@@ -1090,16 +1107,22 @@ syck_resolver_transfer( self, type, val )
                     if ( RARRAY(subclass_parts)->len > 0 && rb_respond_to( target_class, s_tag_subclasses ) &&
                          RTEST( rb_funcall( target_class, s_tag_subclasses, 0 ) ) )
                     {
+                        VALUE subclass_v;
                         subclass = rb_ary_join( subclass_parts, colon );
                         subclass = rb_funcall( target_class, s_tag_read_class, 1, subclass );
-                        sym_sub = rb_to_id( subclass );
-                        if ( RTEST( rb_const_defined( rb_cObject, sym_sub ) ) )
+                        subclass_v = syck_const_find( subclass );
+
+                        if ( subclass_v != Qnil ) 
                         {
-                            subclass = rb_const_get( rb_cObject, sym_sub );
+                            subclass = subclass_v;
                         }
-                        else
+                        else if ( rb_cObject == target_class && subclass_v == Qnil )
                         {
-                            subclass = rb_define_class( rb_id2name( sym_sub ), rb_cObject );
+                            // StringValue(subclass);
+                            // printf( "No class: %s\n", RSTRING(subclass)->ptr );
+                            target_class = cYObject;
+                            type = subclass;
+                            subclass = cYObject;
                         }
                     }
                     break;
@@ -1325,6 +1348,18 @@ syck_domaintype_initialize( self, domain, type_id, val )
     rb_iv_set( self, "@domain", domain );
     rb_iv_set( self, "@type_id", type_id );
     rb_iv_set( self, "@value", val );
+    return self;
+}
+
+/*
+ * YAML::Object.initialize
+ */
+VALUE
+syck_yobject_initialize( self, klass, ivars )
+    VALUE self, klass, ivars;
+{
+    rb_iv_set( self, "@class", klass );
+    rb_iv_set( self, "@ivars", ivars );
     return self;
 }
 
@@ -2077,10 +2112,16 @@ syck_out_initialize( self, emitter )
  * YAML::Syck::Out::map
  */
 VALUE
-syck_out_map( self, type_id, style )
-    VALUE self, type_id, style;
+syck_out_map( argc, argv, self )
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
-    VALUE map = rb_funcall( cMap, s_new, 3, type_id, rb_hash_new(), style );
+    VALUE type_id, style, map;
+    if (rb_scan_args(argc, argv, "11", &type_id, &style) == 1) {
+        style = Qnil;
+    }
+    map = rb_funcall( cMap, s_new, 3, type_id, rb_hash_new(), style );
     syck_out_mark( rb_ivar_get( self, s_emitter ), map );
     rb_yield( map );
     return map;
@@ -2090,10 +2131,16 @@ syck_out_map( self, type_id, style )
  * YAML::Syck::Out::seq
  */
 VALUE
-syck_out_seq( self, type_id, style )
-    VALUE self, type_id, style;
+syck_out_seq( argc, argv, self )
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
-    VALUE seq = rb_funcall( cSeq, s_new, 3, type_id, rb_ary_new(), style );
+    VALUE type_id, style, seq;
+    if (rb_scan_args(argc, argv, "11", &type_id, &style) == 1) {
+        style = Qnil;
+    }
+    seq = rb_funcall( cSeq, s_new, 3, type_id, rb_ary_new(), style );
     syck_out_mark( rb_ivar_get( self, s_emitter ), seq );
     rb_yield( seq );
     return seq;
@@ -2101,12 +2148,20 @@ syck_out_seq( self, type_id, style )
 
 /*
  * YAML::Syck::Out::scalar
- */
-VALUE
 syck_out_scalar( self, type_id, str, style )
     VALUE self, type_id, str, style;
+ */
+VALUE
+syck_out_scalar( argc, argv, self )
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
-    VALUE scalar = rb_funcall( cScalar, s_new, 3, type_id, str, style );
+    VALUE type_id, str, style, scalar;
+    if (rb_scan_args(argc, argv, "21", &type_id, &str, &style) == 2) {
+        style = Qnil;
+    }
+    scalar = rb_funcall( cScalar, s_new, 3, type_id, str, style );
     syck_out_mark( rb_ivar_get( self, s_emitter ), scalar );
     return scalar;
 }
@@ -2276,6 +2331,15 @@ Init_syck()
     rb_define_method( cDomainType, "initialize", syck_domaintype_initialize, 3);
 
     /*
+     * Define YAML::Object class
+     */
+    cYObject = rb_define_class_under( rb_yaml, "Object", rb_cObject );
+    rb_define_attr( cYObject, "class", 1, 1 );
+    rb_define_attr( cYObject, "ivars", 1, 1 );
+    rb_define_method( cYObject, "initialize", syck_yobject_initialize, 2);
+    rb_define_method( cYObject, "yaml_initialize", syck_yobject_initialize, 2);
+
+    /*
      * Define YAML::Syck::BadAlias class
      */
     cBadAlias = rb_define_class_under( rb_syck, "BadAlias", rb_cObject );
@@ -2300,9 +2364,9 @@ Init_syck()
     cOut = rb_define_class_under( rb_syck, "Out", rb_cObject );
     rb_define_attr( cOut, "emitter", 1, 1 );
     rb_define_method( cOut, "initialize", syck_out_initialize, 1 );
-    rb_define_method( cOut, "map", syck_out_map, 2 );
-    rb_define_method( cOut, "seq", syck_out_seq, 2 );
-    rb_define_method( cOut, "scalar", syck_out_scalar, 3 );
+    rb_define_method( cOut, "map", syck_out_map, -1 );
+    rb_define_method( cOut, "seq", syck_out_seq, -1 );
+    rb_define_method( cOut, "scalar", syck_out_scalar, -1 );
 
     /*
      * Define YAML::Syck::Emitter class
