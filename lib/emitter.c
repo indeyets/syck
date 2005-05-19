@@ -1021,7 +1021,10 @@ void syck_emit_item( SyckEmitter *e, st_data_t n )
                 if ( parent->ncount % 2 == 1 ) {
                     syck_emitter_write( e, "?", 1 );
                     parent->status = syck_lvl_mapx;
-                } else {
+                /* shortcut -- the lvl->anctag check should be unneccesary but
+                 * there is a nasty shift/reduce in the parser on this point and
+                 * i'm not ready to tickle it. */
+                } else if ( lvl->anctag == 0 ) { 
                     lvl->spaces = parent->spaces;
                 }
             }

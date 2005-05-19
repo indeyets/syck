@@ -7,6 +7,10 @@
     - YAML::Object class for loaded objects which have no corresponding class.
     - No anchors on simple strings.
     - Outputing of domain and private types and anchors properly.
+    - Memory leak in mktime.
+
+    lib/emitter.c: scale back seq-in-map on a typed seq.  prevents the shift/reduce
+      problem with the parser.
 
 - version: 0.55
   date: 2005-04-14

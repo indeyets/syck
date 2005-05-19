@@ -1,0 +1,25 @@
+## Syck 0.60
+
+[x] Resolver needs to handle implicits
+[x] yaml_org_handler is an integral part of DefaultResolver#transfer
+[x] cNode must be central in-between datatype
+  [x] The values will be fully loaded Hash, Array, String
+      (Close, ended up using YAML::Syck::Seq, etc.)
+  [x] This way node_import can take pure Ruby nodes
+  [x] Incorporate BaseNode.
+[-] Fix typed seq-in-map shortcut.
+[x] Emitter should figure out shortcuts.
+[-] Ensure that common memory leaks are GONE by 0.60.
+[-] UTF-8 strict mode.
+
+## Syck 0.70
+
+[-] YPath integrated into Syck's core
+[-] Implicits can be collections with YPath matching
+[-] UTF-16 and -32 support.
+
+## Syck 0.80
+
+[-] Python extension with complete hooks.
+[-] YAML 1.1 support.
+

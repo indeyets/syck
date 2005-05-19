@@ -1,3 +1,4 @@
+/* -*- indent-tabs-mode: nil -*- */
 /*
  * rubyext.c
  *
@@ -273,6 +274,7 @@ rb_syck_mktime(str, len)
         while ( isdigit( *end ) ) end++;
         MEMCPY(padded, ptr + 1, char, end - (ptr + 1));
         usec = strtol(padded, NULL, 10);
+        S_FREE(padded);
     }
     else
     {
