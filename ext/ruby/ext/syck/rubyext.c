@@ -403,7 +403,7 @@ yaml_org_handler( n, ref )
                     {
                         colon--;
                     }
-                    if ( *colon == ':' ) *colon = '\0';
+                    if ( colon >= ptr && *colon == ':' ) *colon = '\0';
 
                     bnum = strtol( colon + 1, NULL, 10 );
                     total += bnum * sixty;
@@ -433,7 +433,7 @@ yaml_org_handler( n, ref )
                     {
                         colon--;
                     }
-                    if ( *colon == ':' ) *colon = '\0';
+                    if ( colon >= ptr && *colon == ':' ) *colon = '\0';
 
                     bnum = strtod( colon + 1, NULL );
                     total += bnum * sixty;
