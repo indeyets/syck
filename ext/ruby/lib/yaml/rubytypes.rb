@@ -12,7 +12,7 @@ class Class
 end
 
 class Object
-    tag_as "tag:ruby.yaml.org,2002:object"
+    yaml_as "tag:ruby.yaml.org,2002:object"
     def to_yaml_style; end
     def to_yaml_properties; instance_variables.sort; end
 	def to_yaml( opts = {} )
@@ -30,8 +30,8 @@ end
 # Maps: Hash#to_yaml
 #
 class Hash
-    tag_as "tag:ruby.yaml.org,2002:hash"
-    tag_as "tag:yaml.org,2002:map"
+    yaml_as "tag:ruby.yaml.org,2002:hash"
+    yaml_as "tag:yaml.org,2002:map"
     def yaml_initialize( tag, val )
         if Array === val
             update Hash.[]( *val )		# Convert the map to a sequence
@@ -56,9 +56,9 @@ end
 # Structs: export as a !map
 #
 class Struct
-    tag_as "tag:ruby.yaml.org,2002:struct"
-    def self.tag_class_name; self.name.gsub( "Struct::", "" ); end
-    def self.tag_read_class( name ); "Struct::#{ name }"; end
+    yaml_as "tag:ruby.yaml.org,2002:struct"
+    def self.yaml_tag_class_name; self.name.gsub( "Struct::", "" ); end
+    def self.yaml_tag_read_class( name ); "Struct::#{ name }"; end
     def self.yaml_new( klass, tag, val )
         if Hash === val
             struct_type = nil
@@ -113,8 +113,8 @@ end
 # Sequences: Array#to_yaml
 #
 class Array
-    tag_as "tag:ruby.yaml.org,2002:array"
-    tag_as "tag:yaml.org,2002:seq"
+    yaml_as "tag:ruby.yaml.org,2002:array"
+    yaml_as "tag:yaml.org,2002:seq"
     def yaml_initialize( tag, val ); concat( val.to_a ); end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
@@ -131,7 +131,7 @@ end
 # Exception#to_yaml
 #
 class Exception
-    tag_as "tag:ruby.yaml.org,2002:exception"
+    yaml_as "tag:ruby.yaml.org,2002:exception"
     def Exception.yaml_new( klass, tag, val )
         o = YAML.object_maker( klass, { 'mesg' => val.delete( 'message' ) } )
         val.each_pair do |k,v|
@@ -156,8 +156,8 @@ end
 # String#to_yaml
 #
 class String
-    tag_as "tag:ruby.yaml.org,2002:string"
-    tag_as "tag:yaml.org,2002:str"
+    yaml_as "tag:ruby.yaml.org,2002:string"
+    yaml_as "tag:yaml.org,2002:str"
     def is_complex_yaml?
         to_yaml_style or not to_yaml_properties.empty? or self =~ /\n.+/
     end
@@ -197,8 +197,8 @@ end
 # Symbol#to_yaml
 #
 class Symbol
-    tag_as "tag:ruby.yaml.org,2002:symbol"
-    tag_as "tag:ruby.yaml.org,2002:sym"
+    yaml_as "tag:ruby.yaml.org,2002:symbol"
+    yaml_as "tag:ruby.yaml.org,2002:sym"
 	# yaml_implicit /^:/, :yaml_new
     def Symbol.yaml_new( klass, tag, val )
         if String === val
@@ -219,7 +219,7 @@ end
 # TODO: Rework the Range as a sequence (simpler)
 #
 class Range
-    tag_as "tag:ruby.yaml.org,2002:range"
+    yaml_as "tag:ruby.yaml.org,2002:range"
     def Range.yaml_new( klass, tag, val )
         inr = %r'(\w+|[+-]?\d+(?:\.\d+)?(?:e[+-]\d+)?|"(?:[^\\"]|\\.)*")'
         opts = {}
@@ -276,7 +276,7 @@ end
 # Make an Regexp
 #
 class Regexp
-    tag_as "tag:ruby.yaml.org,2002:regexp"
+    yaml_as "tag:ruby.yaml.org,2002:regexp"
     def Regexp.yaml_new( klass, tag, val )
         if String === val and val =~ /^\/(.*)\/([mix]*)$/
             val = { 'regexp' => $1, 'mods' => $2 }
@@ -326,8 +326,8 @@ end
 # Emit a Time object as an ISO 8601 timestamp
 #
 class Time
-    tag_as "tag:ruby.yaml.org,2002:time"
-    tag_as "tag:yaml.org,2002:timestamp"
+    yaml_as "tag:ruby.yaml.org,2002:time"
+    yaml_as "tag:yaml.org,2002:timestamp"
     def Time.yaml_new( klass, tag, val )
         if Hash === val
             t = val.delete( 'at' )
@@ -376,7 +376,7 @@ end
 # Emit a Date object as a simple implicit
 #
 class Date
-    tag_as "tag:yaml.org,2002:timestamp#ymd"
+    yaml_as "tag:yaml.org,2002:timestamp#ymd"
 	def to_yaml( opts = {} )
 		YAML::quick_emit( object_id, opts ) do |out|
             out.scalar( "tag:yaml.org,2002:timestamp", self.to_s, :plain )
@@ -403,14 +403,14 @@ class Numeric
 	end
 end
 class Fixnum
-    tag_as "tag:yaml.org,2002:int"
+    yaml_as "tag:yaml.org,2002:int"
 end
 class Float
-    tag_as "tag:yaml.org,2002:float"
+    yaml_as "tag:yaml.org,2002:float"
 end
 
 class TrueClass
-    tag_as "tag:yaml.org,2002:bool#yes"
+    yaml_as "tag:yaml.org,2002:bool#yes"
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
             out.scalar( taguri, "true", :plain )
@@ -419,7 +419,7 @@ class TrueClass
 end
 
 class FalseClass
-    tag_as "tag:yaml.org,2002:bool#no"
+    yaml_as "tag:yaml.org,2002:bool#no"
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
             out.scalar( taguri, "false", :plain )
@@ -428,7 +428,7 @@ class FalseClass
 end
 
 class NilClass 
-    tag_as "tag:yaml.org,2002:null"
+    yaml_as "tag:yaml.org,2002:null"
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
             out.scalar( taguri, "", :plain )

@@ -54,7 +54,7 @@ class Module # :nodoc: all
     # Adds a taguri _tag_ to a class, used when dumping or loading the class
     # in YAML.  See YAML::tag_class for detailed information on typing and
     # taguris.
-    def tag_as( tag, sc = true )
+    def yaml_as( tag, sc = true )
         class_eval <<-"end;"
             attr_accessor :taguri
             def taguri
@@ -63,24 +63,24 @@ class Module # :nodoc: all
                 else
                     return @taguri if @taguri
                     tag = #{ tag.dump }
-                    if self.class.tag_subclasses? and self.class != YAML::tagged_classes[tag]
-                        tag = "\#{ tag }:\#{ self.class.tag_class_name }"
+                    if self.class.yaml_tag_subclasses? and self.class != YAML::tagged_classes[tag]
+                        tag = "\#{ tag }:\#{ self.class.yaml_tag_class_name }"
                     end
                     tag
                 end
             end
-            def self.tag_subclasses?; #{ sc ? 'true' : 'false' }; end
+            def self.yaml_tag_subclasses?; #{ sc ? 'true' : 'false' }; end
         end;
         YAML::tag_class tag, self
     end
     # Transforms the subclass name into a name suitable for display
     # in a subclassed tag.
-    def tag_class_name
+    def yaml_tag_class_name
         self.name
     end
     # Transforms the subclass name found in the tag into a Ruby
     # constant name.
-    def tag_read_class( name )
+    def yaml_tag_read_class( name )
         name
     end
 end

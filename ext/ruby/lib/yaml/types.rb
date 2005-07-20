@@ -78,7 +78,7 @@ module YAML
     # Builtin collection: !omap
     #
     class Omap < ::Array
-        tag_as "tag:yaml.org,2002:omap"
+        yaml_as "tag:yaml.org,2002:omap"
         def yaml_initialize( tag, val )
             if Array === val
                 val.each do |v|
@@ -133,7 +133,7 @@ module YAML
     # Builtin collection: !pairs
     #
     class Pairs < ::Array
-        tag_as "tag:yaml.org,2002:pairs"
+        yaml_as "tag:yaml.org,2002:pairs"
         def yaml_initialize( tag, val )
             if Array === val
                 val.each do |v|
@@ -183,6 +183,6 @@ module YAML
     # Builtin collection: !set
     #
     class Set < ::Hash
-        tag_as "tag:yaml.org,2002:set"
+        yaml_as "tag:yaml.org,2002:set"
     end
 end

@@ -2205,8 +2205,8 @@ Init_syck()
     s_tr_bang = rb_intern("tr!");
     s_unpack = rb_intern("unpack");
     s_write = rb_intern("write");
-    s_tag_read_class = rb_intern( "tag_read_class" );
-    s_tag_subclasses = rb_intern( "tag_subclasses?" );
+    s_tag_read_class = rb_intern( "yaml_tag_read_class" );
+    s_tag_subclasses = rb_intern( "yaml_tag_subclasses?" );
     s_emitter = rb_intern( "emitter" );
     s_set_resolver = rb_intern( "set_resolver" );
     s_node_export = rb_intern( "node_export" );
