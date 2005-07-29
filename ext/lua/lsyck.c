@@ -129,15 +129,28 @@ void lua_syck_emitter_handler(SyckEmitter *e, st_data_t data)
 			syck_emit_scalar(e, "number", scalar_none, 0, 0, 0, buf, strlen(buf));
 			break;
 		case LUA_TTABLE:
-			syck_emit_seq(e, "table", seq_none);
-			lua_pushnil(bonus->L);  /* first key */
-			while (lua_next(bonus->L, -2) != 0) {
-				/* `key' is at index -2 and `value' at index -1 */
-				syck_emit_item(e, -1);
-				lua_pop(bonus->L, 1);  /* removes `value'; keeps `key' for next iteration */
+			if (luaL_getn(bonus->L, -1) > 0) {			/* treat it as an array */
+				syck_emit_seq(e, "table", seq_none);
+				lua_pushnil(bonus->L);  /* first key */
+				while (lua_next(bonus->L, -2) != 0) {
+					/* `key' is at index -2 and `value' at index -1 */
+					syck_emit_item(e, -1);
+					lua_pop(bonus->L, 1);  /* removes `value'; keeps `key' for next iteration */
 
+				}
+				syck_emit_end(e);
+			} else {									/* treat it as a map */
+				syck_emit_map(e, "table", map_none);
+				lua_pushnil(bonus->L);
+				while (lua_next(bonus->L, -2) != 0) {
+					lua_pushvalue(bonus->L, -2);
+					syck_emit_item(e, -1);
+					lua_pop(bonus->L, 1);
+					syck_emit_item(e, -1);
+					lua_pop(bonus->L, 1);
+				}
+				syck_emit_end(e);
 			}
-			syck_emit_end(e);
 			break;
 	}
 }

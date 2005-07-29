@@ -49,6 +49,9 @@ function testcase.test_dump()
 	assert_equal(str, syck.dump({{1, 2, 3}, {6, 7, 8}}))
 	local str = "--- \n- \n  - 1\n  - 2\n  - 3\n- \n  - one\n  - two\n  - three\n"
 	assert_equal(str, syck.dump({{1, 2, 3}, {"one", "two", "three"}}))
+
+	local str = "--- \none: 1\nthree: 3\ntwo: 2\n"
+	assert_equal(str, syck.dump({one=1, two=2, three=3}))
 end
 
 os.exit(lunit.run())
