@@ -108,24 +108,24 @@ lua_syck_parser_handler(SyckParser *p, SyckNode *n)
 void lua_syck_emitter_handler(SyckEmitter *e, st_data_t data)
 {
 	struct emitter_xtra *bonus = (struct emitter_xtra *)e->bonus;
-	int type = lua_type(bonus->L, data);
+	int type = lua_type(bonus->L, -1);
 	char buf[30];		/* find a better way, if possible */
 	
 	switch (type)
 	{
 		case LUA_TBOOLEAN:
-			if (lua_toboolean(bonus->L, data))
+			if (lua_toboolean(bonus->L, -1))
 				strcpy(buf, "true");
 			else
 				strcpy(buf, "false");
 			syck_emit_scalar(e, "boolean", scalar_none, 0, 0, 0, (char *)buf, strlen(buf));
 			break;
 		case LUA_TSTRING:
-			syck_emit_scalar(e, "string", scalar_none, 0, 0, 0, (char *)lua_tostring(bonus->L, data), lua_strlen(bonus->L, data));
+			syck_emit_scalar(e, "string", scalar_none, 0, 0, 0, (char *)lua_tostring(bonus->L, -1), lua_strlen(bonus->L, -1));
 			break;
 		case LUA_TNUMBER:
 			/* should handle floats as well */
-			snprintf(buf, sizeof(buf), "%i", (int)lua_tonumber(bonus->L, data));
+			snprintf(buf, sizeof(buf), "%i", (int)lua_tonumber(bonus->L, -1));
 			syck_emit_scalar(e, "number", scalar_none, 0, 0, 0, buf, strlen(buf));
 			break;
 		case LUA_TTABLE:
@@ -134,7 +134,7 @@ void lua_syck_emitter_handler(SyckEmitter *e, st_data_t data)
 				lua_pushnil(bonus->L);  /* first key */
 				while (lua_next(bonus->L, -2) != 0) {
 					/* `key' is at index -2 and `value' at index -1 */
-					syck_emit_item(e, -1);
+					syck_emit_item(e, bonus->id++);
 					lua_pop(bonus->L, 1);  /* removes `value'; keeps `key' for next iteration */
 
 				}
@@ -144,15 +144,17 @@ void lua_syck_emitter_handler(SyckEmitter *e, st_data_t data)
 				lua_pushnil(bonus->L);
 				while (lua_next(bonus->L, -2) != 0) {
 					lua_pushvalue(bonus->L, -2);
-					syck_emit_item(e, -1);
+					syck_emit_item(e, bonus->id++);
 					lua_pop(bonus->L, 1);
-					syck_emit_item(e, -1);
+					syck_emit_item(e, bonus->id++);
 					lua_pop(bonus->L, 1);
 				}
 				syck_emit_end(e);
 			}
 			break;
 	}
+
+	bonus->id++;
 }
 
 static void lua_syck_mark_emitter(SyckEmitter *e, int idx)
@@ -222,7 +224,6 @@ static int syck_dump(lua_State *L)
 
 	bonus = (struct emitter_xtra *)emitter->bonus;
 	bonus->L = lua_newthread(L);
-	bonus->id = 1;
 	luaL_buffinit(L, &bonus->output);
 
 	syck_emitter_handler(emitter, lua_syck_emitter_handler);
@@ -231,9 +232,11 @@ static int syck_dump(lua_State *L)
 	lua_pushvalue(L, -2);
 	lua_xmove(L, bonus->L, 1);
 
-	lua_syck_mark_emitter(emitter, -1);
+	bonus->id = 1;
+	lua_syck_mark_emitter(emitter, bonus->id);
 
-	syck_emit(emitter, -1);
+	bonus->id = 1;
+	syck_emit(emitter, bonus->id);
 	syck_emitter_flush(emitter, 0);
 
 	luaL_pushresult(&bonus->output);
