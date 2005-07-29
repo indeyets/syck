@@ -38,16 +38,17 @@ function testcase.test_load()
 end
 
 function testcase.test_dump()
-	--assert_equal("--- ", syck.dump(nil))
+	assert_equal("--- \n", syck.dump(nil))
 	assert_equal("--- hey\n", syck.dump("hey"))
 	assert_equal("--- 5\n", syck.dump(5))
 	assert_equal("--- true\n", syck.dump(true))
 	assert_equal("--- false\n", syck.dump(false))
-	assert_equal("--- \n- 1\n- 2\n- 3\n", syck.dump({1, 2, 3}))
+	assert_equal("--- \n- 5\n- 6\n- 7\n", syck.dump({5, 6, 7}))
 
-	-- currently segfaults
-	--local str = "--- \n- \n  - 1\n  - 2\n  - 3\n- \n  - one\n  - two\n  - three"
-	--assert_equal(str, syck.dump({{1, 2, 3}, {"one", "two", "three"}}))
+	local str = "--- \n- \n  - 1\n  - 2\n  - 3\n- \n  - 6\n  - 7\n  - 8\n"
+	assert_equal(str, syck.dump({{1, 2, 3}, {6, 7, 8}}))
+	local str = "--- \n- \n  - 1\n  - 2\n  - 3\n- \n  - one\n  - two\n  - three\n"
+	assert_equal(str, syck.dump({{1, 2, 3}, {"one", "two", "three"}}))
 end
 
 os.exit(lunit.run())

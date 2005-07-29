@@ -15,17 +15,15 @@
 #include "lua.h"
 #include "lualib.h"
 
-//static lua_State *bonus->L;
-
 struct emitter_xtra {
 	lua_State *L;
 	luaL_Buffer output;
+	int id;
 };
 
 struct parser_xtra {
 	lua_State *L;
 };
-
 
 SYMID
 lua_syck_parser_handler(SyckParser *p, SyckNode *n)
@@ -111,8 +109,7 @@ void lua_syck_emitter_handler(SyckEmitter *e, st_data_t data)
 {
 	struct emitter_xtra *bonus = (struct emitter_xtra *)e->bonus;
 	int type = lua_type(bonus->L, data);
-	char buf[30];		/* we're asking for disaster here */
-	int i;
+	char buf[30];		/* find a better way, if possible */
 	
 	switch (type)
 	{
@@ -121,34 +118,28 @@ void lua_syck_emitter_handler(SyckEmitter *e, st_data_t data)
 				strcpy(buf, "true");
 			else
 				strcpy(buf, "false");
-			syck_emit_scalar(e, NULL, scalar_none, 0, 0, 0, (char *)buf, strlen(buf));
+			syck_emit_scalar(e, "boolean", scalar_none, 0, 0, 0, (char *)buf, strlen(buf));
 			break;
 		case LUA_TSTRING:
-			syck_emit_scalar(e, NULL, scalar_none, 0, 0, 0, (char *)lua_tostring(bonus->L, data), lua_strlen(bonus->L, data));
+			syck_emit_scalar(e, "string", scalar_none, 0, 0, 0, (char *)lua_tostring(bonus->L, data), lua_strlen(bonus->L, data));
 			break;
 		case LUA_TNUMBER:
 			/* should handle floats as well */
-			//snprintf(buf, sizeof(buf), "%i", (int)lua_tonumber(bonus->L, 1));
 			snprintf(buf, sizeof(buf), "%i", (int)lua_tonumber(bonus->L, data));
-			syck_emit_scalar(e, NULL, scalar_none, 0, 0, 0, buf, strlen(buf));
+			syck_emit_scalar(e, "number", scalar_none, 0, 0, 0, buf, strlen(buf));
 			break;
 		case LUA_TTABLE:
-			syck_emit_seq(e, NULL, seq_none);
+			syck_emit_seq(e, "table", seq_none);
 			lua_pushnil(bonus->L);  /* first key */
-			i=1;
-			while (lua_next(bonus->L, 1) != 0) {
+			while (lua_next(bonus->L, -2) != 0) {
 				/* `key' is at index -2 and `value' at index -1 */
-				lua_pushvalue(bonus->L, -1);
-				syck_emit_item(e, -2);
+				syck_emit_item(e, -1);
 				lua_pop(bonus->L, 1);  /* removes `value'; keeps `key' for next iteration */
-				i++;
+
 			}
 			syck_emit_end(e);
 			break;
 	}
-
-	/* do we need this */
-	lua_pop(bonus->L, 1);
 }
 
 static void lua_syck_mark_emitter(SyckEmitter *e, int idx)
@@ -159,14 +150,16 @@ static void lua_syck_mark_emitter(SyckEmitter *e, int idx)
 	switch (type) {
 		case LUA_TTABLE:
 			lua_pushnil(bonus->L);  /* first key */
-			while (lua_next(bonus->L, idx) != 0) {
+			while (lua_next(bonus->L, -2) != 0) {
 				/* `key' is at index -2 and `value' at index -1 */
-				syck_emitter_mark_node(e, -1);
+				//syck_emitter_mark_node(e, bonus->id++);
+				syck_emitter_mark_node(e, bonus->id++);
+				lua_syck_mark_emitter(e, -1);
 				lua_pop(bonus->L, 1);
 			}
 			break;
 		default:
-			syck_emitter_mark_node(e, idx);
+			syck_emitter_mark_node(e, bonus->id++);
 			break;
 	}
 }
@@ -216,6 +209,7 @@ static int syck_dump(lua_State *L)
 
 	bonus = (struct emitter_xtra *)emitter->bonus;
 	bonus->L = lua_newthread(L);
+	bonus->id = 1;
 	luaL_buffinit(L, &bonus->output);
 
 	syck_emitter_handler(emitter, lua_syck_emitter_handler);
@@ -224,8 +218,9 @@ static int syck_dump(lua_State *L)
 	lua_pushvalue(L, -2);
 	lua_xmove(L, bonus->L, 1);
 
-	lua_syck_mark_emitter(emitter, lua_gettop(bonus->L));
-	syck_emit(emitter, lua_gettop(bonus->L));
+	lua_syck_mark_emitter(emitter, -1);
+
+	syck_emit(emitter, -1);
 	syck_emitter_flush(emitter, 0);
 
 	luaL_pushresult(&bonus->output);
