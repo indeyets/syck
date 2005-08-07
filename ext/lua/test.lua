@@ -1,9 +1,8 @@
 
+require "yaml"
 require "lunit"
 
 lunit.import "all"
-
-assert(loadlib("./lsyck.so", "luaopen_syck"))()
 
 local testcase = lunit.TestCase("LuaYAML Testcases")
 
@@ -52,6 +51,31 @@ function testcase.test_dump()
 
 	local str = "--- \none: 1\nthree: 3\ntwo: 2\n"
 	assert_equal(str, syck.dump({one=1, two=2, three=3}))
+end
+
+function testcase.test_file()
+	local file = "test.dump"
+
+	local f = assert(io.open(file, "w"))
+	local obj = {5, 6, "hello"}
+
+	yaml.dump(obj, f)
+	f:close()
+
+	local obj2, err = yaml.load_file(file)
+	assert_nil(err)
+	assert_equal(5, obj2[1])
+	assert_equal(6, obj2[2])
+	assert_equal("hello", obj2[3])
+
+	os.remove(file)
+
+	yaml.dump_file(obj, file)
+	local obj2, err = yaml.load_file(file)
+	assert_nil(err)
+	assert_equal(5, obj2[1])
+	assert_equal(6, obj2[2])
+	assert_equal("hello", obj2[3])
 end
 
 os.exit(lunit.run())
