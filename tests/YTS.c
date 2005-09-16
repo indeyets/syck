@@ -219,7 +219,7 @@ test_emitter_handler( SyckEmitter *emitter, st_data_t data ) {
         case T_SEQ:
         {
             int i = 0;
-            syck_emit_seq( emitter, node->tag, 1 );
+            syck_emit_seq( emitter, node->tag, seq_none );
             while ( node->value[i].type != T_END ) {
                 syck_emit_item( emitter, (st_data_t)&node->value[i] );
                 i++;
@@ -230,7 +230,7 @@ test_emitter_handler( SyckEmitter *emitter, st_data_t data ) {
         case T_MAP:
         {
             int i = 0;
-            syck_emit_map( emitter, node->tag, 1 );
+            syck_emit_map( emitter, node->tag, map_none );
             while ( node->value[i].type != T_END ) {
                 syck_emit_item( emitter, (st_data_t)&node->value[i] );
                 i++;
@@ -273,6 +273,194 @@ void CuRoundTrip( CuTest* tc, struct test_node *stream ) {
  *   (EVERYTHING PREVIOUS WAS SET UP FOR THE TESTS)
  */
 
+/*
+ * Example : Trailing tab in plains
+ */
+void
+YtsFoldedScalars_7( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "a" },
+        { T_STR, 0, "b" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"a: b\t  \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Empty Sequence
+ */
+void
+YtsNullsAndEmpties_0( CuTest *tc )
+{
+struct test_node seq[] = {
+    end_node
+};
+struct test_node map[] = {
+    { T_STR, 0, "empty" },
+        { T_SEQ, 0, 0, seq },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"empty: [] \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Empty Mapping
+ */
+void
+YtsNullsAndEmpties_1( CuTest *tc )
+{
+struct test_node map2[] = {
+    end_node
+};
+struct test_node map1[] = {
+    { T_STR, 0, "empty" },
+        { T_MAP, 0, 0, map2 },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map1 },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"empty: {} \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Empty Sequence as Entire Document
+ */
+void
+YtsNullsAndEmpties_2( CuTest *tc )
+{
+struct test_node seq[] = {
+    end_node
+};
+struct test_node stream[] = {
+    { T_SEQ, 0, 0, seq },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"--- [] \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Empty Mapping as Entire Document
+ */
+void
+YtsNullsAndEmpties_3( CuTest *tc )
+{
+struct test_node map[] = {
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"--- {} \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Null as Document
+ */
+void
+YtsNullsAndEmpties_4( CuTest *tc )
+{
+struct test_node stream[] = {
+    { T_STR, 0, "~" },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"--- ~ \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
+ * Example : Empty String
+ */
+void
+YtsNullsAndEmpties_5( CuTest *tc )
+{
+struct test_node stream[] = {
+    { T_STR, 0, "" },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"--- '' \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
 /*
  * Example 2.1: Sequence of scalars
  */
@@ -2244,6 +2432,13 @@ CuSuite *
 SyckGetSuite()
 {
     CuSuite *suite = CuSuiteNew();
+    SUITE_ADD_TEST( suite, YtsFoldedScalars_7 );
+    SUITE_ADD_TEST( suite, YtsNullsAndEmpties_0 );
+    SUITE_ADD_TEST( suite, YtsNullsAndEmpties_1 );
+    SUITE_ADD_TEST( suite, YtsNullsAndEmpties_2 );
+    SUITE_ADD_TEST( suite, YtsNullsAndEmpties_3 );
+    SUITE_ADD_TEST( suite, YtsNullsAndEmpties_4 );
+    SUITE_ADD_TEST( suite, YtsNullsAndEmpties_5 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_0 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_1 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_2 );

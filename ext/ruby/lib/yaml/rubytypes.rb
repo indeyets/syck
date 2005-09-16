@@ -162,7 +162,7 @@ class String
         to_yaml_style or not to_yaml_properties.empty? or self =~ /\n.+/
     end
     def is_binary_data?
-        ( self.count( "^ -~", "^\r\n" ) / self.size > 0.3 || self.count( "\x00" ) > 0 )
+        ( self.count( "^ -~", "^\r\n" ) / self.size > 0.3 || self.count( "\x00" ) > 0 ) unless empty?
     end
     def String.yaml_new( klass, tag, val )
         val = { 'str' => val } if String === val
@@ -180,7 +180,9 @@ class String
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( is_complex_yaml? ? object_id : nil, opts ) do |out|
-            if to_yaml_properties.empty?
+            if is_binary_data?
+                out.scalar( "tag:yaml.org,2002:binary", [self].pack("m"), :literal )
+            elsif to_yaml_properties.empty?
                 out.scalar( taguri, self, to_yaml_style )
             else
                 out.map( taguri, to_yaml_style ) do |map|

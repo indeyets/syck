@@ -11,6 +11,19 @@ python: |
     ] 
 ruby: | 
     { 'empty' => [] } 
+syck: |
+    struct test_node seq[] = {
+        end_node
+    };
+    struct test_node map[] = {
+        { T_STR, 0, "empty" },
+            { T_SEQ, 0, 0, seq },
+        end_node
+    };
+    struct test_node stream[] = {
+        { T_MAP, 0, 0, map },
+        end_node
+    };
  
 --- 
 test: Empty Mapping 
@@ -25,6 +38,19 @@ python: |
     ] 
 ruby: | 
     { 'empty' => {} } 
+syck: |
+    struct test_node map2[] = {
+        end_node
+    };
+    struct test_node map1[] = {
+        { T_STR, 0, "empty" },
+            { T_MAP, 0, 0, map2 },
+        end_node
+    };
+    struct test_node stream[] = {
+        { T_MAP, 0, 0, map1 },
+        end_node
+    };
  
 --- 
 test: Empty Sequence as Entire Document 
@@ -34,6 +60,14 @@ python: |
     [ [] ] 
 ruby: | 
     [] 
+syck: |
+    struct test_node seq[] = {
+        end_node
+    };
+    struct test_node stream[] = {
+        { T_SEQ, 0, 0, seq },
+        end_node
+    };
  
 --- 
 test: Empty Mapping as Entire Document 
@@ -43,6 +77,14 @@ python: |
     [ {} ] 
 ruby: | 
     {} 
+syck: |
+    struct test_node map[] = {
+        end_node
+    };
+    struct test_node stream[] = {
+        { T_MAP, 0, 0, map },
+        end_node
+    };
  
 ---  
 test: Null as Document 
@@ -52,6 +94,11 @@ python: |
     [ None ] 
 ruby: | 
     nil 
+syck: |
+    struct test_node stream[] = {
+        { T_STR, 0, "~" },
+        end_node
+    };
  
 --- 
 test: Empty String 
@@ -64,3 +111,8 @@ python: |
     [ '' ] 
 ruby: | 
     '' 
+syck: |
+    struct test_node stream[] = {
+        { T_STR, 0, "" },
+        end_node
+    };

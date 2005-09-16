@@ -140,7 +140,7 @@
 /* trim spaces off the end in case of indent */
 #define PLAIN_IS_INL() \
     char *walker = qstr + qidx - 1; \
-    while ( walker > qstr && ( *walker == '\n' || *walker == ' ' ) ) \
+    while ( walker > qstr && ( *walker == '\n' || *walker == ' ' || *walker == '\t' ) ) \
     { \
         qidx--; \
         walker[0] = '\0'; \
@@ -293,7 +293,9 @@ YWORDC = [A-Za-z0-9_-] ;
 YWORDP = [A-Za-z0-9_-\.] ;
 LF = ( "\n" | "\r\n" ) ;
 SPC = " " ;
-ENDSPC = ( SPC+ | LF );
+TAB = "\t" ;
+SPCTAB = ( SPC | TAB ) ;
+ENDSPC = ( SPC+ | LF ) ;
 YINDENT = LF ( SPC | LF )* ;
 NULL = [\000] ;
 ANY = [\001-\377] ;
@@ -364,7 +366,7 @@ YINDENT             {   GOBBLE_UP_YAML_INDENT( doc_level, YYTOKEN );
                         goto Header; 
                     }
 
-SPC+                {   doc_level = YYCURSOR - YYLINEPTR;
+SPCTAB+             {   doc_level = YYCURSOR - YYLINEPTR;
                         goto Header;
                     }
 
@@ -483,7 +485,7 @@ YBLOCK              {   if ( is_newline( YYCURSOR - 1 ) )
                         goto Document;
                     }
 
-SPC+                {   goto Document; }
+SPCTAB+             {   goto Document; }
 
 NULL                {   ENSURE_YAML_IEND(lvl, -1);
                         YYPOS(0);
@@ -505,7 +507,7 @@ Directive:
 
 DIR                 {   goto Directive; }
 
-SPC+                {   goto Directive; }
+SPCTAB+             {   goto Directive; }
 
 ANY                 {   YYCURSOR = YYTOKTMP;
                         return YAML_DOCSEP;
@@ -610,7 +612,15 @@ ISEQC               {   if ( plvl->status != syck_lvl_iseq )
 
 NULL                {   RETURN_IMPLICIT(); }
 
-SPC                 {   goto Plain3; }
+SPCTAB+             {   if ( qidx == 0 ) 
+                        {
+                            goto Plain2;
+                        }
+                        else
+                        {
+                            goto Plain3; 
+                        }
+                    }
 
 ANY                 {   QUOTECATS(qstr, qcapa, qidx, YYTOKEN, YYCURSOR - YYTOKEN);
                         goto Plain2;

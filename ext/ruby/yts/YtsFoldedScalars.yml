@@ -213,3 +213,21 @@ ruby: |
       'kept' => "This has four newlines.\n\n\n\n", 
       'same as "kept" above' => "This has four newlines.\n\n\n\n" 
     } 
+
+--- 
+test: Trailing tab in plains
+yaml: | 
+    a: b	  
+ruby: |
+    { 'a' => 'b' }
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "a" },
+          { T_STR, 0, "b" },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
+
