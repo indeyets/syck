@@ -278,7 +278,6 @@ typedef void (*SyckEmitterHandler)(SyckEmitter *, st_data_t);
 
 enum doc_stage {
     doc_open,
-    doc_need_header,
     doc_processing
 };
 

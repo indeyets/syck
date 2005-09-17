@@ -612,7 +612,7 @@ ISEQC               {   if ( plvl->status != syck_lvl_iseq )
 
 NULL                {   RETURN_IMPLICIT(); }
 
-SPCTAB+             {   if ( qidx == 0 ) 
+SPCTAB              {   if ( qidx == 0 ) 
                         {
                             goto Plain2;
                         }

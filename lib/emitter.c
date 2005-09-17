@@ -337,27 +337,6 @@ syck_emitter_flush( SyckEmitter *e, long check_room )
     }
 
     /*
-     * Determine headers.
-     */
-    if ( ( e->stage == doc_open && ( e->headless == 0 || e->use_header == 1 ) ) || 
-         e->stage == doc_need_header )
-    {
-        if ( e->use_version == 1 )
-        {
-            char *header = S_ALLOC_N( char, 64 );
-            S_MEMZERO( header, char, 64 );
-            sprintf( header, "--- %%YAML:%d.%d ", SYCK_YAML_MAJOR, SYCK_YAML_MINOR );
-            (e->output_handler)( e, header, strlen( header ) );
-            S_FREE( header );
-        }
-        else
-        {
-            (e->output_handler)( e, "--- ", 4 );
-        }
-        e->stage = doc_processing;
-    }
-
-    /*
      * Commit buffer.
      */
     if ( check_room > e->marker - e->buffer )
@@ -381,6 +360,26 @@ syck_emit( SyckEmitter *e, st_data_t n )
     int indent = 0, x = 0;
     SyckLevel *lvl = syck_emitter_current_level( e );
     
+    /*
+     * Determine headers.
+     */
+    if ( e->stage == doc_open && ( e->headless == 0 || e->use_header == 1 ) )
+    {
+        if ( e->use_version == 1 )
+        {
+            char *header = S_ALLOC_N( char, 64 );
+            S_MEMZERO( header, char, 64 );
+            sprintf( header, "--- %%YAML:%d.%d ", SYCK_YAML_MAJOR, SYCK_YAML_MINOR );
+            syck_emitter_write( e, header, strlen( header ) );
+            S_FREE( header );
+        }
+        else
+        {
+            syck_emitter_write( e, "--- ", 4 );
+        }
+        e->stage = doc_processing;
+    }
+
     /* Add new level */
     if ( lvl->spaces >= 0 ) {
         indent = lvl->spaces + e->indent;
@@ -427,6 +426,7 @@ end_emit:
     syck_emitter_pop_level( e );
     if ( e->lvl_idx == 1 ) {
         syck_emitter_write( e, "\n", 1 );
+        e->headless = 0;
         e->stage = doc_open;
     }
 }
@@ -491,6 +491,7 @@ void syck_emit_indent( SyckEmitter *e )
 {
     int i;
     SyckLevel *lvl = syck_emitter_current_level( e );
+    if ( e->bufpos == 0 && ( e->marker - e->buffer ) == 0 ) return;
     if ( lvl->spaces >= 0 ) {
         char *spcs = S_ALLOC_N( char, lvl->spaces + 2 );
 

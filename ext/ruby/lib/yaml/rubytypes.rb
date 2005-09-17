@@ -2,9 +2,6 @@
 require 'date'
 require 'yaml/compat'
 
-#
-# Type conversions
-#
 class Class
 	def to_yaml( opts = {} )
 		raise TypeError, "can't dump anonymous class %s" % self.class
@@ -26,9 +23,6 @@ class Object
 	end
 end
 
-#
-# Maps: Hash#to_yaml
-#
 class Hash
     yaml_as "tag:ruby.yaml.org,2002:hash"
     yaml_as "tag:yaml.org,2002:map"
@@ -52,9 +46,6 @@ class Hash
 	end
 end
 
-#
-# Structs: export as a !map
-#
 class Struct
     yaml_as "tag:ruby.yaml.org,2002:struct"
     def self.yaml_tag_class_name; self.name.gsub( "Struct::", "" ); end
@@ -109,9 +100,6 @@ class Struct
 	end
 end
 
-#
-# Sequences: Array#to_yaml
-#
 class Array
     yaml_as "tag:ruby.yaml.org,2002:array"
     yaml_as "tag:yaml.org,2002:seq"
@@ -127,9 +115,6 @@ class Array
 	end
 end
 
-#
-# Exception#to_yaml
-#
 class Exception
     yaml_as "tag:ruby.yaml.org,2002:exception"
     def Exception.yaml_new( klass, tag, val )
@@ -151,10 +136,6 @@ class Exception
 	end
 end
 
-
-#
-# String#to_yaml
-#
 class String
     yaml_as "tag:ruby.yaml.org,2002:string"
     yaml_as "tag:yaml.org,2002:str"
@@ -195,9 +176,7 @@ class String
         end
 	end
 end
-#
-# Symbol#to_yaml
-#
+
 class Symbol
     yaml_as "tag:ruby.yaml.org,2002:symbol"
     yaml_as "tag:ruby.yaml.org,2002:sym"
@@ -211,15 +190,11 @@ class Symbol
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
-            out.scalar( taguri, self.id2name, :plain )
+            out.scalar( "tag:ruby.yaml.org,2002:str", self.id2name, :plain )
         end
 	end
 end
 
-#
-# Range#to_yaml
-# TODO: Rework the Range as a sequence (simpler)
-#
 class Range
     yaml_as "tag:ruby.yaml.org,2002:range"
     def Range.yaml_new( klass, tag, val )
@@ -274,9 +249,6 @@ class Range
 	end
 end
 
-#
-# Make an Regexp
-#
 class Regexp
     yaml_as "tag:ruby.yaml.org,2002:regexp"
     def Regexp.yaml_new( klass, tag, val )
@@ -324,9 +296,6 @@ class Regexp
 	end
 end
 
-#
-# Emit a Time object as an ISO 8601 timestamp
-#
 class Time
     yaml_as "tag:ruby.yaml.org,2002:time"
     yaml_as "tag:yaml.org,2002:timestamp"
@@ -374,9 +343,6 @@ class Time
 	end
 end
 
-#
-# Emit a Date object as a simple implicit
-#
 class Date
     yaml_as "tag:yaml.org,2002:timestamp#ymd"
 	def to_yaml( opts = {} )
@@ -386,9 +352,6 @@ class Date
 	end
 end
 
-#
-# Send Integer, Booleans, NilClass to String
-#
 class Numeric
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
@@ -404,9 +367,11 @@ class Numeric
         end
 	end
 end
+
 class Fixnum
     yaml_as "tag:yaml.org,2002:int"
 end
+
 class Float
     yaml_as "tag:yaml.org,2002:float"
 end
