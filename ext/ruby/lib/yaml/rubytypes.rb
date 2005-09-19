@@ -190,7 +190,7 @@ class Symbol
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
-            out.scalar( "tag:ruby.yaml.org,2002:str", self.id2name, :plain )
+            out.scalar( "tag:yaml.org,2002:str", self.inspect, :plain )
         end
 	end
 end
