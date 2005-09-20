@@ -1,8 +1,9 @@
 --- %YAML:1.0
 - version: 0.60
-  date: 2005-09-18
+  date: 2005-09-19
   changes:
-    lib/emitter.c: get headless documents working.
+    lib/emitter.c: get headless documents working.  better quoting of various
+      indicators at end or alone in scalars.
     lib/token.re: forgive tabs in plain scalars.
     ext/syck/rubyext.c: headless document always.
 

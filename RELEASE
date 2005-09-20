@@ -1,4 +1,4 @@
-released: { name: Syck, version: 0.54 }
+released: { name: Syck, version: 0.60 }
 for: [ Ruby, PHP, Python ]
 by: why the lucky stiff
 about: >
@@ -53,8 +53,8 @@ installation: >
 
   To compile libsyck, first download libsyck.
 
-    tar xzvf syck-0.54.tar.gz
-    cd syck-0.54
+    tar xzvf syck-0.60.tar.gz
+    cd syck-0.60
     ./configure
     make
     sudo make install
@@ -105,7 +105,7 @@ examples:
          [released] => Array
              (   
                  [name] => Syck
-                 [version] => 0.54
+                 [version] => 0.60
              )
 
      .. and so on ..
