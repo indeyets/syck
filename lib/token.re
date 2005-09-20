@@ -265,6 +265,7 @@ sycklex( YYSTYPE *sycklval, SyckParser *parser )
         case syck_bytecode_utf8:
         return sycklex_bytecode_utf8( sycklval, parser );
     }
+    return YAML_DOCSEP;
 }
 
 /*
@@ -548,8 +549,8 @@ YINDENT             {   int indt_len, nl_count = 0;
 
                         while ( YYTOKEN < YYCURSOR )
                         {
-                            int nl_len = 0;
-                            if ( nl_len = newline_len( YYTOKEN++ ) )
+                            int nl_len = newline_len( YYTOKEN++ );
+                            if ( nl_len )
                             {
                                 nl_count++;
                                 YYTOKEN += nl_len - 1;
@@ -657,8 +658,8 @@ YINDENT             {   int indt_len;
 
                         while ( YYTOKEN < YYCURSOR )
                         {
-                            int nl_len = 0;
-                            if ( nl_len = newline_len( YYTOKEN++ ) )
+                            int nl_len = newline_len( YYTOKEN++ );
+                            if ( nl_len )
                             {
                                 nl_count++;
                                 YYTOKEN += nl_len - 1;
@@ -748,8 +749,8 @@ YINDENT             {   int indt_len;
                         {
                             while ( YYTOKEN < YYCURSOR )
                             {
-                                int nl_len = 0;
-                                if ( nl_len = newline_len( YYTOKEN++ ) )
+                                int nl_len = newline_len( YYTOKEN++ );
+                                if ( nl_len )
                                 {
                                     nl_count++;
                                     YYTOKEN += nl_len - 1;
@@ -984,8 +985,8 @@ YINDENT             {   char *pacer;
                         pacer = YYTOKEN;
                         while ( pacer < YYCURSOR )
                         {
-                            int nl_len = 0;
-                            if ( nl_len = newline_len( pacer++ ) )
+                            int nl_len = newline_len( pacer++ );
+                            if ( nl_len )
                             {
                                 nl_count++;
                                 pacer += nl_len - 1;

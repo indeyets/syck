@@ -26,8 +26,6 @@ void
 TestSyckEmit( CuTest *tc )
 {
     SyckEmitter *emitter;
-    char *tmp;
-    int len = 0;
 
     emitter = syck_new_emitter();
     emitter->bufsize = 10;

@@ -132,7 +132,6 @@ int
 sycklex_bytecode_utf8( YYSTYPE *sycklval, SyckParser *parser )
 {
     SyckLevel *lvl;
-    int doc_level = 0;
     syck_parser_ptr = parser;
     if ( YYCURSOR == NULL ) 
     {
@@ -178,7 +177,7 @@ COM = "c" ;
         goto Document;
     }
 
-Header:
+/* Header: */
 
     YYTOKEN = YYCURSOR;
 

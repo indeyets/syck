@@ -141,7 +141,6 @@ void CuStreamCompareX( CuTest* tc, struct test_node *s1, struct test_node *s2 ) 
 void CuStreamCompare( CuTest* tc, char *yaml, struct test_node *stream ) {
     int doc_ct = 0;
     struct test_node *ystream = S_ALLOC_N( struct test_node, doc_ct + 1 );
-    CuString *msg;
 
     /* Set up parser */
     SyckParser *parser = syck_new_parser();
@@ -198,15 +197,15 @@ build_symbol_table( SyckEmitter *emitter, struct test_node *node ) {
         {
             int i = 0;
             while ( node->value[i].type != T_END ) {
-                SYMID id = build_symbol_table( emitter, &node->value[i] );
+                build_symbol_table( emitter, &node->value[i] );
                 i++;
             }        
         }
         return syck_emitter_mark_node( emitter, (st_data_t)node );
 
-        case T_STR:
-        return 0;
+        default: break;
     }
+    return 0;
 }
 
 void

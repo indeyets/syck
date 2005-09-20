@@ -141,7 +141,6 @@ TestSyckParseString2( CuTest *tc )
 void 
 TestSyckParseMap( CuTest *tc )
 {
-    SYMID id;
     SyckParser *parser;
     parser = syck_new_parser();
     syck_parser_handler( parser, SyckParseStringHandler );
@@ -153,7 +152,6 @@ TestSyckParseMap( CuTest *tc )
 void 
 TestSyckParseFold( CuTest *tc )
 {
-    SYMID id;
     SyckParser *parser;
     parser = syck_new_parser();
     syck_parser_handler( parser, SyckParseStringHandler );
@@ -165,7 +163,6 @@ TestSyckParseFold( CuTest *tc )
 void 
 TestSyckParseMultidoc( CuTest *tc )
 {
-    SYMID id;
     SyckParser *parser;
     parser = syck_new_parser();
     syck_parser_handler( parser, SyckParseStringHandler );

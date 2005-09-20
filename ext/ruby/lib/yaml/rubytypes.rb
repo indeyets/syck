@@ -164,7 +164,7 @@ class String
             if is_binary_data?
                 out.scalar( "tag:yaml.org,2002:binary", [self].pack("m"), :literal )
             elsif to_yaml_properties.empty?
-                out.scalar( taguri, self, to_yaml_style )
+                out.scalar( taguri, self, self =~ /^:/ ? :quote2 : to_yaml_style )
             else
                 out.map( taguri, to_yaml_style ) do |map|
                     map.add( 'str', "#{self}" )
@@ -180,7 +180,6 @@ end
 class Symbol
     yaml_as "tag:ruby.yaml.org,2002:symbol"
     yaml_as "tag:ruby.yaml.org,2002:sym"
-	# yaml_implicit /^:/, :yaml_new
     def Symbol.yaml_new( klass, tag, val )
         if String === val
             val.intern
