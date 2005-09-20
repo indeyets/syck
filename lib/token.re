@@ -215,7 +215,7 @@
     { \
         SyckLevel *lvl_deep = CURRENT_LEVEL(); \
         indt_len = lvl_deep->spaces; \
-        if ( indt_len == YYTOKEN - YYLINEPTR ) \
+        if ( lvl_deep->status == syck_lvl_seq || ( indt_len == YYCURSOR - YYLINEPTR && lvl_deep->status != syck_lvl_map )  ) \
         { \
             SyckLevel *lvl_over; \
             parser->lvl_idx--; \
@@ -433,7 +433,8 @@ CDELIMS             {   POP_LEVEL();
                         return YYTOKEN[0]; 
                     }
 
-[:,] ENDSPC         {   YYPOS(1); 
+[:,] ENDSPC         {   if ( *YYTOKEN == ':' && lvl->status != syck_lvl_imap ) lvl->status = syck_lvl_map;
+                        YYPOS(1); 
                         return YYTOKEN[0]; 
                     }
 
@@ -442,11 +443,11 @@ CDELIMS             {   POP_LEVEL();
                         if ( *YYCURSOR == '#' || is_newline( YYCURSOR ) || is_newline( YYCURSOR - 1 ) )
                         {
                             YYCURSOR--; 
-                            ADD_LEVEL((YYTOKEN + 1) - YYLINEPTR, syck_lvl_doc);
+                            ADD_LEVEL((YYTOKEN + 1) - YYLINEPTR, syck_lvl_seq);
                         }
                         else /* spaces followed by content uses the space as indentation */
                         {
-                            ADD_LEVEL(YYCURSOR - YYLINEPTR, syck_lvl_doc);
+                            ADD_LEVEL(YYCURSOR - YYLINEPTR, syck_lvl_seq);
                         }
                         return YYTOKEN[0]; 
                     }
@@ -920,8 +921,7 @@ ScalarBlock:
         int forceIndent = -1;
         char *yyt = YYTOKEN;
         SyckLevel *lvl = CURRENT_LEVEL();
-        int parentIndent;
-        GET_TRUE_YAML_INDENT(parentIndent);
+        int parentIndent = -1;
 
         switch ( *yyt )
         {
@@ -941,7 +941,7 @@ ScalarBlock:
             }
             else if ( isdigit( *yyt ) )
             {
-                forceIndent = strtol( yyt, NULL, 10 ) + parentIndent;
+                forceIndent = strtol( yyt, NULL, 10 );
             }
         }
 
@@ -959,18 +959,23 @@ YINDENT             {   char *pacer;
                         GOBBLE_UP_YAML_INDENT( indt_len, tok );
                         lvl = CURRENT_LEVEL();
 
-                        if ( indt_len > parentIndent && lvl->status != syck_lvl_block )
+                        if ( lvl->status != syck_lvl_block )
                         {
-                            int new_spaces = forceIndent > 0 ? forceIndent : indt_len;
-                            ADD_LEVEL( new_spaces, syck_lvl_block );
-                            lastIndent = indt_len - new_spaces;
-                            nl_begin = 1;
-                            lvl = CURRENT_LEVEL();
-                        }
-                        else if ( lvl->status != syck_lvl_block )
-                        {
-                            YYCURSOR = YYTOKEN;
-                            RETURN_YAML_BLOCK();
+                            GET_TRUE_YAML_INDENT(parentIndent);
+                            if ( forceIndent > 0 ) forceIndent += parentIndent;
+                            if ( indt_len > parentIndent )
+                            {
+                                int new_spaces = forceIndent > 0 ? forceIndent : indt_len;
+                                ADD_LEVEL( new_spaces, syck_lvl_block );
+                                lastIndent = indt_len - new_spaces;
+                                nl_begin = 1;
+                                lvl = CURRENT_LEVEL();
+                            }
+                            else
+                            {
+                                YYCURSOR = YYTOKEN;
+                                RETURN_YAML_BLOCK();
+                            }
                         }
 
                         /*

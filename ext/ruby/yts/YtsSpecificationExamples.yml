@@ -2215,6 +2215,31 @@ ruby: |
      'also written as' => '  This has no newline.', 
      'both are equal to' => '  This has no newline.' 
    } 
+syck: |
+  struct test_node map[] = {
+      { T_STR, 0, "empty" },
+          { T_STR, 0, "" },
+      { T_STR, 0, "literal" },
+          { T_STR, 0, "The \\ ' \" characters may be\nfreely used. Leading white\n   space "
+               "is significant.\n\nLine breaks are significant.\nThus this value contains one\n"
+               "empty line and ends with a\nsingle line break, but does\nnot start with one.\n" },
+      { T_STR, 0, "is equal to" },
+          { T_STR, 0, "The \\ ' \" characters may be\nfreely used. Leading white\n   space "
+               "is significant.\n\nLine breaks are significant.\nThus this value contains one\n"
+               "empty line and ends with a\nsingle line break, but does\nnot start with one.\n" },
+      { T_STR, 0, "indented and chomped" },
+          { T_STR, 0, "  This has no newline." },
+      { T_STR, 0, "also written as" },
+          { T_STR, 0, "  This has no newline." },
+      { T_STR, 0, "both are equal to" },
+          { T_STR, 0, "  This has no newline." },
+      end_node
+  };
+  struct test_node stream[] = {
+      { T_MAP, 0, 0, map },
+      end_node
+  };
+
  
 --- 
 test: Folded combinations 

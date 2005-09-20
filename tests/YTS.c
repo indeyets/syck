@@ -2390,6 +2390,79 @@ struct test_node stream[] = {
     CuRoundTrip( tc, stream );
 }
 /*
+ * Example : Literal combinations
+ */
+void
+YtsSpecificationExamples_47( CuTest *tc )
+{
+struct test_node map[] = {
+    { T_STR, 0, "empty" },
+        { T_STR, 0, "" },
+    { T_STR, 0, "literal" },
+        { T_STR, 0, "The \\ ' \" characters may be\nfreely used. Leading white\n   space "
+             "is significant.\n\nLine breaks are significant.\nThus this value contains one\n"
+             "empty line and ends with a\nsingle line break, but does\nnot start with one.\n" },
+    { T_STR, 0, "is equal to" },
+        { T_STR, 0, "The \\ ' \" characters may be\nfreely used. Leading white\n   space "
+             "is significant.\n\nLine breaks are significant.\nThus this value contains one\n"
+             "empty line and ends with a\nsingle line break, but does\nnot start with one.\n" },
+    { T_STR, 0, "indented and chomped" },
+        { T_STR, 0, "  This has no newline." },
+    { T_STR, 0, "also written as" },
+        { T_STR, 0, "  This has no newline." },
+    { T_STR, 0, "both are equal to" },
+        { T_STR, 0, "  This has no newline." },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
+
+    CuStreamCompare( tc,
+
+        /* YAML document */ 
+"empty: |\n"
+"\n"
+"literal: |\n"
+" The \\ ' \" characters may be\n"
+" freely used. Leading white\n"
+"    space is significant.\n"
+"\n"
+" Line breaks are significant.\n"
+" Thus this value contains one\n"
+" empty line and ends with a\n"
+" single line break, but does\n"
+" not start with one.\n"
+"\n"
+"is equal to: \"The \\\\ ' \\\" characters may \\\n"
+" be\\nfreely used. Leading white\\n   space \\\n"
+" is significant.\\n\\nLine breaks are \\\n"
+" significant.\\nThus this value contains \\\n"
+" one\\nempty line and ends with a\\nsingle \\\n"
+" line break, but does\\nnot start with one.\\n\"\n"
+"\n"
+"# Comments may follow a block \n"
+"# scalar value. They must be \n"
+"# less indented. \n"
+"\n"
+"# Modifiers may be combined in any order.\n"
+"indented and chomped: |2-\n"
+"    This has no newline.\n"
+"\n"
+"also written as: |-2\n"
+"    This has no newline.\n"
+"\n"
+"both are equal to: \"  This has no newline.\"\n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
+    CuRoundTrip( tc, stream );
+}
+/*
  * Example : Timestamp
  */
 void
@@ -2480,6 +2553,7 @@ SyckGetSuite()
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_40 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_42 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_43 );
+    SUITE_ADD_TEST( suite, YtsSpecificationExamples_47 );
     SUITE_ADD_TEST( suite, YtsSpecificationExamples_62 );
     return suite;
 }
