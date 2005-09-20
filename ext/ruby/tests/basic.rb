@@ -34,7 +34,9 @@ class YAML_Unit_Tests < RUNIT::TestCase
     # Test bytecode parser
     #
     def assert_bytecode( obj, yaml )
-        # assert_equal( obj, YAML::Syck::Parser.new( :Input => :Bytecode ).load( yaml ) )
+        yp = YAML::Syck::Parser.new
+        yp.input = :bytecode
+        assert_equal( obj, yp.load( yaml ) )
     end
 
 	#
@@ -43,7 +45,9 @@ class YAML_Unit_Tests < RUNIT::TestCase
 	def assert_parse_only( obj, yaml )
 		assert_equal( obj, YAML::load( yaml ) )
         assert_equal( obj, YAML::parse( yaml ).transform )
-        # assert_equal( obj, YAML::Syck::Parser.new( :Input => :Bytecode ).load( YAML::Syck::compile( yaml ) ) )
+        yp = YAML::Syck::Parser.new
+        yp.input = :bytecode
+        assert_equal( obj, yp.load( YAML::Syck::compile( yaml ) ) )
 	end
 
     def assert_path_segments( path, segments )
