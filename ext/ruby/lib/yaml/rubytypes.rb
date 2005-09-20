@@ -138,6 +138,7 @@ end
 
 class String
     yaml_as "tag:ruby.yaml.org,2002:string"
+    yaml_as "tag:yaml.org,2002:binary"
     yaml_as "tag:yaml.org,2002:str"
     def is_complex_yaml?
         to_yaml_style or not to_yaml_properties.empty? or self =~ /\n.+/
@@ -146,6 +147,7 @@ class String
         ( self.count( "^ -~", "^\r\n" ) / self.size > 0.3 || self.count( "\x00" ) > 0 ) unless empty?
     end
     def String.yaml_new( klass, tag, val )
+        val = val.unpack("m")[0] if tag == "tag:yaml.org,2002:binary"
         val = { 'str' => val } if String === val
         if Hash === val
             s = klass.allocate

@@ -644,7 +644,7 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
     enum scalar_style favor_style = scalar_literal;
     SyckLevel *parent = syck_emitter_parent_level( e );
     SyckLevel *lvl = syck_emitter_current_level( e );
-    int scan;
+    int scan = 0;
     char *implicit;
     
     if ( str == NULL ) str = "";
@@ -665,6 +665,14 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
     if ( syck_tagcmp( tag, implicit ) != 0 && syck_tagcmp( tag, "tag:yaml.org,2002:str" ) == 0 ) {
         force_style = scalar_2quote;
     } else {
+        /* complex key */
+        if ( parent->status == syck_lvl_map && parent->ncount % 2 == 1 &&
+             ( !( tag == NULL || 
+             ( implicit != NULL && syck_tagcmp( tag, implicit ) == 0 && e->explicit_typing == 0 ) ) ) ) 
+        {
+            syck_emitter_write( e, "? ", 2 );
+            parent->status = syck_lvl_mapx;
+        }
         syck_emit_tag( e, tag, implicit );
     }
     S_FREE( implicit );
@@ -712,7 +720,7 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
     }
 
     /* For now, all ambiguous keys are going to be double-quoted */
-    if ( parent->status == syck_lvl_map && parent->ncount % 2 == 1 ) {
+    if ( ( parent->status == syck_lvl_map || parent->status == syck_lvl_mapx ) && parent->ncount % 2 == 1 ) {
         if ( force_style != scalar_plain ) {
             force_style = scalar_2quote;
         }
@@ -755,6 +763,11 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
         case scalar_plain:
             syck_emitter_write( e, str, len );
         break;
+    }
+
+    if ( parent->status == syck_lvl_mapx )
+    {
+        syck_emitter_write( e, "\n", 1 );
     }
 }
 

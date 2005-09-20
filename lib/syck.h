@@ -204,6 +204,7 @@ enum syck_level_status {
     syck_lvl_end,
     syck_lvl_pause,
     syck_lvl_anctag,
+    syck_lvl_strx,
     syck_lvl_mapx,
     syck_lvl_seqx
 };
