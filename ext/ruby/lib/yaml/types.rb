@@ -10,9 +10,9 @@ module YAML
 	#
 	class PrivateType
         def self.tag_subclasses?; false; end
-		attr_accessor :type_id, :value
-		def initialize( type, val )
-			@type_id = type; @value = val
+        old_init = instance_method(:initialize)
+        define_method(:initialize) do |*args|
+            old_init.call(*args)
             @value.taguri = "x-private:#{ @type_id }"
 		end
 		def to_yaml( opts = {} )
@@ -26,8 +26,9 @@ module YAML
     class DomainType
         def self.tag_subclasses?; false; end
 		attr_accessor :domain, :type_id, :value
-		def initialize( domain, type, val )
-			@domain = domain; @type_id = type; @value = val
+        old_init = instance_method(:initialize)
+        define_method(:initialize) do |*args|
+            old_init.call(*args)
             @value.taguri = "tag:#{ @domain }:#{ @type_id }"
 		end
 		def to_yaml( opts = {} )

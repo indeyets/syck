@@ -34,7 +34,7 @@ class YAML_Unit_Tests < RUNIT::TestCase
     # Test bytecode parser
     #
     def assert_bytecode( obj, yaml )
-        yp = YAML::Syck::Parser.new
+        yp = YAML::Parser.new
         yp.input = :bytecode
         assert_equal( obj, yp.load( yaml ) )
     end
@@ -45,7 +45,7 @@ class YAML_Unit_Tests < RUNIT::TestCase
 	def assert_parse_only( obj, yaml )
 		assert_equal( obj, YAML::load( yaml ) )
         assert_equal( obj, YAML::parse( yaml ).transform )
-        yp = YAML::Syck::Parser.new
+        yp = YAML::Parser.new
         yp.input = :bytecode
         assert_equal( obj, yp.load( YAML::Syck::compile( yaml ) ) )
 	end
@@ -975,8 +975,7 @@ EOY
 		assert_equals( doc_ct, 3 )
 
         doc_ct = 0
-        yp = YAML::Syck::Parser.new
-        yp.resolver = YAML.resolver
+        yp = YAML::Parser.new
         yp.input = :bytecode
         yp.load_documents( 
             "D\nM\nSTime\nS2001-11-23 15:01:42 -05:00\nSUser\nSed\nSWarning\nSThis is an error message for the log file\nN\nE\n" +
