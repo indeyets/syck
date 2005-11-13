@@ -1,3 +1,4 @@
+# -*- mode: ruby; ruby-indent-level: 4 -*- vim: sw=4
 #
 # Classes required by the full core typeset
 #
@@ -5,43 +6,48 @@ require 'yaml/compat'
 
 module YAML
 
-	#
-	# Default private type
-	#
-	class PrivateType
+    #
+    # Default private type
+    #
+    class PrivateType
         def self.tag_subclasses?; false; end
-        old_init = instance_method(:initialize)
-        define_method(:initialize) do |*args|
-            old_init.call(*args)
+        attr_accessor :type_id, :value
+        verbose, $VERBOSE = $VERBOSE, nil
+        def initialize( type, val )
+            @type_id = type; @value = val
             @value.taguri = "x-private:#{ @type_id }"
-		end
-		def to_yaml( opts = {} )
+        end
+        def to_yaml( opts = {} )
             @value.to_yaml( opts )
-		end
-	end
+        end
+    ensure
+        $VERBOSE = verbose
+    end
 
     #
     # Default domain type
     #
     class DomainType
         def self.tag_subclasses?; false; end
-		attr_accessor :domain, :type_id, :value
-        old_init = instance_method(:initialize)
-        define_method(:initialize) do |*args|
-            old_init.call(*args)
+        attr_accessor :domain, :type_id, :value
+        verbose, $VERBOSE = $VERBOSE, nil
+        def initialize( domain, type, val )
+            @domain = domain; @type_id = type; @value = val
             @value.taguri = "tag:#{ @domain }:#{ @type_id }"
-		end
-		def to_yaml( opts = {} )
+        end
+        def to_yaml( opts = {} )
             @value.to_yaml( opts )
-		end
-	end
+        end
+    ensure
+        $VERBOSE = verbose
+    end
 
     #
     # Unresolved objects
     #
     class Object
         def self.tag_subclasses?; false; end
-		def to_yaml( opts = {} )
+        def to_yaml( opts = {} )
             YAML::quick_emit( object_id, opts ) do |out|
                 out.map( "tag:ruby.yaml.org,2002:object:#{ @class }", to_yaml_style ) do |map|
                     @ivars.each do |k,v|
@@ -49,31 +55,31 @@ module YAML
                     end
                 end
             end
-		end
-	end
+        end
+    end
 
-	#
-	# YAML Hash class to support comments and defaults
-	#
-	class SpecialHash < ::Hash 
-		attr_accessor :default
+    #
+    # YAML Hash class to support comments and defaults
+    #
+    class SpecialHash < ::Hash 
+        attr_accessor :default
         def inspect
             self.default.to_s
         end
-		def to_s
-			self.default.to_s
-		end
-		def update( h )
-			if YAML::SpecialHash === h
-				@default = h.default if h.default
-			end
-			super( h )
-		end
+        def to_s
+            self.default.to_s
+        end
+        def update( h )
+            if YAML::SpecialHash === h
+                @default = h.default if h.default
+            end
+            super( h )
+        end
         def to_yaml( opts = {} )
             opts[:DefaultKey] = self.default
             super( opts )
         end
-	end
+    end
 
     #
     # Builtin collection: !omap

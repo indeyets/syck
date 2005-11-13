@@ -13,7 +13,7 @@
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
-#define SYCK_VERSION    "0.60"
+#define SYCK_VERSION    "0.61"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #ifdef HAVE_STDLIB_H
@@ -204,7 +204,6 @@ enum syck_level_status {
     syck_lvl_end,
     syck_lvl_pause,
     syck_lvl_anctag,
-    syck_lvl_strx,
     syck_lvl_mapx,
     syck_lvl_seqx
 };
@@ -465,6 +464,9 @@ long syck_seq_count( SyckNode * );
  * Lexer prototypes
  */
 void syckerror( char * );
+int syckparse( void * );
+union YYSTYPE;
+int sycklex( union YYSTYPE *, SyckParser * );
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

@@ -83,6 +83,9 @@ SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
 void rb_syck_output_handler _((SyckEmitter *, char *, long));
 void rb_syck_emitter_handler _((SyckEmitter *, st_data_t));
 int syck_parser_assign_io _((SyckParser *, VALUE));
+VALUE syck_scalar_alloc _((VALUE class));
+VALUE syck_seq_alloc _((VALUE class));
+VALUE syck_map_alloc _((VALUE class));
 
 struct parser_xtra {
     VALUE data;  /* Borrowed this idea from marshal.c to fix [ruby-core:8067] problem */
@@ -774,6 +777,7 @@ syck_parser_initialize(argc, argv, self)
         Check_Type(options, T_HASH);
     }
     rb_ivar_set(self, s_options, options);
+    rb_ivar_set(self, s_input, Qnil);
     return self;
 }
 
@@ -1343,7 +1347,7 @@ syck_badalias_cmp( alias1, alias2 )
  */
 VALUE
 syck_domaintype_initialize( self, domain, type_id, val )
-    VALUE self, type_id, val;
+    VALUE self, domain, type_id, val;
 {
     rb_iv_set( self, "@domain", domain );
     rb_iv_set( self, "@type_id", type_id );

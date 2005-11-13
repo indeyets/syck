@@ -169,9 +169,9 @@ DNSCOMPRE = WD ( WDD* WD )? ;
 DNSNAMERE = ( ( DNSCOMPRE "." )+ DNSCOMPRE | DNSCOMPRE ) ;
 TAGDATE = YEAR ( "-" MON )? ( "-" MON )? ;
 
-TAG ":" DNSNAMERE "," TAGDATE ":"    {   return type_id; }
+TAG ":" DNSNAMERE "," TAGDATE ":"    {   return syck_strndup( type_id, strlen( type_id ) ); }
 
-XPRIVATE ":"    {   return type_id; }
+XPRIVATE ":"    {   return syck_strndup( type_id, strlen( type_id ) ); }
 
 "!"             {   return syck_xprivate( type_id + 1, strlen( type_id ) - 1 ); }
 

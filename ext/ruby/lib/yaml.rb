@@ -12,6 +12,7 @@ require 'yaml/error'
 require 'yaml/syck'
 require 'yaml/tag'
 require 'yaml/stream'
+require 'yaml/constants'
 
 # == YAML
 #
@@ -392,7 +393,7 @@ end
 require 'yaml/rubytypes'
 require 'yaml/types'
 
-module Kernel # :nodoc:
+module Kernel
     #
     # ryan:: You know how Kernel.p is a really convenient way to dump ruby
     #        structures?  The only downside is that it's not as legible as

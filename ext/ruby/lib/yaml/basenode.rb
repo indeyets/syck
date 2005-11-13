@@ -148,7 +148,7 @@ module YAML
             if pred
                 case pred
                 when /^\.=/
-                    pred = $'
+                    pred = $'   # '
                     match_nodes.reject! { |n|
                         n.last.value != pred
                     }
