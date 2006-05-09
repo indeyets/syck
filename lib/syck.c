@@ -408,7 +408,7 @@ syck_move_tokens( SyckParser *p )
         return 0;
 
     skip = p->limit - p->token;
-    if ( skip < 1 )
+    if ( skip < 0 )
         return 0;
 
     if ( ( count = p->token - p->buffer ) )

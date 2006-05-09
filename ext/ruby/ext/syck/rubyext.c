@@ -56,8 +56,8 @@ typedef struct {
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_unpack, s_tr_bang, s_default_set, s_tag_read_class, s_tag_subclasses, s_resolver, s_push, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_input, s_intern, s_transform, s_yaml_new, s_yaml_initialize, s_node_export, s_to_yaml, s_write, s_set_resolver;
-static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_type_id_set, s_style, s_style_set, s_value, s_value_set;
+static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_unpack, s_tr_bang, s_default_set, s_tag_read_class, s_tag_subclasses, s_resolver, s_push, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_input, s_intern, s_transform, s_yaml_new, s_yaml_initialize, s_node_export, s_to_yaml, s_write, s_set_resolver, s_each;
+static ID s_tags, s_kind, s_name, s_options, s_type_id, s_type_id_set, s_style, s_style_set, s_value, s_value_set;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
 static VALUE sym_1quote, sym_2quote, sym_fold, sym_literal, sym_plain, sym_inline;
@@ -82,7 +82,7 @@ void rb_syck_err_handler _((SyckParser *, char *));
 SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
 void rb_syck_output_handler _((SyckEmitter *, char *, long));
 void rb_syck_emitter_handler _((SyckEmitter *, st_data_t));
-int syck_parser_assign_io _((SyckParser *, VALUE));
+int syck_parser_assign_io _((SyckParser *, VALUE *));
 VALUE syck_scalar_alloc _((VALUE class));
 VALUE syck_seq_alloc _((VALUE class));
 VALUE syck_map_alloc _((VALUE class));
@@ -114,7 +114,7 @@ rb_syck_compile(self, port)
     bytestring_t *sav; 
 
     SyckParser *parser = syck_new_parser();
-    taint = syck_parser_assign_io(parser, port);
+    taint = syck_parser_assign_io(parser, &port);
     syck_parser_handler( parser, syck_yaml2byte_handler );
     syck_parser_error_handler( parser, NULL );
     syck_parser_implicit_typing( parser, 0 );
@@ -122,7 +122,7 @@ rb_syck_compile(self, port)
     oid = syck_parse( parser );
     syck_lookup_sym( parser, oid, (char **)&sav );
 
-    ret = S_ALLOC_N( char, strlen( sav->buffer ) + 3 );
+    ret = S_ALLOCA_N( char, strlen( sav->buffer ) + 3 );
     ret[0] = '\0';
     strcat( ret, "D\n" );
     strcat( ret, sav->buffer );
@@ -171,12 +171,12 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
  * (returns tainted? boolean)
  */
 int
-syck_parser_assign_io(parser, port)
+syck_parser_assign_io(parser, pport)
     SyckParser *parser;
-    VALUE port;
+    VALUE *pport;
 {
     int taint = Qtrue;
-    VALUE tmp;
+    VALUE tmp, port = *pport;
     if (!NIL_P(tmp = rb_check_string_type(port))) {
         taint = OBJ_TAINTED(port); /* original taintedness */
         port = tmp;
@@ -191,6 +191,7 @@ syck_parser_assign_io(parser, port)
     else {
         rb_raise(rb_eTypeError, "instance of IO needed");
     }
+    *pport = port;
     return taint;
 }
 
@@ -272,12 +273,11 @@ rb_syck_mktime(str, len)
     ptr += 2;
     if ( len > ptr - str && *ptr == '.' )
     {
-        char *padded = syck_strndup( "000000", 6 );
+        char padded[] = "000000";
         char *end = ptr + 1;
         while ( isdigit( *end ) ) end++;
         MEMCPY(padded, ptr + 1, char, end - (ptr + 1));
         usec = strtol(padded, NULL, 10);
-        S_FREE(padded);
     }
     else
     {
@@ -461,8 +461,8 @@ yaml_org_handler( n, ref )
             {
                 double f;
                 syck_str_blow_away_commas( n );
-                f = strtod( n->data.str->ptr, NULL );
-                obj = rb_float_new( f );
+                obj = rb_str_new( n->data.str->ptr, n->data.str->len );
+                obj = rb_funcall( obj, s_to_f, 0 );
             }
             else if ( strcmp( type_id, "timestamp#iso8601" ) == 0 )
             {
@@ -578,7 +578,7 @@ yaml_org_handler( n, ref )
                             VALUE dup = rb_funcall( tmph, s_dup, 0 );
                             tmp = rb_ary_reverse( tmp );
                             rb_ary_push( tmp, obj );
-                            rb_iterate( rb_each, tmp, syck_merge_i, dup );
+                            rb_block_call( tmp, s_each, 0, 0, syck_merge_i, dup );
                             obj = dup;
                             skip_aset = 1;
                         }
@@ -601,6 +601,8 @@ yaml_org_handler( n, ref )
     *ref = obj;
     return transferred;
 }
+
+static void syck_node_mark( SyckNode *n );
 
 /*
  * {native mode} node handler
@@ -710,6 +712,13 @@ syck_set_model( p, input, model )
     syck_parser_bad_anchor_handler( parser, rb_syck_bad_anchor_handler );
 }
 
+static int
+syck_st_mark_nodes( char *key, SyckNode *n, char *arg )
+{
+    if ( n != (void *)1 ) syck_node_mark( n );
+    return ST_CONTINUE;
+}
+
 /*
  * mark parser nodes
  */
@@ -717,14 +726,20 @@ static void
 syck_mark_parser(parser)
     SyckParser *parser;
 {
-    struct parser_xtra *bonus;
-    rb_gc_mark(parser->root);
-    rb_gc_mark(parser->root_on_error);
-    if ( parser->bonus != NULL )
-    {
-        bonus = (struct parser_xtra *)parser->bonus;
+    struct parser_xtra *bonus = (struct parser_xtra *)parser->bonus;
+    rb_gc_mark_maybe(parser->root);
+    rb_gc_mark_maybe(parser->root_on_error);
         rb_gc_mark( bonus->data );
         rb_gc_mark( bonus->proc );
+    rb_gc_mark( bonus->resolver );
+
+    if ( parser->anchors != NULL )
+    {
+        st_foreach( parser->anchors, syck_st_mark_nodes, 0 );
+    }
+    if ( parser->bad_anchors != NULL )
+    {
+        st_foreach( parser->bad_anchors, syck_st_mark_nodes, 0 );
     }
 }
 
@@ -735,8 +750,7 @@ void
 rb_syck_free_parser(p)
     SyckParser *p;
 {
-    struct parser_xtra *bonus = (struct parser_xtra *)p->bonus;
-    if ( bonus != NULL ) S_FREE( bonus );
+    S_FREE( p->bonus );
     syck_free_parser(p);
 }
 
@@ -750,6 +764,9 @@ syck_parser_s_alloc(class)
 {
     VALUE pobj;
     SyckParser *parser = syck_new_parser();
+
+    parser->bonus = S_ALLOC( struct parser_xtra );
+    S_MEMZERO( parser->bonus, struct parser_xtra, 1 );
 
     pobj = Data_Wrap_Struct( class, syck_mark_parser, rb_syck_free_parser, parser );
 
@@ -822,8 +839,7 @@ syck_parser_load(argc, argv, self)
 {
     VALUE port, proc, model, input;
     SyckParser *parser;
-    struct parser_xtra *bonus = S_ALLOC_N( struct parser_xtra, 1 );
-    volatile VALUE hash;    /* protect from GC */
+    struct parser_xtra *bonus;
 
     rb_scan_args(argc, argv, "11", &port, &proc);
 
@@ -832,14 +848,13 @@ syck_parser_load(argc, argv, self)
     Data_Get_Struct(self, SyckParser, parser);
     syck_set_model( self, input, model );
 
-    bonus->taint = syck_parser_assign_io(parser, port);
-    bonus->data = hash = rb_hash_new();
+    bonus = (struct parser_xtra *)parser->bonus;
+    bonus->taint = syck_parser_assign_io(parser, &port);
+    bonus->data = rb_hash_new();
     bonus->resolver = rb_attr_get( self, s_resolver );
     if ( NIL_P( proc ) ) bonus->proc = 0;
     else                 bonus->proc = proc;
     
-    parser->bonus = (void *)bonus;
-
     return syck_parse( parser );
 }
 
@@ -854,8 +869,7 @@ syck_parser_load_documents(argc, argv, self)
 {
     VALUE port, proc, v, input, model;
     SyckParser *parser;
-    struct parser_xtra *bonus = S_ALLOC_N( struct parser_xtra, 1 );
-    volatile VALUE hash;
+    struct parser_xtra *bonus;
 
     rb_scan_args(argc, argv, "1&", &port, &proc);
 
@@ -864,15 +878,15 @@ syck_parser_load_documents(argc, argv, self)
     Data_Get_Struct(self, SyckParser, parser);
     syck_set_model( self, input, model );
     
-    bonus->taint = syck_parser_assign_io(parser, port);
+    bonus = (struct parser_xtra *)parser->bonus;
+    bonus->taint = syck_parser_assign_io(parser, &port);
     bonus->resolver = rb_attr_get( self, s_resolver );
     bonus->proc = 0;
-    parser->bonus = (void *)bonus;
 
     while ( 1 )
     {
         /* Reset hash for tracking nodes */
-        bonus->data = hash = rb_hash_new();
+        bonus->data = rb_hash_new();
 
         /* Parse a document */
         v = syck_parse( parser );
@@ -999,7 +1013,7 @@ syck_resolver_node_import( self, node )
                             VALUE dup = rb_funcall( end, s_dup, 0 );
                             v = rb_ary_reverse( v );
                             rb_ary_push( v, obj );
-                            rb_iterate( rb_each, v, syck_merge_i, dup );
+                            rb_block_call( v, s_each, 0, 0, syck_merge_i, dup );
                             obj = dup;
                             skip_aset = 1;
                         }
@@ -1036,12 +1050,11 @@ syck_set_ivars( vars, obj )
     VALUE ivname = rb_ary_entry( vars, 0 );
     char *ivn;
     StringValue( ivname );
-    ivn = S_ALLOC_N( char, RSTRING(ivname)->len + 2 );
+    ivn = S_ALLOCA_N( char, RSTRING(ivname)->len + 2 );
     ivn[0] = '@';
     ivn[1] = '\0';
     strncat( ivn, RSTRING(ivname)->ptr, RSTRING(ivname)->len );
     rb_iv_set( obj, ivn, rb_ary_entry( vars, 1 ) );
-    S_FREE( ivn );
     return Qnil;
 }
 
@@ -1128,6 +1141,10 @@ syck_resolver_transfer( self, type, val )
                             type = subclass;
                             subclass = cYObject;
                         }
+                        else /* workaround for SEGV. real fix please */
+                        {
+                            rb_raise( rb_eTypeError, "invalid subclass" );
+                        }
                     }
                     break;
                 }
@@ -1150,14 +1167,22 @@ syck_resolver_transfer( self, type, val )
             }
             else if ( !NIL_P( target_class ) )
             {
+                if ( subclass == rb_cBignum )
+                {
+                    obj = rb_str2inum( val, 10 ); /* for yaml dumped by 1.8.3 [ruby-core:6159] */
+                }
+                else
+                {
                 obj = rb_obj_alloc( subclass );
+                }
+
                 if ( rb_respond_to( obj, s_yaml_initialize ) )
                 {
                     rb_funcall( obj, s_yaml_initialize, 2, type, val );
                 }
                 else if ( !NIL_P( obj ) && rb_obj_is_instance_of( val, rb_cHash ) )
                 {
-                    rb_iterate( rb_each, val, syck_set_ivars, obj );
+                    rb_block_call( val, s_each, 0, 0, syck_set_ivars, obj );
                 }
             }
             else 
@@ -1194,10 +1219,9 @@ syck_resolver_tagurize( self, val )
 
     if ( !NIL_P(tmp) )
     {
-        char *taguri;
-        val = tmp;
-        taguri = syck_type_id_to_uri( RSTRING(val)->ptr );
-        return rb_str_new2( taguri );
+        char *taguri = syck_type_id_to_uri( RSTRING(tmp)->ptr );
+        val = rb_str_new2( taguri );
+        S_FREE( taguri );
     }
 
     return val;
@@ -1387,6 +1411,7 @@ syck_node_mark( n )
     SyckNode *n;
 {
     int i;
+    rb_gc_mark_maybe( n->id );
     switch ( n->kind )
     {
         case syck_seq_kind:
@@ -1404,42 +1429,9 @@ syck_node_mark( n )
             }
         break;
     }
-}
-
-/*
- * Don't free Ruby data, Ruby will do that
- */
-void
-rb_syck_free_node( SyckNode *n )
-{
-    switch ( n->kind  )
-    {
-        case syck_str_kind:
-            S_FREE( n->data.str );
-            n->data.str = NULL;
-        break;
-
-        case syck_seq_kind:
-            if ( n->data.list != NULL )
-            {
-                S_FREE( n->data.list->items );
-                S_FREE( n->data.list );
-                n->data.list = NULL;
-            }
-        break;
-
-        case syck_map_kind:
-            if ( n->data.pairs != NULL )
-            {
-                S_FREE( n->data.pairs->keys );
-                S_FREE( n->data.pairs->values );
-                S_FREE( n->data.pairs );
-                n->data.pairs = NULL;
-            }
-        break;
-    }
-
-    S_FREE( n );
+#if 0 /* maybe needed */
+    if ( n->shortcut ) syck_node_mark( n->shortcut ); /* caution: maybe cyclic */
+#endif
 }
 
 /*
@@ -1450,7 +1442,7 @@ syck_scalar_alloc( class )
     VALUE class;
 {
     SyckNode *node = syck_alloc_str();
-    VALUE obj = Data_Wrap_Struct( class, syck_node_mark, rb_syck_free_node, node );
+    VALUE obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
     node->id = obj;
     return obj;
 }
@@ -1519,7 +1511,7 @@ syck_scalar_value_set( self, val )
     Data_Get_Struct( self, SyckNode, node );
 
     StringValue( val );
-    node->data.str->ptr = RSTRING(val)->ptr;
+    node->data.str->ptr = syck_strndup( RSTRING(val)->ptr, RSTRING(val)->len );
     node->data.str->len = RSTRING(val)->len;
     node->data.str->style = scalar_none;
 
@@ -1537,7 +1529,7 @@ syck_seq_alloc( class )
     SyckNode *node;
     VALUE obj;
     node = syck_alloc_seq();
-    obj = Data_Wrap_Struct( class, syck_node_mark, rb_syck_free_node, node );
+    obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
     node->id = obj;
     return obj;
 }
@@ -1636,7 +1628,7 @@ syck_map_alloc( class )
     SyckNode *node;
     VALUE obj;
     node = syck_alloc_map();
-    obj = Data_Wrap_Struct( class, syck_node_mark, rb_syck_free_node, node );
+    obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
     node->id = obj;
     return obj;
 }
@@ -1766,8 +1758,7 @@ syck_node_init_copy( copy, orig )
     if ( copy == orig )
         return copy;
 
-    if ( TYPE( orig ) != T_DATA ||
-         RDATA( orig )->dfree != ( RUBY_DATA_FUNC )rb_syck_free_node )
+    if ( TYPE( orig ) != T_DATA )
     {
         rb_raise( rb_eTypeError, "wrong argument type" );
     }
@@ -1788,12 +1779,11 @@ syck_node_type_id_set( self, type_id )
     SyckNode *node;
     Data_Get_Struct( self, SyckNode, node );
 
-    if ( node->type_id != NULL ) S_FREE( node->type_id );
+    S_FREE( node->type_id );
 
-    if ( NIL_P( type_id ) ) {
-        node->type_id = NULL;
-    } else {
-        node->type_id = StringValuePtr( type_id );
+    if ( !NIL_P( type_id ) ) {
+        StringValue( type_id );
+        node->type_id = syck_strndup( RSTRING(type_id)->ptr, RSTRING(type_id)->len );
     }
 
     rb_iv_set( self, "@type_id", type_id );
@@ -1811,13 +1801,14 @@ syck_node_transform( self )
     SyckNode *n;
     SyckNode *orig_n;
     Data_Get_Struct(self, SyckNode, orig_n);
+    t = Data_Wrap_Struct( cNode, syck_node_mark, syck_free_node, 0 );
 
     switch (orig_n->kind)
     {
         case syck_map_kind:
             {
                 int i;
-                n = syck_alloc_map();
+                DATA_PTR(t) = n = syck_alloc_map();
                 for ( i = 0; i < orig_n->data.pairs->idx; i++ )
                 {
                     syck_map_add( n, rb_funcall( syck_map_read( orig_n, map_key, i ), s_transform, 0 ),
@@ -1829,7 +1820,7 @@ syck_node_transform( self )
         case syck_seq_kind:
             {
                 int i;
-                n = syck_alloc_seq();
+                DATA_PTR(t) = n = syck_alloc_seq();
                 for ( i = 0; i < orig_n->data.list->idx; i++ )
                 {
                     syck_seq_add( n, rb_funcall( syck_seq_read( orig_n, i ), s_transform, 0 ) );
@@ -1838,7 +1829,7 @@ syck_node_transform( self )
         break;
 
         case syck_str_kind:
-            n = syck_new_str2( orig_n->data.str->ptr, orig_n->data.str->len, orig_n->data.str->style );
+            DATA_PTR(t) = n = syck_new_str2( orig_n->data.str->ptr, orig_n->data.str->len, orig_n->data.str->style );
         break;
     }
 
@@ -1850,11 +1841,8 @@ syck_node_transform( self )
     {
         n->anchor = syck_strndup( orig_n->anchor, strlen( orig_n->anchor ) );
     }
-    t = Data_Wrap_Struct( cNode, NULL, NULL, n );
     n->id = t;
-    t = rb_funcall( oDefaultResolver, s_node_import, 1, t );
-    syck_free_node( n );
-    return t;
+    return rb_funcall( oDefaultResolver, s_node_import, 1, t );
 }
 
 /*
@@ -1949,14 +1937,11 @@ static void
 syck_mark_emitter(emitter)
     SyckEmitter *emitter;
 {
-    struct emitter_xtra *bonus;
-    if ( emitter->bonus != NULL )
-    {
-        bonus = (struct emitter_xtra *)emitter->bonus;
+    struct emitter_xtra *bonus = (struct emitter_xtra *)emitter->bonus;
+    rb_gc_mark( bonus->oid  );
         rb_gc_mark( bonus->data );
         rb_gc_mark( bonus->port );
     }
-}
 
 /*
  * Free the emitter and any bonus attachment.
@@ -1965,8 +1950,7 @@ void
 rb_syck_free_emitter(e)
     SyckEmitter *e;
 {
-    struct emitter_xtra *bonus = (struct emitter_xtra *)e->bonus;
-    if ( bonus != NULL ) S_FREE( bonus );
+    S_FREE( e->bonus );
     syck_free_emitter(e);
 }
 
@@ -1980,6 +1964,9 @@ syck_emitter_s_alloc(class)
 {
     VALUE pobj;
     SyckEmitter *emitter = syck_new_emitter();
+
+    emitter->bonus = S_ALLOC( struct emitter_xtra );
+    S_MEMZERO( emitter->bonus, struct emitter_xtra, 1 );
 
     pobj = Data_Wrap_Struct( class, syck_mark_emitter, rb_syck_free_emitter, emitter );
     syck_emitter_handler( emitter, rb_syck_emitter_handler );
@@ -2001,15 +1988,13 @@ syck_emitter_reset( argc, argv, self )
     VALUE options, tmp;
     SyckEmitter *emitter;
     struct emitter_xtra *bonus;
-    volatile VALUE hash;    /* protect from GC */
 
     Data_Get_Struct(self, SyckEmitter, emitter);
     bonus = (struct emitter_xtra *)emitter->bonus;
-    if ( bonus != NULL ) S_FREE( bonus );
 
-    bonus = S_ALLOC_N( struct emitter_xtra, 1 );
+    bonus->oid = Qnil;
     bonus->port = rb_str_new2( "" );
-    bonus->data = hash = rb_hash_new();
+    bonus->data = rb_hash_new();
 
     if (rb_scan_args(argc, argv, "01", &options) == 0)
     {
@@ -2030,8 +2015,7 @@ syck_emitter_reset( argc, argv, self )
         rb_ivar_set(self, s_options, options);
     }
     
-    emitter->headless = 1;
-    emitter->bonus = (void *)bonus;
+    emitter->headless = 0;
     rb_ivar_set(self, s_level, INT2FIX(0));
     rb_ivar_set(self, s_resolver, Qnil);
     return self;
@@ -2217,6 +2201,7 @@ Init_syck()
     s_transform = rb_intern( "transform" );
     s_yaml_new = rb_intern("yaml_new");
     s_yaml_initialize = rb_intern("yaml_initialize");
+    s_each = rb_intern("each");
 
     s_tags = rb_intern("@tags");
     s_name = rb_intern("@name");
@@ -2259,10 +2244,12 @@ Init_syck()
     rb_define_method( cResolver, "node_import", syck_resolver_node_import, 1 );
     rb_define_method( cResolver, "tagurize", syck_resolver_tagurize, 1 );
 
+    rb_global_variable( &oDefaultResolver );
     oDefaultResolver = rb_funcall( cResolver, rb_intern( "new" ), 0 );
     rb_define_singleton_method( oDefaultResolver, "node_import", syck_defaultresolver_node_import, 1 );
     rb_define_singleton_method( oDefaultResolver, "detect_implicit", syck_defaultresolver_detect_implicit, 1 );
     rb_define_const( rb_syck, "DefaultResolver", oDefaultResolver );
+    rb_global_variable( &oGenericResolver );
     oGenericResolver = rb_funcall( cResolver, rb_intern( "new" ), 0 );
     rb_define_singleton_method( oGenericResolver, "node_import", syck_genericresolver_node_import, 1 );
     rb_define_const( rb_syck, "GenericResolver", oGenericResolver );

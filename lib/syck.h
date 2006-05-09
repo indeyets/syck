@@ -465,8 +465,6 @@ long syck_seq_count( SyckNode * );
  */
 void syckerror( char * );
 int syckparse( void * );
-union YYSTYPE;
-int sycklex( union YYSTYPE *, SyckParser * );
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

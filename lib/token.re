@@ -433,7 +433,10 @@ CDELIMS             {   POP_LEVEL();
                         return YYTOKEN[0]; 
                     }
 
-[:,] ENDSPC         {   if ( *YYTOKEN == ':' && lvl->status != syck_lvl_imap ) lvl->status = syck_lvl_map;
+[:,] ENDSPC         {   if ( *YYTOKEN == ':' && lvl->status != syck_lvl_imap && lvl->status != syck_lvl_iseq )
+                        {
+                            lvl->status = syck_lvl_map;
+                        }
                         YYPOS(1); 
                         return YYTOKEN[0]; 
                     }
