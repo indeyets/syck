@@ -3,7 +3,7 @@
 
                              . syck .
 
-                         [ version 0.60 ]
+                         [ version 0.65 ]
 
 
 
@@ -60,8 +60,11 @@ PHP INSTALLATION
 
 You'll need to `make install' as described above.
 
+   ln -s lib include    # or cp -r lib include
    cd ext/php/
-   sh make_module.sh
+   phpize
+   ./configure --with-syck=../..
+   make
    sudo make install
 
 HOW SYCK IS SO GREAT

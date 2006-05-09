@@ -196,6 +196,11 @@
         { \
             NEWLINE(indent); \
         } \
+        else if ( *indent == '\t' ) \
+        { \
+            syckerror("TAB found in your indentation, please remove"); \
+            return 0; \
+        } \
     } \
     ict = 0; \
     if ( *YYCURSOR == '\0' ) \
@@ -297,7 +302,7 @@ SPC = " " ;
 TAB = "\t" ;
 SPCTAB = ( SPC | TAB ) ;
 ENDSPC = ( SPC+ | LF ) ;
-YINDENT = LF ( SPC | LF )* ;
+YINDENT = LF ( SPC | TAB | LF )* ;
 NULL = [\000] ;
 ANY = [\001-\377] ;
 ISEQO = "[" ;
