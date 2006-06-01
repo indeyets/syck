@@ -13,6 +13,12 @@
 
 %{
 
+#define YYDEBUG 1
+#define YYERROR_VERBOSE 1
+#ifndef YYSTACK_USE_ALLOCA
+#define YYSTACK_USE_ALLOCA 0
+#endif
+
 #include "syck.h"
 
 void apply_seq_in_map( SyckParser *parser, SyckNode *n );

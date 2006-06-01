@@ -293,18 +293,18 @@ syck_emitter_write( SyckEmitter *e, char *str, long len )
      * Flush if at end of buffer
      */
     at = e->marker - e->buffer;
-    if ( len + at >= e->bufsize )
+    if ( len + at >= e->bufsize - 1 )
     {
         syck_emitter_flush( e, 0 );
-	for (;;) {
-	    long rest = e->bufsize - (e->marker - e->buffer);
-	    if (len <= rest) break;
-	    S_MEMCPY( e->marker, str, char, rest );
-	    e->marker += rest;
-	    str += rest;
-	    len -= rest;
-	    syck_emitter_flush( e, 0 );
-	}
+        for (;;) {
+            long rest = (e->bufsize - 1) - (e->marker - e->buffer);
+            if (len <= rest) break;
+            S_MEMCPY( e->marker, str, char, rest );
+            e->marker += rest;
+            str += rest;
+            len -= rest;
+            syck_emitter_flush( e, 0 );
+        }
     }
 
     /*
@@ -312,6 +312,7 @@ syck_emitter_write( SyckEmitter *e, char *str, long len )
      */
     S_MEMCPY( e->marker, str, char, len );
     e->marker += len;
+    e->marker[0] = '\0';
 }
 
 /*
@@ -325,14 +326,14 @@ syck_emitter_flush( SyckEmitter *e, long check_room )
      */
     if ( check_room > 0 )
     {
-        if ( e->bufsize > ( e->marker - e->buffer ) + check_room )
+        if ( (e->bufsize - 1) > ( e->marker - e->buffer ) + check_room )
         {
             return;
         }
     }
     else
     {
-        check_room = e->bufsize;
+        check_room = (e->bufsize - 1);
     }
 
     /*
@@ -561,7 +562,7 @@ syck_scan_scalar( int req_width, char *cursor, long len )
          cursor[0] == '>' || cursor[0] == '\'' ||
          cursor[0] == '"' || cursor[0] == '#' ||
          cursor[0] == '%' || cursor[0] == '@' ||
-         cursor[0] == '&' ) {
+         cursor[0] == '`' ) {
             flags |= SCAN_INDIC_S;
     }
     if ( ( cursor[0] == '-' || cursor[0] == ':' ||
