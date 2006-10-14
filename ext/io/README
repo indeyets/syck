@@ -1,0 +1,2 @@
+Copy the 'YAML' folder into the 'addons' directory of the Io source tree.
+Install Syck, then re-make Io.
