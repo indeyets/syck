@@ -128,7 +128,7 @@ ANY                 {   return "str"; }
 
 /* Remove ending fragment and compare types */
 int
-syck_tagcmp( char *tag1, char *tag2 )
+syck_tagcmp( const char *tag1, const char *tag2 )
 {
     if ( tag1 == tag2 ) return 1;
     if ( tag1 == NULL || tag2 == NULL ) return 0;

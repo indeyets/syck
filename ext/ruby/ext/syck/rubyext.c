@@ -53,6 +53,20 @@ typedef struct {
 #define rb_attr_get(o, i)  rb_ivar_get(o, i)
 #endif
 
+#ifdef RARRAY_LEN
+#undef T_SYMBOL
+#define T_SYMBOL T_STRING
+static inline long  rb_str_len(VALUE s) {return RSTRING_LEN(s);}                                                               
+static inline char *rb_str_ptr(VALUE s) {return RSTRING_PTR(s);}                                                               
+static inline long  rb_ary_len(VALUE s) {return  RARRAY_LEN(s);}                                                               
+static inline VALUE *rb_ary_ptr(VALUE s) {return  RARRAY_PTR(s);}
+#else                                                                                                                         
+static inline long  rb_str_len(VALUE s) {return rb_str_len(s);}                                                              
+static inline char *rb_str_ptr(VALUE s) {return rb_str_ptr(s);}                                                              
+static inline long  rb_ary_len(VALUE s) {return  rb_ary_len(s);}                                                              
+static inline VALUE *rb_ary_ptr(VALUE s) {return  rb_ary_ptr(s);}                                                              
+#endif 
+
 /*
  * symbols and constants
  */
@@ -104,8 +118,7 @@ struct emitter_xtra {
  * Convert YAML to bytecode
  */
 VALUE
-rb_syck_compile(self, port)
-    VALUE self, port;
+rb_syck_compile(VALUE self, VALUE port)
 {
     SYMID oid;
     int taint;
@@ -157,8 +170,8 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
         if (!NIL_P(str2))
         {
             StringValue(str2);
-            len = RSTRING(str2)->len;
-            memcpy( buf + skip, RSTRING(str2)->ptr, len );
+            len = rb_str_len(str2);
+            memcpy( buf + skip, rb_str_ptr(str2), len );
         }
     }
     len += skip;
@@ -171,16 +184,14 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
  * (returns tainted? boolean)
  */
 int
-syck_parser_assign_io(parser, pport)
-    SyckParser *parser;
-    VALUE *pport;
+syck_parser_assign_io(SyckParser *parser, VALUE *pport)
 {
     int taint = Qtrue;
     VALUE tmp, port = *pport;
     if (!NIL_P(tmp = rb_check_string_type(port))) {
         taint = OBJ_TAINTED(port); /* original taintedness */
         port = tmp;
-        syck_parser_str( parser, RSTRING(port)->ptr, RSTRING(port)->len, NULL );
+        syck_parser_str( parser, rb_str_ptr(port), rb_str_len(port), NULL );
     }
     else if (rb_respond_to(port, s_read)) {
         if (rb_respond_to(port, s_binmode)) {
@@ -199,8 +210,7 @@ syck_parser_assign_io(parser, pport)
  * Get value in hash by key, forcing an empty hash if nil.
  */
 VALUE
-syck_get_hash_aref(hsh, key)
-    VALUE hsh, key;
+syck_get_hash_aref(VALUE hsh, VALUE key)
 {
    VALUE val = rb_hash_aref( hsh, key );
    if ( NIL_P( val ) ) 
@@ -215,9 +225,7 @@ syck_get_hash_aref(hsh, key)
  * creating timestamps
  */
 SYMID
-rb_syck_mktime(str, len)
-    char *str;
-    long len;
+rb_syck_mktime(char *str, long len)
 {
     VALUE time;
     char *ptr = str;
@@ -322,8 +330,7 @@ rb_syck_mktime(str, len)
  * (see http://www.yaml.org/type/merge/)
  */
 VALUE
-syck_merge_i( entry, hsh )
-    VALUE entry, hsh;
+syck_merge_i(VALUE entry, VALUE hsh)
 {
     VALUE tmp;
     if ( !NIL_P(tmp = rb_check_convert_type(entry, T_HASH, "Hash", "to_hash")) )
@@ -338,9 +345,7 @@ syck_merge_i( entry, hsh )
  * default handler for ruby.yaml.org types
  */
 int
-yaml_org_handler( n, ref )
-    SyckNode *n;
-    VALUE *ref;
+yaml_org_handler(SyckNode *n, VALUE *ref)
 {
     char *type_id = n->type_id;
     int transferred = 0;
@@ -609,9 +614,7 @@ static void syck_node_mark( SyckNode *n );
  * - Converts data into native Ruby types
  */
 SYMID
-rb_syck_load_handler(p, n)
-    SyckParser *p;
-    SyckNode *n;
+rb_syck_load_handler(SyckParser *p, SyckNode *n)
 {
     VALUE obj = Qnil;
     struct parser_xtra *bonus = (struct parser_xtra *)p->bonus;
@@ -647,9 +650,7 @@ rb_syck_load_handler(p, n)
  * friendly errors.
  */
 void
-rb_syck_err_handler(p, msg)
-    SyckParser *p;
-    char *msg;
+rb_syck_err_handler(SyckParser *p, char *msg)
 {
     char *endl = p->cursor;
 
@@ -668,9 +669,7 @@ rb_syck_err_handler(p, msg)
  * provide bad anchor object to the parser.
  */
 SyckNode *
-rb_syck_bad_anchor_handler(p, a)
-    SyckParser *p;
-    char *a;
+rb_syck_bad_anchor_handler(SyckParser *p, char *a)
 {
     VALUE anchor_name = rb_str_new2( a );
     SyckNode *badanc = syck_new_map( rb_str_new2( "name" ), anchor_name );
@@ -682,8 +681,7 @@ rb_syck_bad_anchor_handler(p, a)
  * data loaded based on the model requested.
  */
 void
-syck_set_model( p, input, model )
-    VALUE p, input, model;
+syck_set_model(VALUE p, VALUE input, VALUE model)
 {
     SyckParser *parser;
     Data_Get_Struct(p, SyckParser, parser);
@@ -723,8 +721,7 @@ syck_st_mark_nodes( char *key, SyckNode *n, char *arg )
  * mark parser nodes
  */
 static void
-syck_mark_parser(parser)
-    SyckParser *parser;
+syck_mark_parser(SyckParser *parser)
 {
     struct parser_xtra *bonus = (struct parser_xtra *)parser->bonus;
     rb_gc_mark_maybe(parser->root);
@@ -747,8 +744,7 @@ syck_mark_parser(parser)
  * Free the parser and any bonus attachment.
  */
 void
-rb_syck_free_parser(p)
-    SyckParser *p;
+rb_syck_free_parser(SyckParser *p)
 {
     S_FREE( p->bonus );
     syck_free_parser(p);
@@ -759,8 +755,7 @@ rb_syck_free_parser(p)
  */
 VALUE syck_parser_s_alloc _((VALUE));
 VALUE 
-syck_parser_s_alloc(class)
-    VALUE class;
+syck_parser_s_alloc(VALUE class)
 {
     VALUE pobj;
     SyckParser *parser = syck_new_parser();
@@ -779,10 +774,7 @@ syck_parser_s_alloc(class)
  * YAML::Syck::Parser.initialize( resolver, options )
  */
 static VALUE
-syck_parser_initialize(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+syck_parser_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE options;
     if (rb_scan_args(argc, argv, "01", &options) == 0)
@@ -803,8 +795,7 @@ syck_parser_initialize(argc, argv, self)
  * YAML::Syck::Parser.bufsize = Integer
  */
 static VALUE
-syck_parser_bufsize_set( self, size )
-    VALUE self, size;
+syck_parser_bufsize_set(VALUE self, VALUE size)
 {
     SyckParser *parser;
 
@@ -820,8 +811,7 @@ syck_parser_bufsize_set( self, size )
  * YAML::Syck::Parser.bufsize => Integer
  */
 static VALUE
-syck_parser_bufsize_get( self )
-    VALUE self;
+syck_parser_bufsize_get(VALUE self)
 {
     SyckParser *parser;
 
@@ -833,10 +823,7 @@ syck_parser_bufsize_get( self )
  * YAML::Syck::Parser.load( IO or String )
  */
 VALUE
-syck_parser_load(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+syck_parser_load(int argc, VALUE *argv, VALUE self)
 {
     VALUE port, proc, model, input;
     SyckParser *parser;
@@ -863,10 +850,7 @@ syck_parser_load(argc, argv, self)
  * YAML::Syck::Parser.load_documents( IO or String ) { |doc| }
  */
 VALUE
-syck_parser_load_documents(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+syck_parser_load_documents(int argc, VALUE *argv, VALUE self)
 {
     VALUE port, proc, v, input, model;
     SyckParser *parser;
@@ -907,8 +891,7 @@ syck_parser_load_documents(argc, argv, self)
  * YAML::Syck::Parser#set_resolver
  */
 VALUE
-syck_parser_set_resolver( self, resolver )
-    VALUE self, resolver;
+syck_parser_set_resolver(VALUE self, VALUE resolver)
 {
     rb_ivar_set( self, s_resolver, resolver );
     return self;
@@ -918,8 +901,7 @@ syck_parser_set_resolver( self, resolver )
  * YAML::Syck::Resolver.initialize
  */
 static VALUE
-syck_resolver_initialize( self )
-    VALUE self;
+syck_resolver_initialize(VALUE self)
 {
     VALUE tags = rb_hash_new();
     rb_ivar_set(self, s_tags, rb_hash_new());
@@ -930,8 +912,7 @@ syck_resolver_initialize( self )
  * YAML::Syck::Resolver#add_type
  */
 VALUE
-syck_resolver_add_type( self, taguri, cls )
-    VALUE self, taguri, cls;
+syck_resolver_add_type(VALUE self, VALUE taguri, VALUE cls)
 {
     VALUE tags = rb_attr_get(self, s_tags);
     rb_hash_aset( tags, taguri, cls );
@@ -942,8 +923,7 @@ syck_resolver_add_type( self, taguri, cls )
  * YAML::Syck::Resolver#use_types_at
  */
 VALUE
-syck_resolver_use_types_at( self, hsh )
-    VALUE self, hsh;
+syck_resolver_use_types_at(VALUE self, VALUE hsh)
 {
     rb_ivar_set( self, s_tags, hsh );
     return Qnil;
@@ -953,8 +933,7 @@ syck_resolver_use_types_at( self, hsh )
  * YAML::Syck::Resolver#detect_implicit 
  */
 VALUE
-syck_resolver_detect_implicit( self, val )
-    VALUE self, val;
+syck_resolver_detect_implicit(VALUE self, VALUE val)
 {
     char *type_id;
     return rb_str_new2( "" );
@@ -964,8 +943,7 @@ syck_resolver_detect_implicit( self, val )
  * YAML::Syck::Resolver#node_import
  */
 VALUE
-syck_resolver_node_import( self, node )
-    VALUE self, node;
+syck_resolver_node_import(VALUE self, VALUE node)
 {
     SyckNode *n;
     VALUE obj;
@@ -1045,16 +1023,15 @@ syck_resolver_node_import( self, node )
  * Set instance variables
  */
 VALUE
-syck_set_ivars( vars, obj )
-        VALUE vars, obj;
+syck_set_ivars(VALUE vars, VALUE obj)
 {
     VALUE ivname = rb_ary_entry( vars, 0 );
     char *ivn;
     StringValue( ivname );
-    ivn = S_ALLOCA_N( char, RSTRING(ivname)->len + 2 );
+    ivn = S_ALLOCA_N( char, rb_str_len(ivname) + 2 );
     ivn[0] = '@';
     ivn[1] = '\0';
-    strncat( ivn, RSTRING(ivname)->ptr, RSTRING(ivname)->len );
+    strncat( ivn, rb_str_ptr(ivname), rb_str_len(ivname) );
     rb_iv_set( obj, ivn, rb_ary_entry( vars, 1 ) );
     return Qnil;
 }
@@ -1063,13 +1040,12 @@ syck_set_ivars( vars, obj )
  * YAML::Syck::Resolver#const_find
  */
 VALUE
-syck_const_find( const_name )
-    VALUE const_name;
+syck_const_find(VALUE const_name)
 {
     VALUE tclass = rb_cObject;
     VALUE tparts = rb_str_split( const_name, "::" );
     int i = 0;
-    for ( i = 0; i < RARRAY(tparts)->len; i++ ) {
+    for ( i = 0; i < rb_ary_len(tparts); i++ ) {
         VALUE tpart = rb_to_id( rb_ary_entry( tparts, i ) );
         if ( !rb_const_defined( tclass, tpart ) ) return Qnil;
         tclass = rb_const_get( tclass, tpart );
@@ -1081,15 +1057,14 @@ syck_const_find( const_name )
  * YAML::Syck::Resolver#transfer
  */
 VALUE
-syck_resolver_transfer( self, type, val )
-    VALUE self, type, val;
+syck_resolver_transfer(VALUE self, VALUE type, VALUE val)
 {
-    if (NIL_P(type) || RSTRING(StringValue(type))->len == 0) 
+    if (NIL_P(type) || rb_str_len(StringValue(type)) == 0) 
     {
         type = rb_funcall( self, s_detect_implicit, 1, val );
     }
 
-    if ( ! (NIL_P(type) || RSTRING(StringValue(type))->len == 0) )
+    if ( ! (NIL_P(type) || rb_str_len(StringValue(type)) == 0) )
     {
         VALUE str_xprivate = rb_str_new2( "x-private" );
         VALUE colon = rb_str_new2( ":" );
@@ -1106,7 +1081,7 @@ syck_resolver_transfer( self, type, val )
             VALUE subclass_parts = rb_ary_new();
             VALUE parts = rb_str_split( type, ":" );
 
-            while ( RARRAY(parts)->len > 1 )
+            while ( rb_ary_len(parts) > 1 )
             {
                 VALUE partial;
                 rb_ary_unshift( subclass_parts, rb_ary_pop( parts ) );
@@ -1124,7 +1099,7 @@ syck_resolver_transfer( self, type, val )
                 if ( ! NIL_P( target_class ) )
                 {
                     subclass = target_class;
-                    if ( RARRAY(subclass_parts)->len > 0 && rb_respond_to( target_class, s_tag_subclasses ) &&
+                    if ( rb_ary_len(subclass_parts) > 0 && rb_respond_to( target_class, s_tag_subclasses ) &&
                          RTEST( rb_funcall( target_class, s_tag_subclasses, 0 ) ) )
                     {
                         VALUE subclass_v;
@@ -1213,14 +1188,13 @@ syck_resolver_transfer( self, type, val )
  * YAML::Syck::Resolver#tagurize
  */
 VALUE
-syck_resolver_tagurize( self, val )
-    VALUE self, val;
+syck_resolver_tagurize(VALUE self, VALUE val)
 {
     VALUE tmp = rb_check_string_type(val);
 
     if ( !NIL_P(tmp) )
     {
-        char *taguri = syck_type_id_to_uri( RSTRING(tmp)->ptr );
+        char *taguri = syck_type_id_to_uri( rb_str_ptr(tmp) );
         val = rb_str_new2( taguri );
         S_FREE( taguri );
     }
@@ -1232,8 +1206,7 @@ syck_resolver_tagurize( self, val )
  * YAML::Syck::DefaultResolver#detect_implicit 
  */
 VALUE
-syck_defaultresolver_detect_implicit( self, val )
-    VALUE self, val;
+syck_defaultresolver_detect_implicit(VALUE self, VALUE val)
 {
     char *type_id;
     VALUE tmp = rb_check_string_type(val);
@@ -1241,7 +1214,7 @@ syck_defaultresolver_detect_implicit( self, val )
     if ( !NIL_P(tmp) )
     {
         val = tmp;
-        type_id = syck_match_implicit( RSTRING(val)->ptr, RSTRING(val)->len );
+        type_id = syck_match_implicit( rb_str_ptr(val), rb_str_len(val) );
         return rb_str_new2( type_id );
     }
 
@@ -1252,8 +1225,7 @@ syck_defaultresolver_detect_implicit( self, val )
  * YAML::Syck::DefaultResolver#node_import
  */
 VALUE
-syck_defaultresolver_node_import( self, node )
-    VALUE self, node;
+syck_defaultresolver_node_import(VALUE self, VALUE node)
 {
     SyckNode *n;
     VALUE obj;
@@ -1269,8 +1241,7 @@ syck_defaultresolver_node_import( self, node )
  * YAML::Syck::GenericResolver#node_import
  */
 VALUE
-syck_genericresolver_node_import( self, node )
-    VALUE self, node;
+syck_genericresolver_node_import(VALUE self, VALUE node)
 {
     SyckNode *n;
     int i = 0;
@@ -1347,8 +1318,7 @@ syck_genericresolver_node_import( self, node )
  * YAML::Syck::BadAlias.initialize
  */
 VALUE
-syck_badalias_initialize( self, val )
-    VALUE self, val;
+syck_badalias_initialize(VALUE self, VALUE val)
 {
     rb_iv_set( self, "@name", val );
     return self;
@@ -1358,8 +1328,7 @@ syck_badalias_initialize( self, val )
  * YAML::Syck::BadAlias.<=>
  */
 VALUE
-syck_badalias_cmp( alias1, alias2 )
-    VALUE alias1, alias2;
+syck_badalias_cmp(VALUE alias1, VALUE alias2)
 {
     VALUE str1 = rb_ivar_get( alias1, s_name ); 
     VALUE str2 = rb_ivar_get( alias2, s_name ); 
@@ -1371,8 +1340,7 @@ syck_badalias_cmp( alias1, alias2 )
  * YAML::DomainType.initialize
  */
 VALUE
-syck_domaintype_initialize( self, domain, type_id, val )
-    VALUE self, domain, type_id, val;
+syck_domaintype_initialize(VALUE self, VALUE domain, VALUE type_id, VALUE val)
 {
     rb_iv_set( self, "@domain", domain );
     rb_iv_set( self, "@type_id", type_id );
@@ -1384,8 +1352,7 @@ syck_domaintype_initialize( self, domain, type_id, val )
  * YAML::Object.initialize
  */
 VALUE
-syck_yobject_initialize( self, klass, ivars )
-    VALUE self, klass, ivars;
+syck_yobject_initialize(VALUE self, VALUE klass, VALUE ivars)
 {
     rb_iv_set( self, "@class", klass );
     rb_iv_set( self, "@ivars", ivars );
@@ -1396,8 +1363,7 @@ syck_yobject_initialize( self, klass, ivars )
  * YAML::PrivateType.initialize
  */
 VALUE
-syck_privatetype_initialize( self, type_id, val )
-    VALUE self, type_id, val;
+syck_privatetype_initialize(VALUE self, VALUE type_id, VALUE val)
 {
     rb_iv_set( self, "@type_id", type_id );
     rb_iv_set( self, "@value", val );
@@ -1408,8 +1374,7 @@ syck_privatetype_initialize( self, type_id, val )
  * Mark node contents.
  */
 static void
-syck_node_mark( n )
-    SyckNode *n;
+syck_node_mark(SyckNode *n)
 {
     int i;
     rb_gc_mark_maybe( n->id );
@@ -1439,8 +1404,7 @@ syck_node_mark( n )
  * YAML::Syck::Scalar.allocate
  */
 VALUE
-syck_scalar_alloc( class )
-    VALUE class;
+syck_scalar_alloc(VALUE class)
 {
     SyckNode *node = syck_alloc_str();
     VALUE obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
@@ -1452,8 +1416,7 @@ syck_scalar_alloc( class )
  * YAML::Syck::Scalar.initialize
  */
 VALUE
-syck_scalar_initialize( self, type_id, val, style )
-    VALUE self, type_id, val, style;
+syck_scalar_initialize(VALUE self, VALUE type_id, VALUE val, VALUE style)
 {
     rb_iv_set( self, "@kind", sym_scalar );
     rb_funcall( self, s_type_id_set, 1, type_id );
@@ -1466,8 +1429,7 @@ syck_scalar_initialize( self, type_id, val, style )
  * YAML::Syck::Scalar.style=
  */
 VALUE
-syck_scalar_style_set( self, style )
-    VALUE self, style;
+syck_scalar_style_set(VALUE self, VALUE style)
 {
     SyckNode *node;
     Data_Get_Struct( self, SyckNode, node );
@@ -1505,15 +1467,14 @@ syck_scalar_style_set( self, style )
  * YAML::Syck::Scalar.value=
  */
 VALUE
-syck_scalar_value_set( self, val )
-    VALUE self, val;
+syck_scalar_value_set(VALUE  self, VALUE val)
 {
     SyckNode *node;
     Data_Get_Struct( self, SyckNode, node );
 
     StringValue( val );
-    node->data.str->ptr = syck_strndup( RSTRING(val)->ptr, RSTRING(val)->len );
-    node->data.str->len = RSTRING(val)->len;
+    node->data.str->ptr = syck_strndup( rb_str_ptr(val), rb_str_len(val) );
+    node->data.str->len = rb_str_len(val);
     node->data.str->style = scalar_none;
 
     rb_iv_set( self, "@value", val );
@@ -1524,8 +1485,7 @@ syck_scalar_value_set( self, val )
  * YAML::Syck::Seq.allocate
  */
 VALUE
-syck_seq_alloc( class )
-    VALUE class;
+syck_seq_alloc(VALUE class)
 {
     SyckNode *node;
     VALUE obj;
@@ -1539,8 +1499,7 @@ syck_seq_alloc( class )
  * YAML::Syck::Seq.initialize
  */
 VALUE
-syck_seq_initialize( self, type_id, val, style )
-    VALUE self, type_id, val, style;
+syck_seq_initialize(VALUE self, VALUE type_id, VALUE val, VALUE style)
 {
     SyckNode *node;
     Data_Get_Struct( self, SyckNode, node );
@@ -1556,8 +1515,7 @@ syck_seq_initialize( self, type_id, val, style )
  * YAML::Syck::Seq.value=
  */
 VALUE
-syck_seq_value_set( self, val )
-    VALUE self, val;
+syck_seq_value_set(VALUE self, VALUE val)
 {
     SyckNode *node;
     Data_Get_Struct( self, SyckNode, node );
@@ -1566,7 +1524,7 @@ syck_seq_value_set( self, val )
     if ( !NIL_P( val ) ) {
         int i;
         syck_seq_empty( node );
-        for ( i = 0; i < RARRAY( val )->len; i++ )
+        for ( i = 0; i < rb_ary_len( val ); i++ )
         {
             syck_seq_add( node, rb_ary_entry(val, i) );
         }
@@ -1580,8 +1538,7 @@ syck_seq_value_set( self, val )
  * YAML::Syck::Seq.add
  */
 VALUE
-syck_seq_add_m( self, val )
-    VALUE self, val;
+syck_seq_add_m(VALUE self, VALUE val)
 {
     SyckNode *node;
     VALUE emitter = rb_ivar_get( self, s_emitter );
@@ -1600,8 +1557,7 @@ syck_seq_add_m( self, val )
  * YAML::Syck::Seq.style=
  */
 VALUE
-syck_seq_style_set( self, style )
-    VALUE self, style;
+syck_seq_style_set(VALUE self, VALUE style)
 {
     SyckNode *node;
     Data_Get_Struct( self, SyckNode, node );
@@ -1623,8 +1579,7 @@ syck_seq_style_set( self, style )
  * YAML::Syck::Map.allocate
  */
 VALUE
-syck_map_alloc( class )
-    VALUE class;
+syck_map_alloc(VALUE class)
 {
     SyckNode *node;
     VALUE obj;
@@ -1638,8 +1593,7 @@ syck_map_alloc( class )
  * YAML::Syck::Map.initialize
  */
 VALUE
-syck_map_initialize( self, type_id, val, style )
-    VALUE self, type_id, val, style;
+syck_map_initialize(VALUE self, VALUE type_id, VALUE val, VALUE style)
 {
     SyckNode *node;
     Data_Get_Struct( self, SyckNode, node );
@@ -1655,7 +1609,7 @@ syck_map_initialize( self, type_id, val, style )
         }
 
         keys = rb_funcall( hsh, s_keys, 0 );
-        for ( i = 0; i < RARRAY(keys)->len; i++ )
+        for ( i = 0; i < rb_ary_len(keys); i++ )
         {
             VALUE key = rb_ary_entry(keys, i);
             syck_map_add( node, key, rb_hash_aref(hsh, key) );
@@ -1673,8 +1627,7 @@ syck_map_initialize( self, type_id, val, style )
  * YAML::Syck::Map.value=
  */
 VALUE
-syck_map_value_set( self, val )
-    VALUE self, val;
+syck_map_value_set(VALUE self, VALUE val)
 {
     SyckNode *node;
     Data_Get_Struct( self, SyckNode, node );
@@ -1691,7 +1644,7 @@ syck_map_value_set( self, val )
 
         syck_map_empty( node );
         keys = rb_funcall( hsh, s_keys, 0 );
-        for ( i = 0; i < RARRAY(keys)->len; i++ )
+        for ( i = 0; i < rb_ary_len(keys); i++ )
         {
             VALUE key = rb_ary_entry(keys, i);
             syck_map_add( node, key, rb_hash_aref(hsh, key) );
@@ -1706,8 +1659,7 @@ syck_map_value_set( self, val )
  * YAML::Syck::Map.add
  */
 VALUE
-syck_map_add_m( self, key, val )
-    VALUE self, key, val;
+syck_map_add_m(VALUE self, VALUE key, VALUE val)
 {
     SyckNode *node;
     VALUE emitter = rb_ivar_get( self, s_emitter );
@@ -1727,8 +1679,7 @@ syck_map_add_m( self, key, val )
  * YAML::Syck::Map.style=
  */
 VALUE
-syck_map_style_set( self, style )
-    VALUE self, style;
+syck_map_style_set(VALUE self, VALUE style)
 {
     SyckNode *node;
     Data_Get_Struct( self, SyckNode, node );
@@ -1750,8 +1701,7 @@ syck_map_style_set( self, style )
  * Cloning method for all node types
  */
 VALUE
-syck_node_init_copy( copy, orig )
-    VALUE copy, orig;
+syck_node_init_copy(VALUE copy, VALUE orig)
 {
     SyckNode *copy_n;
     SyckNode *orig_n;
@@ -1774,8 +1724,7 @@ syck_node_init_copy( copy, orig )
  * YAML::Syck::Node#type_id=
  */
 VALUE
-syck_node_type_id_set( self, type_id )
-    VALUE self, type_id;
+syck_node_type_id_set(VALUE self, VALUE type_id)
 {
     SyckNode *node;
     Data_Get_Struct( self, SyckNode, node );
@@ -1784,7 +1733,7 @@ syck_node_type_id_set( self, type_id )
 
     if ( !NIL_P( type_id ) ) {
         StringValue( type_id );
-        node->type_id = syck_strndup( RSTRING(type_id)->ptr, RSTRING(type_id)->len );
+        node->type_id = syck_strndup( rb_str_ptr(type_id), rb_str_len(type_id) );
     }
 
     rb_iv_set( self, "@type_id", type_id );
@@ -1795,8 +1744,7 @@ syck_node_type_id_set( self, type_id )
  * YAML::Syck::Node.transform
  */
 VALUE
-syck_node_transform( self )
-    VALUE self;
+syck_node_transform(VALUE self)
 {
     VALUE t;
     SyckNode *n;
@@ -1852,9 +1800,7 @@ syck_node_transform( self )
  * No one could possibly object.
  */
 void
-rb_syck_emitter_handler(e, data)
-    SyckEmitter *e;
-    st_data_t data;
+rb_syck_emitter_handler(SyckEmitter *e, st_data_t data)
 {
     SyckNode *n;
     Data_Get_Struct((VALUE)data, SyckNode, n);
@@ -1898,10 +1844,7 @@ rb_syck_emitter_handler(e, data)
  * Handle output from the emitter
  */
 void 
-rb_syck_output_handler( emitter, str, len )
-    SyckEmitter *emitter;
-    char *str;
-    long len;
+rb_syck_output_handler(SyckEmitter * emitter, char *str, long len)
 {
     struct emitter_xtra *bonus = (struct emitter_xtra *)emitter->bonus;
     VALUE dest = bonus->port;
@@ -1917,8 +1860,7 @@ rb_syck_output_handler( emitter, str, len )
  * symbol table.
  */
 void
-syck_out_mark( emitter, node )
-    VALUE emitter, node;
+syck_out_mark(VALUE emitter, VALUE node)
 {
     SyckEmitter *emitterPtr;
     struct emitter_xtra *bonus;
@@ -1935,8 +1877,7 @@ syck_out_mark( emitter, node )
  * Mark emitter values.
  */
 static void
-syck_mark_emitter(emitter)
-    SyckEmitter *emitter;
+syck_mark_emitter(SyckEmitter *emitter)
 {
     struct emitter_xtra *bonus = (struct emitter_xtra *)emitter->bonus;
     rb_gc_mark( bonus->oid  );
@@ -1948,8 +1889,7 @@ syck_mark_emitter(emitter)
  * Free the emitter and any bonus attachment.
  */
 void
-rb_syck_free_emitter(e)
-    SyckEmitter *e;
+rb_syck_free_emitter(SyckEmitter *e)
 {
     S_FREE( e->bonus );
     syck_free_emitter(e);
@@ -1960,8 +1900,7 @@ rb_syck_free_emitter(e)
  */
 VALUE syck_emitter_s_alloc _((VALUE));
 VALUE 
-syck_emitter_s_alloc(class)
-    VALUE class;
+syck_emitter_s_alloc(VALUE class)
 {
     VALUE pobj;
     SyckEmitter *emitter = syck_new_emitter();
@@ -1981,10 +1920,7 @@ syck_emitter_s_alloc(class)
  * YAML::Syck::Emitter.reset( options )
  */
 VALUE
-syck_emitter_reset( argc, argv, self )
-    int argc;
-    VALUE *argv;
-    VALUE self;
+syck_emitter_reset(int argc, VALUE *argv, VALUE self)
 {
     VALUE options, tmp;
     SyckEmitter *emitter;
@@ -2026,10 +1962,7 @@ syck_emitter_reset( argc, argv, self )
  * YAML::Syck::Emitter.emit( object_id ) { |out| ... }
  */
 VALUE
-syck_emitter_emit( argc, argv, self )
-    int argc;
-    VALUE *argv;
-    VALUE self;
+syck_emitter_emit(int argc, VALUE *argv, VALUE self)
 {
     VALUE oid, proc;
     char *anchor_name;
@@ -2070,8 +2003,7 @@ syck_emitter_emit( argc, argv, self )
  * YAML::Syck::Emitter#node_export
  */
 VALUE
-syck_emitter_node_export( self, node )
-    VALUE self, node;
+syck_emitter_node_export(VALUE self, VALUE node)
 {
     return rb_funcall( node, s_to_yaml, 1, self );
 }
@@ -2080,8 +2012,7 @@ syck_emitter_node_export( self, node )
  * YAML::Syck::Emitter#set_resolver
  */
 VALUE
-syck_emitter_set_resolver( self, resolver )
-    VALUE self, resolver;
+syck_emitter_set_resolver(VALUE self, VALUE resolver)
 {
     rb_ivar_set( self, s_resolver, resolver );
     return self;
@@ -2091,8 +2022,7 @@ syck_emitter_set_resolver( self, resolver )
  * YAML::Syck::Out::initialize
  */
 VALUE
-syck_out_initialize( self, emitter )
-    VALUE self, emitter;
+syck_out_initialize(VALUE self, VALUE emitter)
 {
     rb_ivar_set( self, s_emitter, emitter );
     return self;
@@ -2102,10 +2032,7 @@ syck_out_initialize( self, emitter )
  * YAML::Syck::Out::map
  */
 VALUE
-syck_out_map( argc, argv, self )
-    int argc;
-    VALUE *argv;
-    VALUE self;
+syck_out_map(int argc, VALUE *argv, VALUE self)
 {
     VALUE type_id, style, map;
     if (rb_scan_args(argc, argv, "11", &type_id, &style) == 1) {
@@ -2121,10 +2048,7 @@ syck_out_map( argc, argv, self )
  * YAML::Syck::Out::seq
  */
 VALUE
-syck_out_seq( argc, argv, self )
-    int argc;
-    VALUE *argv;
-    VALUE self;
+syck_out_seq(int argc, VALUE *argv, VALUE self)
 {
     VALUE type_id, style, seq;
     if (rb_scan_args(argc, argv, "11", &type_id, &style) == 1) {
@@ -2142,10 +2066,7 @@ syck_out_scalar( self, type_id, str, style )
     VALUE self, type_id, str, style;
  */
 VALUE
-syck_out_scalar( argc, argv, self )
-    int argc;
-    VALUE *argv;
-    VALUE self;
+syck_out_scalar(int argc, VALUE *argv, VALUE self)
 {
     VALUE type_id, str, style, scalar;
     if (rb_scan_args(argc, argv, "21", &type_id, &str, &style) == 2) {
