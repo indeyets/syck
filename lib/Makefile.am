@@ -3,7 +3,7 @@ REC = re2c
 AM_YFLAGS = -d -t -v -p syck
 SUFFIXES = .re
 
-.re.o:
+.re.c:
 	$(REC) $< > $@.new && mv $@.new $@
 
 lib_LIBRARIES = libsyck.a
