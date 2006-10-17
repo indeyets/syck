@@ -13,6 +13,7 @@ YAML ioDoc(
 #include "IoList.h"
 #include "IoMap.h"
 #include "IoSeq.h"
+#include "ByteArray.h"
 
 #define DATA(self) ((IoYAMLData *)IoObject_dataPointer(self))
 
@@ -39,7 +40,7 @@ IoYAML *IoYAML_proto(void *state)
 	{
 		IoMethodTable methodTable[] = {
 		{"load", IoYAML_load},
-		{"dump", IoYAML_load},
+		{"dump", IoYAML_dump},
 		{NULL, NULL},
 		};
 		IoObject_addMethodTable_(self, methodTable);
@@ -204,7 +205,88 @@ IoObject *IoYAML_load(IoYAML *self, IoObject *locals, IoMessage *m)
 	return obj;
 }
 
+typedef struct {
+  IoYAML *self;
+  ByteArray *buffer;
+} IoYAMLout;
+
+void
+IoYAML_emitHandler(SyckEmitter *e, st_data_t data)
+{
+	IoYAMLout *out = (IoYAMLout *)e->bonus;
+  IoYAML *self = out->self;
+  IoObject *obj = (IoObject *)data;
+	
+  if (ISNIL(obj))
+  {
+    syck_emit_scalar(e, "null", scalar_none, 0, 0, 0, "", 0);
+  }
+  else if (ISBOOL(obj))
+  {
+    char *bool_s = ISTRUE(obj) ? "true" : "false";
+    syck_emit_scalar(e, "boolean", scalar_none, 0, 0, 0, (char *)bool_s, strlen(bool_s));
+  }
+  else if (ISSEQ(obj))
+  {
+    syck_emit_scalar(e, "string", scalar_none, 0, 0, 0, (char *)IOSEQ_BYTES(obj), IOSEQ_LENGTH(obj));
+  }
+  else if (ISNUMBER(obj))
+  {
+    /* should handle floats as well */
+    char buf[30];		/* find a better way, if possible */
+    snprintf(buf, sizeof(buf), "%i", (int)CNUMBER(obj));
+    syck_emit_scalar(e, "number", scalar_none, 0, 0, 0, buf, strlen(buf));
+  }
+  else if (ISLIST(obj))
+  {
+    syck_emit_seq(e, "seq", seq_none);
+    size_t len = IoList_rawSize(obj);
+    size_t i = 0;
+    for (i = 0; i < len; i++)
+    {
+      syck_emit_item(e, (st_data_t)IoList_rawAt_(obj, i));
+    }
+    syck_emit_end(e);
+  }
+  else if (ISMAP(obj))
+  {
+    syck_emit_map(e, "map", map_none);
+    IoList *keys = IoMap_rawKeys(obj);
+    size_t len = IoList_rawSize(keys);
+    size_t i = 0;
+    for (i = 0; i < len; i++)
+    {
+      IoSymbol *k = IoList_rawAt_(obj, i);
+      syck_emit_item(e, (st_data_t)k);
+      syck_emit_item(e, (st_data_t)IoMap_rawAt(obj, k));
+    }
+    syck_emit_end(e);
+  }
+}
+
+void
+IoYAML_outputHandler(SyckEmitter *e, char *str, long len)
+{
+	IoYAMLout *out = (IoYAMLout *)e->bonus;
+  ByteArray_appendBytes_size_(out->buffer, str, len);
+}
+
 IoObject *IoYAML_dump(IoYAML *self, IoObject *locals, IoMessage *m)
 {
-  return self;
+  ByteArray *buffer = ByteArray_new();
+	IoObject *obj = IoMessage_locals_valueArgAt_(m, locals, 0);
+	SyckEmitter *emitter = syck_new_emitter();
+  IoYAMLout *out = S_ALLOC(IoYAMLout);
+  out->self = self;
+  out->buffer = buffer;
+  emitter->bonus = (void *)out;
+
+	syck_emitter_handler(emitter, IoYAML_emitHandler);
+	syck_output_handler(emitter, IoYAML_outputHandler);
+	syck_emit(emitter, (st_data_t)obj);
+	syck_emitter_flush(emitter, 0);
+	syck_free_emitter(emitter);
+  S_FREE(out);
+
+  return IoSeq_newWithByteArray_copy_(self->state, buffer, 0);
 }
