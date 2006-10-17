@@ -90,7 +90,7 @@ IoYAML_parseHandler(SyckParser *p, SyckNode *n)
 	switch (n->kind) {
 		case syck_str_kind:
 			if (n->type_id == NULL || strcmp(n->type_id, "str") == 0) {
-        o = IoSeq_newWithData_length_(self->state, n->data.str->ptr, n->data.str->len);
+        o = IOSEQ(n->data.str->ptr, n->data.str->len);
 			}
 			else if (strcmp(n->type_id, "null") == 0)
 			{
@@ -141,7 +141,7 @@ IoYAML_parseHandler(SyckParser *p, SyckNode *n)
 			}
 			else
 			{
-        o = IoSeq_newWithData_length_(self->state, n->data.str->ptr, n->data.str->len);
+        o = IOSEQ(n->data.str->ptr, n->data.str->len);
 			}
 			break;
 
@@ -164,6 +164,7 @@ IoYAML_parseHandler(SyckParser *p, SyckNode *n)
 				oid = syck_map_read(n, map_value, i);
 				syck_lookup_sym(p, oid, (char **)&o3);
 
+        o2 = IoSeq_rawAsSymbol(o2);
         IoMap_rawAtPut(o, (IoSymbol *)o2, o3);
 			}
 			break;
