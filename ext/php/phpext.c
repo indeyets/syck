@@ -19,6 +19,34 @@
 #include "ext/standard/info.h"
 #include "php_syck.h"
 
+#define PHP_SYCK_EXCEPTION_PARENT "UnexpectedValueException"
+#define PHP_SYCK_EXCEPTION_PARENT_LC "unexpectedvalueexception"
+#define PHP_SYCK_EXCEPTION_NAME "SyckException"
+
+static zend_class_entry *spl_ce_RuntimeException;
+
+PHP_SYCK_API zend_class_entry *php_syck_get_exception_base(TSRMLS_DC)
+{
+#if defined(HAVE_SPL) && ((PHP_MAJOR_VERSION > 5) || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 1))
+	if (!spl_ce_RuntimeException) {
+		zend_class_entry **pce;
+
+		if (zend_hash_find(CG(class_table), PHP_SYCK_EXCEPTION_PARENT_LC, sizeof(PHP_SYCK_EXCEPTION_PARENT_LC), (void **) &pce) == SUCCESS) {
+			spl_ce_RuntimeException = *pce;
+			return *pce;
+		}
+	} else {
+		return spl_ce_RuntimeException;
+	}
+#endif
+#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
+	return zend_exception_get_default();
+#else
+	return zend_exception_get_default(TSRMLS_C);
+#endif
+}
+
+
 static double zero()	{ return 0.0; }
 static double one() { return 1.0; }
 static double inf() { return one() / zero(); }
@@ -42,13 +70,13 @@ zend_module_entry syck_module_entry = {
 #endif
 	"syck",
 	syck_functions,
-	NULL,			/* module init function */
+	PHP_MINIT(syck),	/* module init function */
 	NULL,			/* module shutdown function */
 	NULL,			/* request init function */
 	NULL,			/* request shutdown function */
-	PHP_MINFO(syck), /* module info function */
+	PHP_MINFO(syck),	/* module info function */
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.1", /* Replace with version number for your extension */
+	"0.2",			/* Replace with version number for your extension */
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
@@ -58,68 +86,47 @@ zend_module_entry syck_module_entry = {
 ZEND_GET_MODULE(syck)
 #endif
 
-/* {{{ PHP_INI
- */
-/* Remove comments and fill if you need to have entries in php.ini
-PHP_INI_BEGIN()
-	STD_PHP_INI_ENTRY("syck.global_value",	  "42", PHP_INI_ALL, OnUpdateInt, global_value, zend_syck_globals, syck_globals)
-	STD_PHP_INI_ENTRY("syck.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_syck_globals, syck_globals)
-PHP_INI_END()
-*/
-/* }}} */
-
-/* {{{ php_syck_init_globals
- */
-/* Uncomment this function if you have INI entries
-static void php_syck_init_globals(zend_syck_globals *syck_globals)
-{
-	syck_globals->global_value = 0;
-	syck_globals->global_string = NULL;
-}
-*/
-/* }}} */
-
+/**
+ * "Merge" class
+**/
 static int le_mergekeyp;
-
-zend_class_entry merge_key_entry;
-	
-/* {{{ MergeKey */
+zend_class_entry *merge_key_entry;
 
 static zend_function_entry mergekey_functions[] = {
-  PHP_FALIAS(mergekey,		  mergekey_init,			  NULL)
-  { NULL, NULL, NULL }
+	PHP_FALIAS(mergekey, mergekey_init, NULL)
+	{ NULL, NULL, NULL }
 };
 
-/* {{{ swfmovie_init */
-
 PHP_FUNCTION(mergekey_init)
-{   
-  object_init_ex(getThis(), &merge_key_entry);
-} 
-												
+{
+	object_init_ex(getThis(), merge_key_entry);
+}
 
 static void destroy_MergeKey_resource(zend_rsrc_list_entry *resource TSRMLS_DC)
 {
 }
 
-/* }}} */
 
+/**
+ * SyckException class
+**/
+
+zend_class_entry *syck_exception_entry;
 /* }}} */
 
 /* {{{ PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION(syck)
 {
+	zend_class_entry ce;
+
+	INIT_CLASS_ENTRY(ce, PHP_SYCK_EXCEPTION_NAME, NULL);
+	syck_exception_entry = zend_register_internal_class_ex(&ce, php_syck_get_exception_base(TSRMLS_CC), PHP_SYCK_EXCEPTION_PARENT TSRMLS_CC);
+
 	le_mergekeyp = zend_register_list_destructors_ex(destroy_MergeKey_resource, NULL, "MergeKey", module_number);
+	INIT_CLASS_ENTRY(ce, "mergekey", mergekey_functions);
+	merge_key_entry = zend_register_internal_class(&ce TSRMLS_CC);
 
-	INIT_CLASS_ENTRY(merge_key_entry, "mergekey", mergekey_functions);
-
-	zend_register_internal_class(&merge_key_entry TSRMLS_CC);
-
-	/* If you have INI entries, uncomment these lines 
-	ZEND_INIT_MODULE_GLOBALS(syck, php_syck_init_globals, NULL);
-	REGISTER_INI_ENTRIES();
-	*/
 	return SUCCESS;
 }
 /* }}} */
@@ -166,6 +173,7 @@ PHP_MINFO_FUNCTION(syck)
 	*/
 }
 /* }}} */
+
 
 
 SYMID php_syck_handler(SyckParser *p, SyckNode *n)
@@ -232,7 +240,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 			{
 				TSRMLS_FETCH();
 				MAKE_STD_ZVAL( o );
-				object_init_ex( o, &merge_key_entry );
+				object_init_ex( o, merge_key_entry );
 			}
 			else
 			{
@@ -272,8 +280,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 void php_syck_ehandler(SyckParser *p, char *str)
 {
 	TSRMLS_FETCH();
-	zend_class_entry *exc = zend_get_error_exception();
-	zend_throw_error_exception(exc, str, 1, 1 TSRMLS_CC);
+	zend_throw_exception(syck_exception_entry, str, 0 TSRMLS_CC);
 }
 
 /* {{{ proto object syck_load(string arg)

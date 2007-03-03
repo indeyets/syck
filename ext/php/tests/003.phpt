@@ -1,5 +1,5 @@
 --TEST--
-Check valid-yaml parsing
+Check invalid-yaml parsing
 --SKIPIF--
 <?php if (!extension_loaded("syck")) print "skip"; ?>
 --POST--
@@ -17,7 +17,7 @@ EOY;
 try {
 	syck_load($yaml);
 	echo "loaded fine";
-} catch (ErrorException $e) {
+} catch (SyckException $e) {
 	echo $e->getMessage();
 }
 ?>
