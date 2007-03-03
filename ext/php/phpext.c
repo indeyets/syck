@@ -5,6 +5,7 @@
 // $Date$
 //
 // Copyright (C) 2003 why the lucky stiff
+// Copyright © 2007 Alexey Zakhlestin <indeyets@gmail.com>
 //
 
 #ifdef HAVE_CONFIG_H
