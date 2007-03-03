@@ -14,14 +14,15 @@
 #include <syck.h>
 
 #include "php.h"
+#include "zend_exceptions.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_syck.h"
 
-static double zero()    { return 0.0; }
+static double zero()	{ return 0.0; }
 static double one() { return 1.0; }
 static double inf() { return one() / zero(); }
-static double nan() { return zero() / zero(); }
+static double nanphp() { return zero() / zero(); }
 
 /* {{{ syck_functions[]
  *
@@ -41,10 +42,10 @@ zend_module_entry syck_module_entry = {
 #endif
 	"syck",
 	syck_functions,
-	NULL,            /* module init function */
-	NULL,            /* module shutdown function */
-	NULL,            /* request init function */
-	NULL,            /* request shutdown function */
+	NULL,			/* module init function */
+	NULL,			/* module shutdown function */
+	NULL,			/* request init function */
+	NULL,			/* request shutdown function */
 	PHP_MINFO(syck), /* module info function */
 #if ZEND_MODULE_API_NO >= 20010901
 	"0.1", /* Replace with version number for your extension */
@@ -61,8 +62,8 @@ ZEND_GET_MODULE(syck)
  */
 /* Remove comments and fill if you need to have entries in php.ini
 PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("syck.global_value",      "42", PHP_INI_ALL, OnUpdateInt, global_value, zend_syck_globals, syck_globals)
-    STD_PHP_INI_ENTRY("syck.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_syck_globals, syck_globals)
+	STD_PHP_INI_ENTRY("syck.global_value",	  "42", PHP_INI_ALL, OnUpdateInt, global_value, zend_syck_globals, syck_globals)
+	STD_PHP_INI_ENTRY("syck.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_syck_globals, syck_globals)
 PHP_INI_END()
 */
 /* }}} */
@@ -85,7 +86,7 @@ zend_class_entry merge_key_entry;
 /* {{{ MergeKey */
 
 static zend_function_entry mergekey_functions[] = {
-  PHP_FALIAS(mergekey,          mergekey_init,              NULL)
+  PHP_FALIAS(mergekey,		  mergekey_init,			  NULL)
   { NULL, NULL, NULL }
 };
 
@@ -95,7 +96,7 @@ PHP_FUNCTION(mergekey_init)
 {   
   object_init_ex(getThis(), &merge_key_entry);
 } 
-                                                
+												
 
 static void destroy_MergeKey_resource(zend_rsrc_list_entry *resource TSRMLS_DC)
 {
@@ -109,7 +110,7 @@ static void destroy_MergeKey_resource(zend_rsrc_list_entry *resource TSRMLS_DC)
  */
 PHP_MINIT_FUNCTION(syck)
 {
-    le_mergekeyp = zend_register_list_destructors_ex(destroy_MergeKey_resource, NULL, "MergeKey", module_number);
+	le_mergekeyp = zend_register_list_destructors_ex(destroy_MergeKey_resource, NULL, "MergeKey", module_number);
 
 	INIT_CLASS_ENTRY(merge_key_entry, "mergekey", mergekey_functions);
 
@@ -167,107 +168,112 @@ PHP_MINFO_FUNCTION(syck)
 /* }}} */
 
 
-SYMID
-php_syck_handler(p, n)
-    SyckParser *p;
-    SyckNode *n;
+SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 {
-    SYMID oid;
-    zval *o, *o2, *o3;
-    unsigned int i;
+	SYMID oid;
+	zval *o, *o2, *o3;
+	unsigned int i;
 
 	MAKE_STD_ZVAL(o);
-    switch (n->kind)
-    {
-        case syck_str_kind:
-            if ( n->type_id == NULL || strcmp( n->type_id, "str" ) == 0 )
-            {
+	switch (n->kind)
+	{
+		case syck_str_kind:
+			if ( n->type_id == NULL || strcmp( n->type_id, "str" ) == 0 )
+			{
 				ZVAL_STRINGL( o, n->data.str->ptr, n->data.str->len, 1);
-            }
-            else if ( strcmp( n->type_id, "null" ) == 0 )
-            {
-                ZVAL_NULL( o );
-            }
-            else if ( strcmp( n->type_id, "bool#yes" ) == 0 )
-            {
+			}
+			else if ( strcmp( n->type_id, "null" ) == 0 )
+			{
+				ZVAL_NULL( o );
+			}
+			else if ( strcmp( n->type_id, "bool#yes" ) == 0 )
+			{
 				ZVAL_BOOL( o, 1 );
-            }
-            else if ( strcmp( n->type_id, "bool#no" ) == 0 )
-            {
+			}
+			else if ( strcmp( n->type_id, "bool#no" ) == 0 )
+			{
 				ZVAL_BOOL( o, 0 );
-            }
-            else if ( strcmp( n->type_id, "int#hex" ) == 0 )
-            {
+			}
+			else if ( strcmp( n->type_id, "int#hex" ) == 0 )
+			{
 				long intVal = strtol( n->data.str->ptr, NULL, 16 );
 				ZVAL_LONG( o, intVal );
-            }
-            else if ( strcmp( n->type_id, "int#oct" ) == 0 )
-            {
+			}
+			else if ( strcmp( n->type_id, "int#oct" ) == 0 )
+			{
 				long intVal = strtol( n->data.str->ptr, NULL, 8 );
 				ZVAL_LONG( o, intVal );
-            }
-            else if ( strcmp( n->type_id, "int" ) == 0 )
-            {
+			}
+			else if ( strcmp( n->type_id, "int" ) == 0 )
+			{
 				long intVal = strtol( n->data.str->ptr, NULL, 10 );
 				ZVAL_LONG( o, intVal );
-            }
-            else if ( strcmp( n->type_id, "float" ) == 0 )
-            {
-                double f;
-                syck_str_blow_away_commas( n );
-                f = strtod( n->data.str->ptr, NULL );
+			}
+			else if ( strcmp( n->type_id, "float" ) == 0 )
+			{
+				double f;
+				syck_str_blow_away_commas( n );
+				f = strtod( n->data.str->ptr, NULL );
 				ZVAL_DOUBLE( o, f );
-            }
-            else if ( strcmp( n->type_id, "float#nan" ) == 0 )
-            {
-                ZVAL_DOUBLE( o, nan() );
-            }
-            else if ( strcmp( n->type_id, "float#inf" ) == 0 )
-            {
-                ZVAL_DOUBLE( o, inf() );
-            }
-            else if ( strcmp( n->type_id, "float#neginf" ) == 0 )
-            {
-                ZVAL_DOUBLE( o, -inf() );
-            }
-            else if ( strcmp( n->type_id, "merge" ) == 0 )
-            {
+			}
+			else if ( strcmp( n->type_id, "float#nan" ) == 0 )
+			{
+				ZVAL_DOUBLE( o, nanphp() );
+			}
+			else if ( strcmp( n->type_id, "float#inf" ) == 0 )
+			{
+				ZVAL_DOUBLE( o, inf() );
+			}
+			else if ( strcmp( n->type_id, "float#neginf" ) == 0 )
+			{
+				ZVAL_DOUBLE( o, -inf() );
+			}
+			else if ( strcmp( n->type_id, "merge" ) == 0 )
+			{
+				TSRMLS_FETCH();
 				MAKE_STD_ZVAL( o );
 				object_init_ex( o, &merge_key_entry );
-            }
-            else
-            {
+			}
+			else
+			{
 				ZVAL_STRINGL(o, n->data.str->ptr, n->data.str->len, 1);
-            }
-        break;
+			}
+		break;
 
-        case syck_seq_kind:
+		case syck_seq_kind:
 			array_init(o);
-            for ( i = 0; i < n->data.list->idx; i++ )
-            {
-                oid = syck_seq_read( n, i );
-                syck_lookup_sym( p, oid, &o2 );
+			for ( i = 0; i < n->data.list->idx; i++ )
+			{
+				oid = syck_seq_read( n, i );
+				syck_lookup_sym( p, oid, &o2 );
 				add_index_zval( o, i, o2 );
-            }
-        break;
+			}
+		break;
 
-        case syck_map_kind:
+		case syck_map_kind:
 			array_init(o);
-            for ( i = 0; i < n->data.pairs->idx; i++ )
-            {
-                oid = syck_map_read( n, map_key, i );
-                syck_lookup_sym( p, oid, &o2 );
-                oid = syck_map_read( n, map_value, i );
-                syck_lookup_sym( p, oid, &o3 );
+			for ( i = 0; i < n->data.pairs->idx; i++ )
+			{
+				oid = syck_map_read( n, map_key, i );
+				syck_lookup_sym( p, oid, &o2 );
+				oid = syck_map_read( n, map_value, i );
+				syck_lookup_sym( p, oid, &o3 );
 				if ( o2->type == IS_STRING )
 				{
 					add_assoc_zval( o, o2->value.str.val, o3 );
 				}
-            }
-        break;
-    }
-    oid = syck_add_sym( p, o );
-    return oid;
+			}
+		break;
+	}
+	oid = syck_add_sym( p, o );
+	return oid;
+}
+
+void php_syck_ehandler(SyckParser *p, char *str)
+{
+	TSRMLS_FETCH();
+	zend_class_entry *exc = zend_get_error_exception();
+	zend_throw_error_exception(exc, str, 1, 1 TSRMLS_CC);
 }
 
 /* {{{ proto object syck_load(string arg)
@@ -286,16 +292,23 @@ PHP_FUNCTION(syck_load)
 	}
 
 	parser = syck_new_parser();
-    syck_parser_str( parser, arg, arg_len, NULL );
-    syck_parser_handler( parser, php_syck_handler );
-    syck_parser_implicit_typing( parser, 1 );
-    syck_parser_taguri_expansion( parser, 0 );
-    v = syck_parse( parser );
-    syck_lookup_sym( parser, v, &obj );
-    syck_free_parser( parser );
 
-	*return_value = *obj;
-	zval_copy_ctor(return_value);
+	syck_parser_handler( parser, php_syck_handler );
+	syck_parser_error_handler( parser, php_syck_ehandler );
+
+	syck_parser_implicit_typing( parser, 1 );
+	syck_parser_taguri_expansion( parser, 0 );
+
+	syck_parser_str( parser, arg, arg_len, NULL );
+
+	v = syck_parse( parser );
+
+	if (1 == syck_lookup_sym( parser, v, &obj )) {
+		*return_value = *obj;
+		zval_copy_ctor(return_value);
+	}
+
+	syck_free_parser( parser );
 }
 /* }}} */
 
