@@ -1,12 +1,12 @@
 /**
  * phpext.c
- * 
+ *
  * $Author$
  * $Date$
- * 
+ *
  * Copyright (C) 2003 why the lucky stiff
  * Copyright © 2007 Alexey Zakhlestin <indeyets@gmail.com>
- * 
+ *
 **/
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -50,10 +50,10 @@ PHP_SYCK_API zend_class_entry *php_syck_get_exception_base(TSRMLS_DC)
 }
 
 
-static double zero()	{ return 0.0; }
-static double one()		{ return 1.0; }
-static double inf()		{ return one() / zero(); }
-static double nanphp()	{ return zero() / zero(); }
+static double inline zero()		{ return 0.0; }
+static double inline one()		{ return 1.0; }
+static double inline inf()		{ return one() / zero(); }
+static double inline nanphp()	{ return zero() / zero(); }
 
 
 function_entry syck_functions[] = {
@@ -98,7 +98,7 @@ ZEND_GET_MODULE(syck)
 /**
  * "Merge" class
 **/
-static int le_mergekeyp;
+/*static int le_mergekeyp;
 zend_class_entry *merge_key_entry;
 
 static zend_function_entry mergekey_functions[] = {
@@ -114,7 +114,7 @@ PHP_FUNCTION(mergekey_init)
 static void destroy_MergeKey_resource(zend_rsrc_list_entry *resource TSRMLS_DC)
 {
 }
-
+*/
 
 /**
  * SyckException class
@@ -129,10 +129,10 @@ PHP_MINIT_FUNCTION(syck)
 	INIT_CLASS_ENTRY(ce, PHP_SYCK_EXCEPTION_NAME, NULL);
 	syck_exception_entry = zend_register_internal_class_ex(&ce, php_syck_get_exception_base(TSRMLS_CC), PHP_SYCK_EXCEPTION_PARENT TSRMLS_CC);
 
-	le_mergekeyp = zend_register_list_destructors_ex(destroy_MergeKey_resource, NULL, "MergeKey", module_number);
+/*	le_mergekeyp = zend_register_list_destructors_ex(destroy_MergeKey_resource, NULL, "MergeKey", module_number);
 	INIT_CLASS_ENTRY(ce, "mergekey", mergekey_functions);
 	merge_key_entry = zend_register_internal_class(&ce TSRMLS_CC);
-
+*/
 	return SUCCESS;
 }
 
@@ -193,10 +193,10 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 			} else if (strcmp(n->type_id, "float#neginf") == 0) {
 				ZVAL_DOUBLE(o, -inf());
 			} else if (strcmp(n->type_id, "merge") == 0) {
-				TSRMLS_FETCH();
-				MAKE_STD_ZVAL(o);
+/* This thing doesn't work, anyway */
+/*				TSRMLS_FETCH();
 				object_init_ex(o, merge_key_entry);
-			} else {
+*/			} else {
 				ZVAL_STRINGL(o, n->data.str->ptr, n->data.str->len, 1);
 			}
 		break;
@@ -205,7 +205,8 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 			array_init(o);
 			for (i = 0; i < n->data.list->idx; i++) {
 				oid = syck_seq_read(n, i);
-				syck_lookup_sym(p, oid, (char **) &o2);
+				syck_lookup_sym(p, oid, (char **) &o2); /* retrieving child-node */
+
 				add_index_zval(o, i, o2);
 			}
 		break;
@@ -214,9 +215,11 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 			array_init(o);
 			for (i = 0; i < n->data.pairs->idx; i++) {
 				oid = syck_map_read(n, map_key, i);
-				syck_lookup_sym(p, oid, (char **) &o2);
+				syck_lookup_sym(p, oid, (char **) &o2); /* retrieving key-node */
+
 				oid = syck_map_read(n, map_value, i);
-				syck_lookup_sym(p, oid, (char **) &o3);
+				syck_lookup_sym(p, oid, (char **) &o3); /* retrieving value-node */
+
 				if (o2->type == IS_STRING) {
 					add_assoc_zval(o, o2->value.str.val, o3);
 				}
@@ -224,8 +227,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 		break;
 	}
 
-	oid = syck_add_sym(p, (char *)o);
-	return oid;
+	return syck_add_sym(p, (char *)o); /* storing node */
 }
 
 void php_syck_ehandler(SyckParser *p, char *str)
@@ -267,6 +269,9 @@ PHP_FUNCTION(syck_load)
 	if (1 == syck_lookup_sym(parser, v, (char **) &obj)) {
 		*return_value = *obj;
 		zval_copy_ctor(return_value);
+
+		zval_dtor(obj);
+		efree(obj);
 	}
 
 	syck_free_parser(parser);
