@@ -28,8 +28,9 @@
 
 static zend_class_entry *spl_ce_RuntimeException;
 
-PHP_SYCK_API zend_class_entry *php_syck_get_exception_base(TSRMLS_DC)
+PHP_SYCK_API zend_class_entry *php_syck_get_exception_base()
 {
+	TSRMLS_FETCH();
 #if defined(HAVE_SPL) && ((PHP_MAJOR_VERSION > 5) || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 1))
 	if (!spl_ce_RuntimeException) {
 		zend_class_entry **pce;
@@ -127,7 +128,7 @@ PHP_MINIT_FUNCTION(syck)
 	zend_class_entry ce;
 
 	INIT_CLASS_ENTRY(ce, PHP_SYCK_EXCEPTION_NAME, NULL);
-	syck_exception_entry = zend_register_internal_class_ex(&ce, php_syck_get_exception_base(TSRMLS_CC), PHP_SYCK_EXCEPTION_PARENT TSRMLS_CC);
+	syck_exception_entry = zend_register_internal_class_ex(&ce, php_syck_get_exception_base(), PHP_SYCK_EXCEPTION_PARENT TSRMLS_CC);
 
 /*	le_mergekeyp = zend_register_list_destructors_ex(destroy_MergeKey_resource, NULL, "MergeKey", module_number);
 	INIT_CLASS_ENTRY(ce, "mergekey", mergekey_functions);
