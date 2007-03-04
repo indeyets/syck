@@ -1,4 +1,4 @@
-<?
+<?php
 if(!extension_loaded('syck')) {
 	dl('syck.so');
 }

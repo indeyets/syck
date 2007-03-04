@@ -6,7 +6,7 @@ PHP_ARG_WITH(syck, for syck support,
 
 if test "$PHP_SYCK" != "no"; then
   # --with-syck -> check with-path
-  SEARCH_PATH="/usr/local /usr"
+  SEARCH_PATH="/sw/local /sw /usr/local /usr"
   SEARCH_FOR="/include/syck.h"
   if test -r $PHP_SYCK/; then # path given as parameter
     SYCK_DIR=$PHP_SYCK
@@ -42,11 +42,7 @@ if test "$PHP_SYCK" != "no"; then
     -L$SYCK_DIR/lib
   ])
   
-  # For PHP 4.3.0:
-  # PHP_NEW_EXTENSION(syck, phpext.c, $ext_shared)
-
-  # For PHP pre-4.3.0:
-  PHP_EXTENSION(syck, $ext_shared)
+  PHP_NEW_EXTENSION(syck, phpext.c, $ext_shared)
 
   PHP_SUBST(SYCK_SHARED_LIBADD)
 fi
