@@ -270,8 +270,7 @@ PHP_FUNCTION(syck_load)
 		*return_value = *obj;
 		zval_copy_ctor(return_value);
 
-		zval_dtor(obj);
-		efree(obj);
+		zval_ptr_dtor(&obj);
 	}
 
 	syck_free_parser(parser);
