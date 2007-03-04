@@ -22,11 +22,15 @@
 
 #define PHP_SYCK_VERSION "0.2"
 
+/**
+ * SyckException class
+**/
 #define PHP_SYCK_EXCEPTION_PARENT "UnexpectedValueException"
 #define PHP_SYCK_EXCEPTION_PARENT_LC "unexpectedvalueexception"
 #define PHP_SYCK_EXCEPTION_NAME "SyckException"
 
 static zend_class_entry *spl_ce_RuntimeException;
+zend_class_entry *syck_exception_entry;
 
 PHP_SYCK_API zend_class_entry *php_syck_get_exception_base()
 {
@@ -94,57 +98,14 @@ zend_module_entry syck_module_entry = {
 ZEND_GET_MODULE(syck)
 #endif
 
-
-
-/**
- * "Merge" class
-**/
-/*static int le_mergekeyp;
-zend_class_entry *merge_key_entry;
-
-static zend_function_entry mergekey_functions[] = {
-	PHP_FALIAS(mergekey, mergekey_init, NULL)
-	{ NULL, NULL, NULL }
-};
-
-PHP_FUNCTION(mergekey_init)
-{
-	object_init_ex(getThis(), merge_key_entry);
-}
-
-static void destroy_MergeKey_resource(zend_rsrc_list_entry *resource TSRMLS_DC)
-{
-}
-*/
-
-/**
- * SyckException class
-**/
-
-zend_class_entry *syck_exception_entry;
-
 PHP_MINIT_FUNCTION(syck)
 {
 	zend_class_entry ce;
 
 	INIT_CLASS_ENTRY(ce, PHP_SYCK_EXCEPTION_NAME, NULL);
 	syck_exception_entry = zend_register_internal_class_ex(&ce, php_syck_get_exception_base(), PHP_SYCK_EXCEPTION_PARENT TSRMLS_CC);
-
-/*	le_mergekeyp = zend_register_list_destructors_ex(destroy_MergeKey_resource, NULL, "MergeKey", module_number);
-	INIT_CLASS_ENTRY(ce, "mergekey", mergekey_functions);
-	merge_key_entry = zend_register_internal_class(&ce TSRMLS_CC);
-*/
 	return SUCCESS;
 }
-
-PHP_MSHUTDOWN_FUNCTION(syck)
-{
-	/* uncomment this line if you have INI entries
-	UNREGISTER_INI_ENTRIES();
-	*/
-	return SUCCESS;
-}
-
 
 PHP_MINFO_FUNCTION(syck)
 {
@@ -153,7 +114,6 @@ PHP_MINFO_FUNCTION(syck)
 	php_info_print_table_header(2, "Syck library version", SYCK_VERSION);
 	php_info_print_table_end();
 }
-
 
 
 SYMID php_syck_handler(SyckParser *p, SyckNode *n)
@@ -194,10 +154,12 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 			} else if (strcmp(n->type_id, "float#neginf") == 0) {
 				ZVAL_DOUBLE(o, -inf());
 			} else if (strcmp(n->type_id, "merge") == 0) {
-/* This thing doesn't work, anyway */
-/*				TSRMLS_FETCH();
+				/* This thing doesn't work, anyway */
+				/* 
+				TSRMLS_FETCH();
 				object_init_ex(o, merge_key_entry);
-*/			} else {
+				*/
+			} else {
 				ZVAL_STRINGL(o, n->data.str->ptr, n->data.str->len, 1);
 			}
 		break;
@@ -236,6 +198,7 @@ void php_syck_ehandler(SyckParser *p, char *str)
 	TSRMLS_FETCH();
 	zend_throw_exception(syck_exception_entry, str, 0 TSRMLS_CC);
 }
+
 
 /* {{{ proto object syck_load(string arg)
    Return PHP object from a YAML string */
