@@ -185,6 +185,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 				if (o2->type == IS_STRING) {
 					add_assoc_zval(o, o2->value.str.val, o3);
+					zval_ptr_dtor(&o2);
 				}
 			}
 		break;
