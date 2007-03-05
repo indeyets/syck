@@ -210,8 +210,15 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 void php_syck_ehandler(SyckParser *p, char *str)
 {
+	char *endl = p->cursor;
 	TSRMLS_FETCH();
-	zend_throw_exception(syck_exception_entry, str, 0 TSRMLS_CC);
+
+	while (*endl != '\0' && *endl != '\n')
+		endl++;
+
+	endl[0] = '\0';
+
+	zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "%s on line %d, col %d: '%s'", str, p->linect, p->cursor - p->lineptr, p->lineptr);
 }
 
 
