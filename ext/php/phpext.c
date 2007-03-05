@@ -118,11 +118,10 @@ PHP_MINFO_FUNCTION(syck)
 
 SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 {
-	SYMID oid;
-	zval *o, *o2, *o3;
-	unsigned int i;
+	zval *o;
 
 	MAKE_STD_ZVAL(o);
+
 	switch (n->kind) {
 		case syck_str_kind:
 			if (n->type_id == NULL || strcmp(n->type_id, "str") == 0) {
@@ -165,29 +164,44 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 		break;
 
 		case syck_seq_kind:
+		{
+			SYMID oid;
+			size_t i;
+			zval *o2;
+
 			array_init(o);
+
 			for (i = 0; i < n->data.list->idx; i++) {
 				oid = syck_seq_read(n, i);
 				syck_lookup_sym(p, oid, (char **) &o2); /* retrieving child-node */
 
 				add_index_zval(o, i, o2);
 			}
+		}
 		break;
 
 		case syck_map_kind:
+		{
+			SYMID oid;
+			size_t i;
+			zval *o2, *o3;
+
 			array_init(o);
+
 			for (i = 0; i < n->data.pairs->idx; i++) {
 				oid = syck_map_read(n, map_key, i);
 				syck_lookup_sym(p, oid, (char **) &o2); /* retrieving key-node */
 
-				oid = syck_map_read(n, map_value, i);
-				syck_lookup_sym(p, oid, (char **) &o3); /* retrieving value-node */
-
 				if (o2->type == IS_STRING) {
+					oid = syck_map_read(n, map_value, i);
+					syck_lookup_sym(p, oid, (char **) &o3); /* retrieving value-node */
+
 					add_assoc_zval(o, o2->value.str.val, o3);
-					zval_ptr_dtor(&o2);
 				}
+
+				zval_ptr_dtor(&o2);
 			}
+		}
 		break;
 	}
 

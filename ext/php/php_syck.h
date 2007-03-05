@@ -35,12 +35,7 @@ extern zend_module_entry syck_module_entry;
 #endif
 
 PHP_MINIT_FUNCTION(syck);
-PHP_MSHUTDOWN_FUNCTION(syck);
-PHP_RINIT_FUNCTION(syck);
-PHP_RSHUTDOWN_FUNCTION(syck);
 PHP_MINFO_FUNCTION(syck);
-
-PHP_FUNCTION(mergekey_init);
 
 PHP_FUNCTION(syck_load);
 
