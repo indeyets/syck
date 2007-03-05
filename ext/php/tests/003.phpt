@@ -18,8 +18,8 @@ try {
 	syck_load($yaml);
 	echo "loaded fine";
 } catch (SyckException $e) {
-	echo $e->getMessage();
+	echo "Caught exception";
 }
 ?>
 --EXPECT--
-syntax error, unexpected ':', expecting '}' or ','
+Caught exception
