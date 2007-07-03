@@ -63,15 +63,64 @@ static double inline nanphp()	{ return zero() / zero(); }
 typedef struct {
 	char *output;
 	size_t output_size;
+	size_t output_alloc;
 	zval **stack;
 	unsigned char level;
 } php_syck_emitter_xtra;
 
-psex_add_output(php_syck_emitter_xtra *ptr)
+void psex_init(php_syck_emitter_xtra *ptr)
 {
-	
+	ptr->output = NULL;
+	ptr->output_size = 0;
+	ptr->output_alloc = 0;
+	ptr->stack = emalloc(sizeof(zval *) * 255);
+	ptr->level = 0;
 }
 
+void psex_free(php_syck_emitter_xtra *ptr)
+{
+	if (ptr->output) {
+		efree(ptr->output);
+		ptr->output = NULL;
+	}
+
+	if (ptr->stack) {
+		efree(ptr->stack);
+		ptr->stack = NULL;
+	}
+
+	ptr->output_size = 0;
+	ptr->output_alloc = 0;
+	ptr->level = 0;
+}
+
+void psex_add_output(php_syck_emitter_xtra *ptr, char *data, size_t len)
+{
+	while (ptr->output_size + len > ptr->output_alloc) {
+		ptr->output_alloc += 8192;
+		ptr->output = erealloc(ptr->output, ptr->output_alloc);
+	}
+
+	strncpy(ptr->output + ptr->output_size, data, len);
+	ptr->output_size += len;
+}
+
+int psex_push_obj(php_syck_emitter_xtra *ptr, zval *obj)
+{
+	if (ptr->level == 255)
+		return 0;
+
+	ptr->stack[++(ptr->level)] = obj;
+	return 1;
+}
+
+zval * psex_pop_obj(php_syck_emitter_xtra *ptr)
+{
+	if (ptr->level == 0)
+		return NULL;
+
+	return ptr->stack[(ptr->level)--];
+}
 
 function_entry syck_functions[] = {
 	PHP_FE(syck_load, NULL)
@@ -167,7 +216,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				ZVAL_DOUBLE(o, -inf());
 			} else if (strcmp(n->type_id, "merge") == 0) {
 				/* This thing doesn't work, anyway */
-				/* 
+				/*
 				TSRMLS_FETCH();
 				object_init_ex(o, merge_key_entry);
 				*/
@@ -234,14 +283,72 @@ void php_syck_ehandler(SyckParser *p, char *str)
 	zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "%s on line %d, col %d: '%s'", str, p->linect, p->cursor - p->lineptr, p->lineptr);
 }
 
-void php_syck_emitter_handler(SyckEmitter *e, st_data_t data)
+void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 {
-	
+	php_syck_emitter_xtra *bonus = (php_syck_emitter_xtra *) e->bonus;
+	zval *data = bonus->stack[id];
+
+	switch (Z_TYPE_P(data)) {
+		case IS_NULL:
+			syck_emit_scalar(e, "null", scalar_none, 0, 0, 0, "", 0);
+		break;
+
+		case IS_BOOL:
+		{
+		    char *bool_s = Z_BVAL_P(data) ? "true" : "false";
+		    syck_emit_scalar(e, "boolean", scalar_none, 0, 0, 0, bool_s, strlen(bool_s));
+		}
+		break;
+
+		case IS_LONG:
+		{
+			size_t res_size;
+			char *res;
+
+			res_size = snprintf(res, 0, "%ld", Z_LVAL_P(data)); /* getting size ("0" doesn't let output) */
+			res = emalloc(res_size + 1);
+			snprintf(res, res_size + 1, "%ld", Z_LVAL_P(data));
+
+			syck_emit_scalar(e, "number", scalar_none, 0, 0, 0, res, res_size);
+			efree(res);
+		}
+		break;
+
+		case IS_DOUBLE:
+		{
+			size_t res_size;
+			char *res;
+
+			res_size = snprintf(res, 0, "%f", Z_DVAL_P(data)); /* getting size ("0" doesn't let output) */
+			res = emalloc(res_size + 1);
+			snprintf(res, res_size + 1, "%f", Z_DVAL_P(data));
+
+			syck_emit_scalar(e, "number", scalar_none, 0, 0, 0, res, res_size);
+			efree(res);
+		}
+		break;
+
+		case IS_STRING:
+			syck_emit_scalar(e, "string", scalar_none, 0, 0, 0, Z_STRVAL_P(data), Z_STRLEN_P(data));
+		break;
+
+		case IS_ARRAY:
+		break;
+
+		case IS_OBJECT:
+		break;
+
+		case IS_RESOURCE:
+		default:
+			/* something unknown */
+		break;
+	}
 }
 
 void php_syck_output_handler(SyckEmitter *e, char *str, long len)
 {
-	
+	php_syck_emitter_xtra *bonus = (php_syck_emitter_xtra *) e->bonus;
+	psex_add_output(bonus, str, (size_t)len);
 }
 
 /* {{{ proto object syck_load(string arg)
@@ -291,7 +398,7 @@ PHP_FUNCTION(syck_load)
 PHP_FUNCTION(syck_dump)
 {
 	SyckEmitter *emitter;
-	emitter_extra *extra;
+	php_syck_emitter_xtra *extra;
 	zval *ptr;
 
 	if (ZEND_NUM_ARGS() != 1) {
@@ -302,18 +409,23 @@ PHP_FUNCTION(syck_dump)
 		return;
 	}
 
+	extra = emalloc(sizeof(php_syck_emitter_xtra));
+	psex_init(extra);
+	psex_push_obj(extra, ptr);
+
 	emitter = syck_new_emitter();
-	emitter->bonus = emalloc(sizeof(emitter_extra));
-	emitter->bonus.output = emalloc(8192);
-	emitter->bonus.output_size = 8192;
+	emitter->bonus = extra;
 
 	syck_emitter_handler(emitter, php_syck_emitter_handler);
 	syck_output_handler(emitter, php_syck_output_handler);
 
-	syck_emit(emitter, 0);
+	syck_emit(emitter, extra->level);
 	syck_emitter_flush(emitter, 0);
 
-	efree(emitter->bonus);
+	ZVAL_STRINGL(return_value, extra->output, extra->output_size, 1);
+
+	psex_free(extra);
+	efree(extra);
 	syck_free_emitter(emitter);
 }
 /* }}} */
