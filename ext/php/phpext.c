@@ -333,6 +333,52 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 		break;
 
 		case IS_ARRAY:
+		{
+			HashTable *tbl = Z_ARRVAL_P(data);
+
+			if (zend_hash_index_exists(tbl, 0)) {
+				/* indexed array */
+				syck_emit_seq(e, "table", seq_none);
+
+				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
+					zval **ppzval;
+
+					zend_hash_get_current_data(tbl, (void **)&ppzval);
+					if (psex_push_obj(bonus, *ppzval)) {
+						syck_emit_item(e, bonus->level);
+						psex_pop_obj(bonus);
+					}
+				}
+
+				syck_emit_end(e);
+			} else {
+				/* associative array */
+				syck_emit_map(e, "table", map_none);
+
+				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
+					zval **ppzval, *kzval;
+					char *key;
+					size_t key_len, idx;
+
+					zend_hash_get_current_key_ex(tbl, (char **)&key, (uint *)&key_len, &idx, 0, NULL);
+					zend_hash_get_current_data(tbl, (void **)&ppzval);
+
+					ZVAL_STRINGL(kzval, key, key_len - 1, 0);
+					if (psex_push_obj(bonus, kzval)) {
+						syck_emit_item(e, bonus->level);
+						psex_pop_obj(bonus);
+
+						if (psex_push_obj(bonus, *ppzval)) {
+							syck_emit_item(e, bonus->level);
+							psex_pop_obj(bonus);
+						}
+					}
+
+				}
+
+				syck_emit_end(e);
+			}
+		}
 		break;
 
 		case IS_OBJECT:
