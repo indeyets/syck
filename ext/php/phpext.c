@@ -20,7 +20,7 @@
 #include "ext/standard/info.h"
 #include "php_syck.h"
 
-#define PHP_SYCK_VERSION "0.2"
+#define PHP_SYCK_VERSION "0.3"
 
 /**
  * SyckException class
@@ -60,9 +60,22 @@ static double inline one()		{ return 1.0; }
 static double inline inf()		{ return one() / zero(); }
 static double inline nanphp()	{ return zero() / zero(); }
 
+typedef struct {
+	char *output;
+	size_t output_size;
+	zval **stack;
+	unsigned char level;
+} php_syck_emitter_xtra;
+
+psex_add_output(php_syck_emitter_xtra *ptr)
+{
+	
+}
+
 
 function_entry syck_functions[] = {
 	PHP_FE(syck_load, NULL)
+	PHP_FE(syck_dump, NULL)
 	{NULL, NULL, NULL}	/* Must be the last line in syck_functions[] */
 };
 
@@ -221,6 +234,15 @@ void php_syck_ehandler(SyckParser *p, char *str)
 	zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "%s on line %d, col %d: '%s'", str, p->linect, p->cursor - p->lineptr, p->lineptr);
 }
 
+void php_syck_emitter_handler(SyckEmitter *e, st_data_t data)
+{
+	
+}
+
+void php_syck_output_handler(SyckEmitter *e, char *str, long len)
+{
+	
+}
 
 /* {{{ proto object syck_load(string arg)
    Return PHP object from a YAML string */
@@ -260,6 +282,39 @@ PHP_FUNCTION(syck_load)
 	}
 
 	syck_free_parser(parser);
+}
+/* }}} */
+
+
+/* {{{ proto object syck_load(string arg)
+   Convert PHP object into YAML string */
+PHP_FUNCTION(syck_dump)
+{
+	SyckEmitter *emitter;
+	emitter_extra *extra;
+	zval *ptr;
+
+	if (ZEND_NUM_ARGS() != 1) {
+		WRONG_PARAM_COUNT;
+	}
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &ptr) == FAILURE) {
+		return;
+	}
+
+	emitter = syck_new_emitter();
+	emitter->bonus = emalloc(sizeof(emitter_extra));
+	emitter->bonus.output = emalloc(8192);
+	emitter->bonus.output_size = 8192;
+
+	syck_emitter_handler(emitter, php_syck_emitter_handler);
+	syck_output_handler(emitter, php_syck_output_handler);
+
+	syck_emit(emitter, 0);
+	syck_emitter_flush(emitter, 0);
+
+	efree(emitter->bonus);
+	syck_free_emitter(emitter);
 }
 /* }}} */
 
