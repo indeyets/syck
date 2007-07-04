@@ -13,7 +13,7 @@
     - SyckException (derived from SPL's UnexpectedValueException) is thrown in case of parse-error
     - MacOS-X compatibility
     - ZTS-related fixes
-    - Report versions os extension and library in phpinfo()
+    - Report versions of extension and library in phpinfo()
     - Cleaner, PECL-style compliant source
 
 - version: 0.1
