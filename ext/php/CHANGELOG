@@ -1,0 +1,22 @@
+--- %YAML:1.0
+- version: 0.3
+  date: 2007-07-04
+  changes:
+    - added emitter functionality
+    - new function: "string syck_dump(mixed data)"
+
+- version: 0.2
+  date: 2007-03-05
+  changes:
+    - PHP5 is a requirement now
+    - Removed a lof ot memory leaks
+    - SyckException (derived from SPL's UnexpectedValueException) is thrown in case of parse-error
+    - MacOS-X compatibility
+    - ZTS-related fixes
+    - Report versions os extension and library in phpinfo()
+    - Cleaner, PECL-style compliant source
+
+- version: 0.1
+  date: 2003-09-24
+  changes:
+    - WhyTheLuckyStiff's initial implementation
