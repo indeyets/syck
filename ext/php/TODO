@@ -17,14 +17,10 @@ load:
     - "timestamp#spaced"
     - "timestamp#ymd"
   - objects:
-    - "Datetime": {as: "timestamp#iso8601"}
-    - Iterator:
-      as: map
-      label: "!php/hash:YAML::ClassName"
-    - ArrayAccess:
-      as: sequence
-      label: "!php/array:YAML::ClassName"
-    - Generic object
+    - "!php/hash:YAML::ClassName"
+    - "!php/array:YAML::ClassName"
+    - "!php:YAML::Datetime"
+    - "!php:YAML::ClassName (?)"
 dump:
   - merge
   - objects:
@@ -35,4 +31,4 @@ dump:
     - ArrayAccess:
       as: sequence
       label: "!php/array:YAML::ClassName"
-    - Generic object
+    - Generic object (?)
