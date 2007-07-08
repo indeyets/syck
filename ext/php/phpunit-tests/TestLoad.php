@@ -89,6 +89,7 @@ class TestLoad extends PHPUnit_Framework_TestCase
     {
         $this->assertSame(syck_load('99.0'), 99.0);
         $this->assertSame(syck_load('!float 99'), 99.0);
+        $this->assertSame(syck_load('190:20:30.15'), 6.8523015e+5);
     }
 
     public function testFloatExponential()

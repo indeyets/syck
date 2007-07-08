@@ -8,7 +8,6 @@ General:
   - "add PHP6 (unicode strings) support"
 load:
   - "Add support for datatypes":
-    - "float#base60"
     - merge
     - "timestamp#iso8601"
     - "timestamp#spaced"

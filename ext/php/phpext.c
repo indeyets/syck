@@ -35,7 +35,7 @@ zend_class_entry *syck_exception_entry;
 PHP_SYCK_API zend_class_entry *php_syck_get_exception_base()
 {
 	TSRMLS_FETCH();
-#if defined(HAVE_SPL) && ((PHP_MAJOR_VERSION > 5) || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 1))
+
 	if (!spl_ce_RuntimeException) {
 		zend_class_entry **pce;
 
@@ -46,12 +46,8 @@ PHP_SYCK_API zend_class_entry *php_syck_get_exception_base()
 	} else {
 		return spl_ce_RuntimeException;
 	}
-#endif
-#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
-	return zend_exception_get_default();
-#else
+
 	return zend_exception_get_default(TSRMLS_C);
-#endif
 }
 
 
@@ -128,22 +124,15 @@ function_entry syck_functions[] = {
 	{NULL, NULL, NULL}	/* Must be the last line in syck_functions[] */
 };
 
-#if ZEND_MODULE_API_NO >= 20050922
 static zend_module_dep syck_deps[] = {
-# ifdef HAVE_SPL
 	ZEND_MOD_REQUIRED("spl")
-# endif
+	ZEND_MOD_REQUIRED("hash")
 	{NULL, NULL, NULL}
 };
-#endif
 
 zend_module_entry syck_module_entry = {
-#if ZEND_MODULE_API_NO >= 20050922
 	STANDARD_MODULE_HEADER_EX, NULL,
 	syck_deps,
-#else
-	STANDARD_MODULE_HEADER,
-#endif
 	"syck",
 	syck_functions,
 	PHP_MINIT(syck),	/* module init function */
@@ -274,12 +263,32 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				f = strtod(n->data.str->ptr, NULL);
 
 				ZVAL_DOUBLE(o, f);
-			} else if (strcmp(n->type_id, "float#sixty") == 0) {
-				double f;
-				syck_str_blow_away_commas(n);
-				f = strtod(n->data.str->ptr, NULL);
+			} else if (strcmp(n->type_id, "float#base60") == 0) {
+				char *ptr, *end;
+				long multiplier = 1;
+				double total = 0;
 
-				ZVAL_DOUBLE(o, f);
+				syck_str_blow_away_commas(n);
+				ptr = n->data.str->ptr;
+				end = n->data.str->ptr + n->data.str->len;
+
+				while (end > ptr) {
+					double bnum = 0;
+					char *colon = end - 1;
+					while (colon >= ptr && *colon != ':') {
+					    colon--;
+					}
+
+					if (colon >= ptr && *colon == ':')
+						*colon = '\0';
+
+					bnum = strtod(colon + 1, NULL);
+					total += bnum * multiplier;
+					multiplier *= 60;
+					end = colon;
+				}
+
+				ZVAL_DOUBLE(o, total);
 			} else if (strcmp(n->type_id, "float#nan") == 0) {
 				ZVAL_DOUBLE(o, nanphp());
 			} else if (strcmp(n->type_id, "float#inf") == 0) {

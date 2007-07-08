@@ -19,7 +19,7 @@ if test "$PHP_SYCK" != "no"; then
       fi
     done
   fi
-  
+
   if test -z "$SYCK_DIR"; then
     AC_MSG_RESULT([not found])
     AC_MSG_ERROR([Please reinstall the syck distribution])
@@ -41,8 +41,10 @@ if test "$PHP_SYCK" != "no"; then
   ],[
     -L$SYCK_DIR/lib
   ])
-  
+
   PHP_NEW_EXTENSION(syck, phpext.c, $ext_shared)
+  PHP_ADD_EXTENSION_DEP(syck, hash)
+  PHP_ADD_EXTENSION_DEP(syck, spl)
 
   PHP_SUBST(SYCK_SHARED_LIBADD)
 fi
