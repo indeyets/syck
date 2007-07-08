@@ -194,19 +194,91 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				ZVAL_BOOL(o, 1);
 			} else if (strcmp(n->type_id, "bool#no") == 0) {
 				ZVAL_BOOL(o, 0);
+			} else if (strcmp(n->type_id, "bool") == 0) {
+				/* implicit boolean */
+				char *ptr = n->data.str->ptr;
+				size_t len = n->data.str->len;
+
+				if (len == 1) {
+					if (ptr[0] == 'y' || ptr[0] == 'Y') {
+						ZVAL_BOOL(o, 1);
+					} else if (ptr[0] == 'n' || ptr[0] == 'N') {
+						ZVAL_BOOL(o, 0);
+					}
+				} else if (len == 2) {
+					if (strncmp(ptr, "on", len) == 0 || strncmp(ptr, "On", len) == 0 || strncmp(ptr, "ON", len) == 0) {
+						ZVAL_BOOL(o, 1);
+					} else if (strncmp(ptr, "no", len) == 0 || strncmp(ptr, "No", len) == 0 || strncmp(ptr, "NO", len) == 0) {
+						ZVAL_BOOL(o, 0);
+					}
+				} else if (len == 3) {
+					if (strncmp(ptr, "yes", len) == 0 || strncmp(ptr, "Yes", len) == 0 || strncmp(ptr, "YES", len) == 0) {
+						ZVAL_BOOL(o, 1);
+					} else if (strncmp(ptr, "off", len) == 0 || strncmp(ptr, "Off", len) == 0 || strncmp(ptr, "OFF", len) == 0) {
+						ZVAL_BOOL(o, 0);
+					}
+				} else if (len == 4) {
+					if (strncmp(ptr, "true", len) == 0 || strncmp(ptr, "True", len) == 0 || strncmp(ptr, "TRUE", len) == 0) {
+						ZVAL_BOOL(o, 1);
+					}
+				} else if (len == 3) {
+					if (strncmp(ptr, "false", len) == 0 || strncmp(ptr, "False", len) == 0 || strncmp(ptr, "FALSE", len) == 0) {
+						ZVAL_BOOL(o, 1);
+					}
+				}
+
+				if (Z_TYPE_P(o) != IS_BOOL) {
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "!bool specified, but value \"%s\" (len=%d) is incorrect on line %d, col %d: '%s'", ptr, len, p->linect, p->cursor - p->lineptr, p->lineptr);
+				}
 			} else if (strcmp(n->type_id, "int#hex") == 0) {
+				syck_str_blow_away_commas(n);
 				long intVal = strtol(n->data.str->ptr, NULL, 16);
 				ZVAL_LONG(o, intVal);
+			} else if (strcmp(n->type_id, "int#base60") == 0) {
+				char *ptr, *end;
+				long sixty = 1;
+				long total = 0;
+
+				syck_str_blow_away_commas(n);
+				ptr = n->data.str->ptr;
+				end = n->data.str->ptr + n->data.str->len;
+
+				while (end > ptr) {
+					long bnum = 0;
+					char *colon = end - 1;
+					while (colon >= ptr && *colon != ':') {
+					    colon--;
+					}
+
+					if (colon >= ptr && *colon == ':')
+						*colon = '\0';
+
+					bnum = strtol(colon + 1, NULL, 10);
+					total += bnum * sixty;
+					sixty *= 60;
+					end = colon;
+				}
+
+				ZVAL_LONG(o, total);
 			} else if (strcmp(n->type_id, "int#oct") == 0) {
+				syck_str_blow_away_commas(n);
 				long intVal = strtol(n->data.str->ptr, NULL, 8);
 				ZVAL_LONG(o, intVal);
 			} else if (strcmp(n->type_id, "int") == 0) {
+				syck_str_blow_away_commas(n);
 				long intVal = strtol(n->data.str->ptr, NULL, 10);
 				ZVAL_LONG(o, intVal);
-			} else if (strcmp(n->type_id, "float") == 0) {
+			} else if (strcmp(n->type_id, "float") == 0 || strcmp(n->type_id, "float#fix") == 0 || strcmp(n->type_id, "float#exp") == 0) {
 				double f;
 				syck_str_blow_away_commas(n);
 				f = strtod(n->data.str->ptr, NULL);
+
+				ZVAL_DOUBLE(o, f);
+			} else if (strcmp(n->type_id, "float#sixty") == 0) {
+				double f;
+				syck_str_blow_away_commas(n);
+				f = strtod(n->data.str->ptr, NULL);
+
 				ZVAL_DOUBLE(o, f);
 			} else if (strcmp(n->type_id, "float#nan") == 0) {
 				ZVAL_DOUBLE(o, nanphp());
@@ -446,10 +518,6 @@ PHP_FUNCTION(syck_dump)
 	SyckEmitter *emitter;
 	php_syck_emitter_xtra *extra;
 	zval *ptr;
-
-	if (ZEND_NUM_ARGS() != 1) {
-		WRONG_PARAM_COUNT;
-	}
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &ptr) == FAILURE) {
 		return;

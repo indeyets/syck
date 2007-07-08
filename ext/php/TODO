@@ -1,7 +1,7 @@
 --- 
 General:
   - "switch requirements to php 5.2 and remove redundant code"
-  - "write phpunit tests"
+  - "write more phpunit tests"
   - "syck_load_from_file(string $url[, resource $context])"
   - "syck_dump_to_file(string $url, mixed $data[, int $flags[, resource $context]])"
   - "syck_dump_to_file can have a flag for buffered or streamed output"
@@ -9,13 +9,11 @@ General:
 load:
   - "Add support for datatypes":
     - "float#base60"
-    - "float#exp"
-    - "float#fix"
-    - "int#base60"
     - merge
     - "timestamp#iso8601"
     - "timestamp#spaced"
     - "timestamp#ymd"
+    - timestamp
   - objects:
     - "!php/hash:YAML::ClassName"
     - "!php/array:YAML::ClassName"
