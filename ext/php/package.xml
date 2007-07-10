@@ -4,7 +4,7 @@
   <channel>pecl.php.net</channel>
   <summary>YAML-1.0 parser and emitter</summary>
   <description>A binding to the Syck library. 
-YAML(tm) (rhymes with "camel") is a straightforward machine parsable data serialization format designed for human readability and interaction with scripting languages such as Perl and Python. YAML is optimized for data serialization, configuration settings, log files, Internet messaging and filtering.
+YAML(tm) (rhymes with "camel") is a straightforward machine parsable data serialization format designed for human readability and interaction with scripting languages. YAML is optimized for data serialization, configuration settings, log files, Internet messaging and filtering.
   </description>
   <lead>
     <name>Alexey Zakhlestin</name>
