@@ -236,7 +236,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 					long bnum = 0;
 					char *colon = end - 1;
 					while (colon >= ptr && *colon != ':') {
-					    colon--;
+						colon--;
 					}
 
 					if (colon >= ptr && *colon == ':')
@@ -276,7 +276,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 					double bnum = 0;
 					char *colon = end - 1;
 					while (colon >= ptr && *colon != ':') {
-					    colon--;
+						colon--;
 					}
 
 					if (colon >= ptr && *colon == ':')
@@ -376,8 +376,8 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 
 		case IS_BOOL:
 		{
-		    char *bool_s = Z_BVAL_P(data) ? "true" : "false";
-		    syck_emit_scalar(e, "boolean", scalar_none, 0, 0, 0, bool_s, strlen(bool_s));
+			char *bool_s = Z_BVAL_P(data) ? "true" : "false";
+			syck_emit_scalar(e, "boolean", scalar_none, 0, 0, 0, bool_s, strlen(bool_s));
 		}
 		break;
 
