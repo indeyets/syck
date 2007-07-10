@@ -1,5 +1,8 @@
 <?php
-dl('syck.so');
+
+if (!extension_loaded('syck'))
+    dl('syck.so');
+
 require_once "PHPUnit/Framework/TestCase.php";
 
 class TestLoad extends PHPUnit_Framework_TestCase
