@@ -12,9 +12,9 @@ YAML(tm) (rhymes with "camel") is a straightforward machine parsable data serial
     <email>indeyets@gmail.com</email>
     <active>yes</active>
   </lead>
-  <date>2007-07-11</date>
+  <date>2007-07-15</date>
   <version>
-   <release>0.9</release>
+   <release>0.9.1</release>
    <api>1.0</api>
   </version>
   <stability>
@@ -23,10 +23,11 @@ YAML(tm) (rhymes with "camel") is a straightforward machine parsable data serial
   </stability>
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
-- this is the first release in PECL
-- added several unit-tests
-- fixed a bunch of vartype-errors
-- added support for sexagesimal numbers
+- fixed handling of invalid merge-references [pecl#11585]
+- fixed tsrm-incompatibility introduced in 0.9
+- added support for timestamps in syck_load
+- added support for DateTime in syck_dump
+- fixed dumping of associative-arrays
   </notes>
   <contents>
     <dir name="/">
@@ -54,4 +55,24 @@ YAML(tm) (rhymes with "camel") is a straightforward machine parsable data serial
   </dependencies> 
   <providesextension>syck</providesextension>
   <extsrcrelease></extsrcrelease>
+  <changelog>
+    <release>
+        <date>2007-07-11</date>
+        <version>
+         <release>0.9.0</release>
+         <api>1.0</api>
+        </version>
+        <stability>
+         <release>beta</release>
+         <api>beta</api>
+        </stability>
+        <license uri="http://www.php.net/license">PHP License</license>
+        <notes>
+      - this is the first release in PECL
+      - added several unit-tests
+      - fixed a bunch of vartype-errors
+      - added support for sexagesimal numbers
+        </notes>
+    </release>
+  </changelog>
 </package>

@@ -1,4 +1,14 @@
 --- %YAML:1.0
+- version: 0.9.1
+  date: 2007-07-15
+  status: beta
+  changes:
+    - fixed handling of invalid merge-references [pecl#11585]
+    - fixed tsrm-incompatibility introduced in 0.9
+    - added support for timestamps in syck_load
+    - added support for DateTime in syck_dump
+    - fixed dumping of associative-arrays
+
 - version: 0.9
   date: 2007-07-11
   status: beta

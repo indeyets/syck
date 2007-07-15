@@ -5,6 +5,8 @@ if (!extension_loaded('syck'))
 
 require_once "PHPUnit/Framework/TestCase.php";
 
+error_reporting(E_ALL);
+
 class TestLoad extends PHPUnit_Framework_TestCase
 {
     //
@@ -123,7 +125,15 @@ class TestLoad extends PHPUnit_Framework_TestCase
         $this->assertEquals(syck_load('.NAN'), NAN);
     }
 
-    public function testDefault()
+    public function testTimestamps()
     {
+        // canonical
+        $this->assertType('DateTime', syck_load("2001-12-15T02:59:43.1Z"));
+        // iso8601
+        $this->assertType('DateTime', syck_load("2001-12-14t21:59:43.10-05:00"));
+        // spaced
+        $this->assertType('DateTime', syck_load("2001-12-14 21:59:43.10 -05"));
+        // date
+        $this->assertType('DateTime', syck_load("2002-12-14"));
     }
 }

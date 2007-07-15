@@ -1,18 +1,11 @@
 --- 
 General:
-  - "switch requirements to php 5.2 and remove redundant code"
   - "write more phpunit tests"
   - "syck_load_from_file(string $url[, resource $context])"
   - "syck_dump_to_file(string $url, mixed $data[, int $flags[, resource $context]])"
   - "syck_dump_to_file can have a flag for buffered or streamed output"
   - "add PHP6 (unicode strings) support"
 load:
-  - "Add support for datatypes":
-    - merge
-    - "timestamp#iso8601"
-    - "timestamp#spaced"
-    - "timestamp#ymd"
-    - timestamp
   - objects:
     - "!php/hash:YAML::ClassName"
     - "!php/array:YAML::ClassName"
@@ -21,7 +14,6 @@ load:
 dump:
   - merge
   - objects:
-    - "Datetime": {as: "timestamp#iso8601"}
     - Iterator:
       as: map
       label: "!php/hash:YAML::ClassName"

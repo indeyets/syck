@@ -26,6 +26,7 @@
 
 #include "php.h"
 #include "zend_exceptions.h"
+#include "zend_interfaces.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_syck.h"
@@ -70,8 +71,8 @@ typedef struct {
 	char *output;
 	size_t output_size;
 	size_t output_alloc;
-	zval **stack;
 	unsigned char level;
+	zval **stack;
 } php_syck_emitter_xtra;
 
 void psex_init(php_syck_emitter_xtra *ptr)
@@ -103,8 +104,13 @@ void psex_free(php_syck_emitter_xtra *ptr)
 void psex_add_output(php_syck_emitter_xtra *ptr, char *data, size_t len)
 {
 	while (ptr->output_size + len > ptr->output_alloc) {
-		ptr->output_alloc += 8192;
-		ptr->output = erealloc(ptr->output, ptr->output_alloc);
+		if (ptr->output_alloc == 0) {
+			ptr->output_alloc = 8192;
+			ptr->output = emalloc(ptr->output_alloc);
+		} else {
+			ptr->output_alloc += 8192;
+			ptr->output = erealloc(ptr->output, ptr->output_alloc);
+		}
 	}
 
 	strncpy(ptr->output + ptr->output_size, data, len);
@@ -195,6 +201,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				ZVAL_BOOL(o, 0);
 			} else if (strcmp(n->type_id, "bool") == 0) {
 				/* implicit boolean */
+				TSRMLS_FETCH();
 				char *ptr = n->data.str->ptr;
 				size_t len = n->data.str->len;
 
@@ -305,27 +312,35 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				ZVAL_DOUBLE(o, inf());
 			} else if (strcmp(n->type_id, "float#neginf") == 0) {
 				ZVAL_DOUBLE(o, -inf());
-			} else if (strcmp(n->type_id, "merge") == 0) {
-				/* This thing doesn't work, anyway */
-				/*
+			} else if (strncmp(n->type_id, "timestamp", 9) == 0) {
 				TSRMLS_FETCH();
-				object_init_ex(o, merge_key_entry);
-				*/
+				zval fname, param, *params[1];
+
+				ZVAL_STRING(&fname, "date_create", 1);
+				INIT_ZVAL(param);
+				params[0] = &param;
+				ZVAL_STRINGL(params[0], n->data.str->ptr, n->data.str->len, 1);
+
+				call_user_function(EG(function_table), NULL, &fname, o, 1, params TSRMLS_CC);
+
+				zval_dtor(&fname);
+				zval_dtor(params[0]);
 			} else {
+				php_error(E_NOTICE, "syck extension didn't handle %s type => treating as a string", n->type_id);
 				ZVAL_STRINGL(o, n->data.str->ptr, n->data.str->len, 1);
 			}
 		break;
 
 		case syck_seq_kind:
 		{
-			SYMID oid;
 			size_t i;
-			zval *o2;
 
 			array_init(o);
 
 			for (i = 0; i < n->data.list->idx; i++) {
-				oid = syck_seq_read(n, i);
+				SYMID oid = syck_seq_read(n, i);
+				zval *o2;
+
 				syck_lookup_sym(p, oid, (char **) &o2); /* retrieving child-node */
 
 				add_index_zval(o, i, o2);
@@ -338,6 +353,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 			SYMID oid;
 			size_t i;
 			zval *o2, *o3;
+			zval *res;
 
 			array_init(o);
 
@@ -359,6 +375,24 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 	}
 
 	return syck_add_sym(p, (char *)o); /* storing node */
+}
+
+SyckNode * php_syck_badanchor_handler(SyckParser *p, char *str)
+{
+	TSRMLS_FETCH();
+	SyckNode *res;
+	char *endl = p->cursor;
+
+	while (*endl != '\0' && *endl != '\n')
+		endl++;
+
+	endl[0] = '\0';
+
+	res = syck_alloc_str();
+
+	zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "bad anchor \"%s\" on line %d, col %d", str, p->linect, p->cursor - p->lineptr - strlen(str));
+
+	return res;
 }
 
 void php_syck_ehandler(SyckParser *p, char *str)
@@ -420,7 +454,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 		break;
 
 		case IS_STRING:
-			syck_emit_scalar(e, "string", scalar_none, 0, 0, 0, Z_STRVAL_P(data), Z_STRLEN_P(data));
+			syck_emit_scalar(e, "str", scalar_none, 0, 0, 0, Z_STRVAL_P(data), Z_STRLEN_P(data));
 		break;
 
 		case IS_ARRAY:
@@ -447,15 +481,16 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 				syck_emit_map(e, "table", map_none);
 
 				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
-					zval **ppzval, *kzval;
+					zval **ppzval, kzval;
 					char *key;
 					size_t key_len, idx;
 
 					zend_hash_get_current_key_ex(tbl, (char **)&key, (uint *)&key_len, &idx, 0, NULL);
 					zend_hash_get_current_data(tbl, (void **)&ppzval);
 
-					ZVAL_STRINGL(kzval, key, key_len - 1, 0);
-					if (psex_push_obj(bonus, kzval)) {
+					ZVAL_STRINGL(&kzval, key, key_len - 1, 1);
+
+					if (psex_push_obj(bonus, &kzval)) {
 						syck_emit_item(e, bonus->level);
 						psex_pop_obj(bonus);
 
@@ -465,6 +500,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 						}
 					}
 
+					zval_dtor(&kzval);
 				}
 
 				syck_emit_end(e);
@@ -473,6 +509,30 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 		break;
 
 		case IS_OBJECT:
+		{
+			TSRMLS_FETCH();
+			char *name;
+			zend_uint name_len;
+			zend_class_entry *ce = Z_OBJCE_P(data);
+
+			zend_get_object_classname(data, &name, &name_len TSRMLS_CC);
+
+			if (strncmp(name, "DateTime", name_len) == 0) {
+				zval *retval;
+				zval constant;
+
+				zend_get_constant("DateTime::ISO8601", 17, &constant TSRMLS_CC);
+				zend_call_method_with_1_params(&data, ce, NULL, "format", &retval, &constant);
+
+				zval_dtor(&constant);
+
+				syck_emit_scalar(e, "tag:yaml.org,2002:timestamp#iso8601", scalar_none, 0, 0, 0, Z_STRVAL_P(retval), Z_STRLEN_P(retval));
+				zval_dtor(retval);
+				efree(retval);
+			}
+
+			efree(name);
+		}
 		break;
 
 		case IS_RESOURCE:
@@ -509,6 +569,7 @@ PHP_FUNCTION(syck_load)
 	parser = syck_new_parser();
 
 	syck_parser_handler(parser, php_syck_handler);
+	syck_parser_bad_anchor_handler(parser, php_syck_badanchor_handler);
 	syck_parser_error_handler(parser, php_syck_ehandler);
 
 	syck_parser_implicit_typing(parser, 1);
@@ -521,7 +582,6 @@ PHP_FUNCTION(syck_load)
 	if (1 == syck_lookup_sym(parser, v, (char **) &obj)) {
 		*return_value = *obj;
 		zval_copy_ctor(return_value);
-
 		zval_ptr_dtor(&obj);
 	}
 
