@@ -10,6 +10,10 @@
 #ifndef SYCK_H
 #define SYCK_H
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
