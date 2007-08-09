@@ -454,16 +454,35 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 		break;
 
 		case IS_STRING:
-			syck_emit_scalar(e, "str", scalar_none, 0, 0, 0, Z_STRVAL_P(data), Z_STRLEN_P(data));
+			syck_emit_scalar(e, "str", scalar_2quote, 0, 0, 0, Z_STRVAL_P(data), Z_STRLEN_P(data));
 		break;
 
 		case IS_ARRAY:
 		{
 			HashTable *tbl = Z_ARRVAL_P(data);
+			int flat_and_short = false;
+
+			/* we try to detect if array is short and flat */
+			if (tbl->nNumOfElements <= 6) {
+				flat_and_short = true;
+
+				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
+					zval **ppzval;
+
+					zend_hash_get_current_data(tbl, (void **)&ppzval);
+
+					if (Z_TYPE_P(*ppzval) == IS_ARRAY || Z_TYPE_P(*ppzval) == IS_OBJECT) {
+						flat_and_short = false;
+					}
+				}
+			}
 
 			if (zend_hash_index_exists(tbl, 0)) {
 				/* indexed array */
-				syck_emit_seq(e, "table", seq_none);
+				if (flat_and_short)
+					syck_emit_seq(e, "table", seq_inline);
+				else
+					syck_emit_seq(e, "table", seq_none);
 
 				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
 					zval **ppzval;
@@ -478,7 +497,10 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 				syck_emit_end(e);
 			} else {
 				/* associative array */
-				syck_emit_map(e, "table", map_none);
+				if (flat_and_short)
+					syck_emit_map(e, "table", map_inline);
+				else
+					syck_emit_map(e, "table", map_none);
 
 				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
 					zval **ppzval, kzval;
