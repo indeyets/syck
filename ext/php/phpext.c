@@ -201,9 +201,9 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				ZVAL_BOOL(o, 0);
 			} else if (strcmp(n->type_id, "bool") == 0) {
 				/* implicit boolean */
-				TSRMLS_FETCH();
 				char *ptr = n->data.str->ptr;
 				size_t len = n->data.str->len;
+				TSRMLS_FETCH();
 
 				if (len == 1) {
 					if (ptr[0] == 'y' || ptr[0] == 'Y') {
@@ -237,8 +237,9 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "!bool specified, but value \"%s\" (len=%d) is incorrect on line %d, col %d: '%s'", ptr, len, p->linect, p->cursor - p->lineptr, p->lineptr);
 				}
 			} else if (strcmp(n->type_id, "int#hex") == 0) {
+				long intVal;
 				syck_str_blow_away_commas(n);
-				long intVal = strtol(n->data.str->ptr, NULL, 16);
+				intVal = strtol(n->data.str->ptr, NULL, 16);
 				ZVAL_LONG(o, intVal);
 			} else if (strcmp(n->type_id, "int#base60") == 0) {
 				char *ptr, *end;
@@ -267,12 +268,14 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 				ZVAL_LONG(o, total);
 			} else if (strcmp(n->type_id, "int#oct") == 0) {
+				long intVal;
 				syck_str_blow_away_commas(n);
-				long intVal = strtol(n->data.str->ptr, NULL, 8);
+				intVal = strtol(n->data.str->ptr, NULL, 8);
 				ZVAL_LONG(o, intVal);
 			} else if (strcmp(n->type_id, "int") == 0) {
+				long intVal;
 				syck_str_blow_away_commas(n);
-				long intVal = strtol(n->data.str->ptr, NULL, 10);
+				intVal = strtol(n->data.str->ptr, NULL, 10);
 				ZVAL_LONG(o, intVal);
 			} else if (strcmp(n->type_id, "float") == 0 || strcmp(n->type_id, "float#fix") == 0 || strcmp(n->type_id, "float#exp") == 0) {
 				double f;
@@ -313,8 +316,8 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 			} else if (strcmp(n->type_id, "float#neginf") == 0) {
 				ZVAL_DOUBLE(o, -inf());
 			} else if (strncmp(n->type_id, "timestamp", 9) == 0) {
-				TSRMLS_FETCH();
 				zval fname, param, *params[1];
+				TSRMLS_FETCH();
 
 				ZVAL_STRING(&fname, "date_create", 1);
 				INIT_ZVAL(param);
@@ -379,9 +382,9 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 SyckNode * php_syck_badanchor_handler(SyckParser *p, char *str)
 {
-	TSRMLS_FETCH();
 	SyckNode *res;
 	char *endl = p->cursor;
+	TSRMLS_FETCH();
 
 	while (*endl != '\0' && *endl != '\n')
 		endl++;
@@ -532,11 +535,12 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 
 		case IS_OBJECT:
 		{
-			TSRMLS_FETCH();
 			char *name;
 			zend_uint name_len;
-			zend_class_entry *ce = Z_OBJCE_P(data);
+			zend_class_entry *ce;
+			TSRMLS_FETCH();
 
+			ce = Z_OBJCE_P(data);
 			zend_get_object_classname(data, &name, &name_len TSRMLS_CC);
 
 			if (strncmp(name, "DateTime", name_len) == 0) {
