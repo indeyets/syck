@@ -31,7 +31,7 @@
 #include "ext/standard/info.h"
 #include "php_syck.h"
 
-#define PHP_SYCK_VERSION "@PACKAGE_VERSION@"
+#define PHP_SYCK_VERSION "0.9.2-dev"
 
 /**
  * SyckException class
@@ -133,6 +133,50 @@ zval * psex_pop_obj(php_syck_emitter_xtra *ptr)
 
 	return ptr->stack[(ptr->level)--];
 }
+
+
+
+
+/**
+ * returns
+ *   0 for sequential numeric arrays
+ *   1 for insequential or associative arrays
+ */
+static int psex_determine_array_type(HashTable *myht TSRMLS_DC) /* {{{ */
+{
+	int i = myht ? zend_hash_num_elements(myht) : 0;
+
+	if (i > 0) {
+		char *key;
+		uint key_len;
+		HashPosition pos;
+		ulong index, idx = 0;
+
+		zend_hash_internal_pointer_reset_ex(myht, &pos);
+
+		for (;; zend_hash_move_forward_ex(myht, &pos)) {
+			i = zend_hash_get_current_key_ex(myht, &key, &key_len, &index, 0, &pos);
+
+			if (i == HASH_KEY_NON_EXISTANT)
+				break;
+
+			if (i == HASH_KEY_IS_STRING) {
+				return 1;
+			} else {
+				if (index != idx) {
+					return 1;
+				}
+			}
+
+			idx++;
+		}
+	}
+
+	return 0;
+}
+
+
+
 
 function_entry syck_functions[] = {
 	PHP_FE(syck_load, NULL)
@@ -415,6 +459,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 {
 	php_syck_emitter_xtra *bonus = (php_syck_emitter_xtra *) e->bonus;
 	zval *data = bonus->stack[id];
+	TSRMLS_FETCH();
 
 	switch (Z_TYPE_P(data)) {
 		case IS_NULL:
@@ -480,7 +525,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 				}
 			}
 
-			if (zend_hash_index_exists(tbl, 0)) {
+			if (0 == psex_determine_array_type(tbl TSRMLS_CC)) {
 				/* indexed array */
 				if (flat_and_short)
 					syck_emit_seq(e, "table", seq_inline);
@@ -508,10 +553,17 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
 					zval **ppzval, kzval;
 					char *key;
-					size_t key_len, idx;
+					size_t key_len, idx, key_type;
 
 					zend_hash_get_current_key_ex(tbl, (char **)&key, (uint *)&key_len, &idx, 0, NULL);
 					zend_hash_get_current_data(tbl, (void **)&ppzval);
+					key_type = zend_hash_get_current_key_type_ex(tbl, NULL);
+
+					if (key_type == HASH_KEY_IS_LONG) {
+						key_len = 1 + snprintf(key, 0, "%ld", idx); /* getting size ("0" doesn't let output) */
+						key = emalloc(key_len);
+						snprintf(key, key_len, "%ld", idx);
+					}
 
 					ZVAL_STRINGL(&kzval, key, key_len - 1, 1);
 
@@ -526,6 +578,10 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 					}
 
 					zval_dtor(&kzval);
+
+					if (key_type == HASH_KEY_IS_LONG) {
+						efree(key);
+					}
 				}
 
 				syck_emit_end(e);
