@@ -150,7 +150,8 @@ class TestLoad extends PHPUnit_Framework_TestCase
         $this->assertEquals(syck_load('!php/array []'), array());
 
         // ArrayObject implements ArrayAccess: OK
-        $this->assertEquals(syck_load('!php/array:ArrayObject []'), array());
+        $this->assertEquals(syck_load('!php/array:ArrayObject []'), new ArrayObject());
+        $this->assertEquals(syck_load('!php/array:ArrayObject [1, 2, 3]'), new ArrayObject(array(1, 2, 3)));
 
         // SyckTestSomeClass doesn't implement ArrayAccess: FAILURE
         try {

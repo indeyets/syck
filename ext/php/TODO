@@ -7,17 +7,16 @@ General:
   - "add PHP6 (unicode strings) support"
 load:
   - objects:
-    - "!php/hash:YAML::ClassName"
-    - "!php/array:YAML::ClassName"
-    - "!php:YAML::ClassName (?)"
+    - "!php/hash:ClassName"
+    - "!php:ClassName (?)"
   - allow user to assign custom handler for loading any other type of objects (java, ruby, etc.)
 dump:
   - merge
   - objects:
     - Iterator:
       as: map
-      label: "!php/hash:YAML::ClassName"
+      label: "!php/hash:ClassName"
     - ArrayAccess:
       as: sequence
-      label: "!php/array:YAML::ClassName"
+      label: "!php/array:ClassName"
     - Generic object (?)

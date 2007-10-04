@@ -395,7 +395,8 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 					add_index_zval(o, i, o2);
 				}
 			} else if (strncmp(n->type_id, "php/array:", 10) == 0) {
-				/* some classm which implements ArrayAccess */
+				/* some class which implements ArrayIterator */
+				size_t i;
 				size_t classname_len = strlen(n->type_id) - 10;
 				char *classname = emalloc(classname_len + 1);
 				zend_class_entry **ce;
@@ -409,16 +410,30 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 					break;
 				}
 
-				if (0 == instanceof_function_ex(*ce, zend_ce_arrayaccess, 1 TSRMLS_CC)) {
-					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement ArrayAccess on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+				if (0 != instanceof_function_ex(*ce, zend_ce_arrayaccess, 1 TSRMLS_CC)) {
+					object_init_ex(o, *ce);
+
+					for (i = 0; i < n->data.list->idx; i++) {
+						SYMID oid = syck_seq_read(n, i);
+						zval *o2;
+						zval *key;
+
+						syck_lookup_sym(p, oid, (char **) &o2); /* retrieving child-node */
+
+						MAKE_STD_ZVAL(key);
+						ZVAL_LONG(key, i);
+
+						zend_call_method_with_2_params(&o, *ce, NULL, "offsetset", NULL, key, o2);
+						zval_ptr_dtor(&o2);
+						efree(key);
+					}
+				} else {
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement ArrayIterator on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
 					efree(classname);
 					break;
 				}
 
-				/*
-				 * TODO: add filling of ArrayAccess object with values
-				 */
-				array_init(o);
+
 
 				efree(classname);
 			} else {

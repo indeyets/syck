@@ -8,6 +8,7 @@
     - fixed dumping of mixed arrays and numeric-arrays starting from non-zero digit
     - added support for loading explicitly typed DateTime (with timestamp-compatible value)
     - fixed loading of maps with numeric keys
+    - added support for loading sequences into classes which implement ArrayAccess 
 
 - version: 0.9.1
   date: 2007-07-15
