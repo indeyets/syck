@@ -7,6 +7,9 @@ require_once "PHPUnit/Framework/TestCase.php";
 
 error_reporting(E_ALL);
 
+class SyckTestSomeClass {}
+
+
 class TestLoad extends PHPUnit_Framework_TestCase
 {
     //
@@ -135,5 +138,59 @@ class TestLoad extends PHPUnit_Framework_TestCase
         $this->assertType('DateTime', syck_load("2001-12-14 21:59:43.10 -05"));
         // date
         $this->assertType('DateTime', syck_load("2002-12-14"));
+
+        // explicit
+        $this->assertType('DateTime', syck_load("!php:YAML::Datetime 2002-12-14"));
+    }
+
+    public function testArray()
+    {
+        $this->assertEquals(syck_load('[]'), array());
+        $this->assertEquals(syck_load('[a, b, c]'), array('a', 'b', 'c'));
+        $this->assertEquals(syck_load('!php/array []'), array());
+
+        // ArrayObject implements ArrayAccess: OK
+        $this->assertEquals(syck_load('!php/array:ArrayObject []'), array());
+
+        // SyckTestSomeClass doesn't implement ArrayAccess: FAILURE
+        try {
+            syck_load('!php/array:SyckTestSomeClass []');
+            $this->assertTrue(false);
+        } catch (SyckException $e) {
+            $this->assertTrue(true);
+        }
+
+        // SyckTestOtherClass doesn't exist: FAILURE
+        try {
+            syck_load('!php/array:SyckTestOtherClass []');
+            $this->assertTrue(false);
+        } catch (SyckException $e) {
+            $this->assertTrue(true);
+        }
+    }
+
+    public function testHash()
+    {
+        $this->assertEquals(syck_load('{}'), array());
+        $this->assertEquals(syck_load('{0: a, 1: b, 2: c}'), array('a', 'b', 'c'));
+
+        // ArrayObject implements ArrayAccess: OK
+        $this->assertEquals(syck_load('!php/hash:ArrayObject {}'), array());
+
+        // SyckTestSomeClass doesn't implement ArrayAccess: FAILURE
+        try {
+            syck_load('!php/hash:SyckTestSomeClass {}');
+            $this->assertTrue(false);
+        } catch (SyckException $e) {
+            $this->assertTrue(true);
+        }
+
+        // SyckTestOtherClass doesn't exist: FAILURE
+        try {
+            syck_load('!php/hash:SyckTestOtherClass {}');
+            $this->assertTrue(false);
+        } catch (SyckException $e) {
+            $this->assertTrue(true);
+        }
     }
 }

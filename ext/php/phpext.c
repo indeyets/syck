@@ -359,7 +359,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				ZVAL_DOUBLE(o, inf());
 			} else if (strcmp(n->type_id, "float#neginf") == 0) {
 				ZVAL_DOUBLE(o, -inf());
-			} else if (strncmp(n->type_id, "timestamp", 9) == 0) {
+			} else if (strncmp(n->type_id, "timestamp", 9) == 0 || strcmp(n->type_id, "php:YAML::Datetime") == 0) {
 				zval fname, param, *params[1];
 				TSRMLS_FETCH();
 
@@ -380,42 +380,111 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 		case syck_seq_kind:
 		{
-			size_t i;
+			if (NULL == n->type_id || strcmp(n->type_id, "php/array") == 0) {
+				size_t i;
 
-			array_init(o);
+				/* Just an array */
+				array_init(o);
 
-			for (i = 0; i < n->data.list->idx; i++) {
-				SYMID oid = syck_seq_read(n, i);
-				zval *o2;
+				for (i = 0; i < n->data.list->idx; i++) {
+					SYMID oid = syck_seq_read(n, i);
+					zval *o2;
 
-				syck_lookup_sym(p, oid, (char **) &o2); /* retrieving child-node */
+					syck_lookup_sym(p, oid, (char **) &o2); /* retrieving child-node */
 
-				add_index_zval(o, i, o2);
+					add_index_zval(o, i, o2);
+				}
+			} else if (strncmp(n->type_id, "php/array:", 10) == 0) {
+				/* some classm which implements ArrayAccess */
+				size_t classname_len = strlen(n->type_id) - 10;
+				char *classname = emalloc(classname_len + 1);
+				zend_class_entry **ce;
+				TSRMLS_FETCH();
+
+				strncpy(classname, n->type_id + 10, classname_len + 1);
+
+				if (FAILURE == zend_lookup_class_ex(classname, classname_len, 1, &ce TSRMLS_CC)) {
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Couldn't find %s class on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					efree(classname);
+					break;
+				}
+
+				if (0 == instanceof_function_ex(*ce, zend_ce_arrayaccess, 1 TSRMLS_CC)) {
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement ArrayAccess on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					efree(classname);
+					break;
+				}
+
+				/*
+				 * TODO: add filling of ArrayAccess object with values
+				 */
+				array_init(o);
+
+				efree(classname);
+			} else {
+				/* something else */
+				php_error(E_NOTICE, "syck extension didn't handle %s type", n->type_id);
 			}
 		}
 		break;
 
 		case syck_map_kind:
 		{
-			SYMID oid;
-			size_t i;
-			zval *o2, *o3;
-			zval *res;
+			if (NULL == n->type_id || strcmp(n->type_id, "php/hash") == 0) {
+				SYMID oid;
+				size_t i;
+				zval *o2, *o3;
+				zval *res;
 
-			array_init(o);
+				array_init(o);
 
-			for (i = 0; i < n->data.pairs->idx; i++) {
-				oid = syck_map_read(n, map_key, i);
-				syck_lookup_sym(p, oid, (char **) &o2); /* retrieving key-node */
+				for (i = 0; i < n->data.pairs->idx; i++) {
+					oid = syck_map_read(n, map_key, i);
+					syck_lookup_sym(p, oid, (char **) &o2); /* retrieving key-node */
 
-				if (o2->type == IS_STRING) {
-					oid = syck_map_read(n, map_value, i);
-					syck_lookup_sym(p, oid, (char **) &o3); /* retrieving value-node */
+					if (o2->type == IS_STRING || o2->type == IS_LONG) {
+						oid = syck_map_read(n, map_value, i);
+						syck_lookup_sym(p, oid, (char **) &o3); /* retrieving value-node */
 
-					add_assoc_zval(o, o2->value.str.val, o3);
+						if (o2->type == IS_LONG) {
+							add_index_zval(o, Z_LVAL_P(o2), o3);
+						} else {
+							add_assoc_zval(o, Z_STRVAL_P(o2), o3);
+						}
+					}
+
+					zval_ptr_dtor(&o2);
+				}
+			} else if (strncmp(n->type_id, "php/hash:", 9) == 0) {
+				/* some classm which implements ArrayAccess */
+				size_t classname_len = strlen(n->type_id) - 9;
+				char *classname = emalloc(classname_len + 1);
+				zend_class_entry **ce;
+				TSRMLS_FETCH();
+
+				strncpy(classname, n->type_id + 9, classname_len + 1);
+
+				if (FAILURE == zend_lookup_class_ex(classname, classname_len, 1, &ce TSRMLS_CC)) {
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Couldn't find %s class on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					efree(classname);
+					break;
 				}
 
-				zval_ptr_dtor(&o2);
+				if (0 == instanceof_function_ex(*ce, zend_ce_arrayaccess, 1 TSRMLS_CC)) {
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement ArrayAccess on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					efree(classname);
+					break;
+				}
+
+				/*
+				 * TODO: add filling of ArrayAccess object with values
+				 */
+				array_init(o);
+
+				efree(classname);
+			} else {
+				/* something else */
+				php_error(E_NOTICE, "syck extension didn't handle %s type", n->type_id);
 			}
 		}
 		break;

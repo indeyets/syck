@@ -6,6 +6,8 @@
     - short-and-flat arrays are dumped using inline-mode now (for readability)
     - gcc-2.95 compatibility (patch by Brian J. France)
     - fixed dumping of mixed arrays and numeric-arrays starting from non-zero digit
+    - added support for loading explicitly typed DateTime (with timestamp-compatible value)
+    - fixed loading of maps with numeric keys
 
 - version: 0.9.1
   date: 2007-07-15
