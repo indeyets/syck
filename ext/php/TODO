@@ -12,8 +12,8 @@ dump:
   - objects:
     - Iterator:
       as: map
-      label: "!php/hash:ClassName"
+      label: "!php/hash::ClassName"
     - ArrayAccess:
       as: sequence
-      label: "!php/array:ClassName"
+      label: "!php/array::ClassName"
     - Generic object (?)

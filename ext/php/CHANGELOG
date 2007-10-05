@@ -7,11 +7,12 @@
     - fixed dumping of mixed arrays and numeric-arrays starting from non-zero digit
     - fixed loading of maps with numeric keys
     - short-and-flat arrays are dumped using inline-mode now (for readability)
+    - changed explicit type of DateTime class to be !php/object::DateTime
     - added support for loading explicitly typed DateTime (with timestamp-compatible value)
-    - added support for loading sequences into classes which implement ArrayAccess (!php/array:ClassName)
-    - added support for loading maps into classes which implement ArrayAccess (!php/hash:ClassName)
-    - added support for loading classes which implement Serializable (!php:ClassName)
-    - changed explicit type of DateTime class to be !php:DateTime
+    - added support for loading sequences into classes which implement ArrayAccess (!php/array::ClassName)
+    - added support for loading maps into classes which implement ArrayAccess (!php/hash::ClassName)
+    - added support for loading classes which implement Serializable (!php/object::ClassName)
+    - added support for dumping classes which implement Serializable (!php/object::ClassName)
 
 - version: 0.9.1
   date: 2007-07-15

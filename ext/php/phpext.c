@@ -359,7 +359,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				ZVAL_DOUBLE(o, inf());
 			} else if (strcmp(n->type_id, "float#neginf") == 0) {
 				ZVAL_DOUBLE(o, -inf());
-			} else if (strncmp(n->type_id, "timestamp", 9) == 0 || strcmp(n->type_id, "php:Datetime") == 0) {
+			} else if (strncmp(n->type_id, "timestamp", 9) == 0 || strcmp(n->type_id, "php/object::Datetime") == 0) {
 				zval fname, param, *params[1];
 				TSRMLS_FETCH();
 
@@ -372,15 +372,15 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 				zval_dtor(&fname);
 				zval_dtor(params[0]);
-			} else if (strncmp(n->type_id, "php:", 4) == 0) {
+			} else if (strncmp(n->type_id, "php/object::", 12) == 0) {
 				/* Some custom php-class packed in a string. Only ones implementing Serializable ar supported */
-				size_t classname_len = strlen(n->type_id) - 4;
+				size_t classname_len = strlen(n->type_id) - 12;
 				char *classname = emalloc(classname_len + 1);
 				zend_class_entry **ce;
 				zval param;
 				TSRMLS_FETCH();
 
-				strncpy(classname, n->type_id + 4, classname_len + 1);
+				strncpy(classname, n->type_id + 12, classname_len + 1);
 
 				if (FAILURE == zend_lookup_class_ex(classname, classname_len, 1, &ce TSRMLS_CC)) {
 					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Couldn't find %s class on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
@@ -420,15 +420,15 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 					add_index_zval(o, i, o2);
 				}
-			} else if (strncmp(n->type_id, "php/array:", 10) == 0) {
+			} else if (strncmp(n->type_id, "php/array::", 11) == 0) {
 				/* some class which implements ArrayAccess */
 				size_t i;
-				size_t classname_len = strlen(n->type_id) - 10;
+				size_t classname_len = strlen(n->type_id) - 11;
 				char *classname = emalloc(classname_len + 1);
 				zend_class_entry **ce;
 				TSRMLS_FETCH();
 
-				strncpy(classname, n->type_id + 10, classname_len + 1);
+				strncpy(classname, n->type_id + 11, classname_len + 1);
 
 				if (FAILURE == zend_lookup_class_ex(classname, classname_len, 1, &ce TSRMLS_CC)) {
 					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Couldn't find %s class on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
@@ -500,17 +500,17 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 					zval_ptr_dtor(&o2);
 				}
-			} else if (strncmp(n->type_id, "php/hash:", 9) == 0) {
+			} else if (strncmp(n->type_id, "php/hash::", 10) == 0) {
 				/* some classm which implements ArrayAccess */
 				SYMID oid;
 				size_t i;
 				zval *o2, *o3;
-				size_t classname_len = strlen(n->type_id) - 9;
+				size_t classname_len = strlen(n->type_id) - 10;
 				char *classname = emalloc(classname_len + 1);
 				zend_class_entry **ce;
 				TSRMLS_FETCH();
 
-				strncpy(classname, n->type_id + 9, classname_len + 1);
+				strncpy(classname, n->type_id + 10, classname_len + 1);
 
 				if (FAILURE == zend_lookup_class_ex(classname, classname_len, 1, &ce TSRMLS_CC)) {
 					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Couldn't find %s class on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
@@ -732,6 +732,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 			ce = Z_OBJCE_P(data);
 			zend_get_object_classname(data, &name, &name_len TSRMLS_CC);
 
+			/* DateTime is encoded as timestamp */
 			if (strncmp(name, "DateTime", name_len) == 0) {
 				zval *retval;
 				zval constant;
@@ -744,6 +745,20 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 				syck_emit_scalar(e, "tag:yaml.org,2002:timestamp#iso8601", scalar_none, 0, 0, 0, Z_STRVAL_P(retval), Z_STRLEN_P(retval));
 				zval_dtor(retval);
 				efree(retval);
+			} else {
+				if (0 != instanceof_function_ex(ce, zend_ce_serializable, 1 TSRMLS_CC)) {
+					char *prefix = "tag:php:object::";
+					size_t prefix_len = strlen(prefix) + 1;
+					char *tagname = emalloc(name_len + prefix_len);
+					zval *serialized;
+
+					snprintf(tagname, name_len + prefix_len, "%s%s", prefix, name);
+
+					zend_call_method_with_0_params(&data, ce, NULL, "serialize", &serialized);
+					syck_emit_scalar(e, tagname, scalar_2quote, 0, 0, 0, Z_STRVAL_P(serialized), Z_STRLEN_P(serialized));
+
+					efree(tagname);
+				}
 			}
 
 			efree(name);

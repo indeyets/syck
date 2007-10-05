@@ -4,11 +4,18 @@ if (!extension_loaded('syck'))
     dl('syck.so');
 
 require_once "PHPUnit/Framework/TestCase.php";
+require 'helpers.php';
 
 error_reporting(E_ALL);
 
 class TestDump extends PHPUnit_Framework_TestCase
 {
+    public function testNull()
+    {
+        $arr = array('qq' => null);
+        $this->assertEquals($arr, syck_load(syck_dump($arr)));
+    }
+
     public function testArray()
     {
         $arr = array('a', 'b', 'c', 'd');
@@ -45,5 +52,11 @@ class TestDump extends PHPUnit_Framework_TestCase
         $arr2 = syck_load($string);
 
         $this->assertEquals($arr2, $arr);
+    }
+
+    public function testSerializable()
+    {
+        $obj = new MySerializable('some string');
+        $this->assertEquals($obj, syck_load(syck_dump($obj)));
     }
 }

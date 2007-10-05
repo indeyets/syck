@@ -4,35 +4,10 @@ if (!extension_loaded('syck'))
     dl('syck.so');
 
 require_once "PHPUnit/Framework/TestCase.php";
+require 'helpers.php';
 
 error_reporting(E_ALL);
 
-class SyckTestSomeClass {}
-
-class MySerializable implements Serializable
-{
-    private $string = null;
-
-    public function __construct()
-    {
-        throw new Exception('This is not supposed to be called');
-    }
-
-    public function serialize()
-    {
-        return 'test';
-    }
-
-    public function unserialize($string)
-    {
-        $this->string = $string;
-    }
-
-    public function test()
-    {
-        return $this->string;
-    }
-}
 
 class TestLoad extends PHPUnit_Framework_TestCase
 {
@@ -164,7 +139,7 @@ class TestLoad extends PHPUnit_Framework_TestCase
         $this->assertType('DateTime', syck_load("2002-12-14"));
 
         // explicit
-        $this->assertType('DateTime', syck_load("!php:Datetime 2002-12-14"));
+        $this->assertType('DateTime', syck_load("!php/object::Datetime 2002-12-14"));
     }
 
     public function testArray()
@@ -174,12 +149,12 @@ class TestLoad extends PHPUnit_Framework_TestCase
         $this->assertEquals(syck_load('!php/array []'), array());
 
         // ArrayObject implements ArrayAccess: OK
-        $this->assertEquals(syck_load('!php/array:ArrayObject []'), new ArrayObject());
-        $this->assertEquals(syck_load('!php/array:ArrayObject [1, 2, 3]'), new ArrayObject(array(1, 2, 3)));
+        $this->assertEquals(syck_load('!php/array::ArrayObject []'), new ArrayObject());
+        $this->assertEquals(syck_load('!php/array::ArrayObject [1, 2, 3]'), new ArrayObject(array(1, 2, 3)));
 
         // SyckTestSomeClass doesn't implement ArrayAccess: FAILURE
         try {
-            syck_load('!php/array:SyckTestSomeClass []');
+            syck_load('!php/array::SyckTestSomeClass []');
             $this->assertTrue(false);
         } catch (SyckException $e) {
             $this->assertTrue(true);
@@ -187,7 +162,7 @@ class TestLoad extends PHPUnit_Framework_TestCase
 
         // SyckTestOtherClass doesn't exist: FAILURE
         try {
-            syck_load('!php/array:SyckTestOtherClass []');
+            syck_load('!php/array::SyckTestOtherClass []');
             $this->assertTrue(false);
         } catch (SyckException $e) {
             $this->assertTrue(true);
@@ -200,15 +175,15 @@ class TestLoad extends PHPUnit_Framework_TestCase
         $this->assertEquals(syck_load('{0: a, 1: b, 2: c}'), array('a', 'b', 'c'));
 
         // ArrayObject implements ArrayAccess: OK
-        $this->assertEquals(new ArrayObject(), syck_load('!php/hash:ArrayObject {}'));
+        $this->assertEquals(new ArrayObject(), syck_load('!php/hash::ArrayObject {}'));
         $this->assertEquals(
             new ArrayObject(array('a' => 1, 'b' => 2, 3 => 3, 4 => 'd', 'e' => 5)),
-            syck_load('!php/hash:ArrayObject {a: 1, b: 2, 3: 3, 4: d, e: 5}')
+            syck_load('!php/hash::ArrayObject {a: 1, b: 2, 3: 3, 4: d, e: 5}')
         );
 
         // SyckTestSomeClass doesn't implement ArrayAccess: FAILURE
         try {
-            syck_load('!php/hash:SyckTestSomeClass {}');
+            syck_load('!php/hash::SyckTestSomeClass {}');
             $this->assertTrue(false);
         } catch (SyckException $e) {
             $this->assertTrue(true);
@@ -216,7 +191,7 @@ class TestLoad extends PHPUnit_Framework_TestCase
 
         // SyckTestOtherClass doesn't exist: FAILURE
         try {
-            syck_load('!php/hash:SyckTestOtherClass {}');
+            syck_load('!php/hash::SyckTestOtherClass {}');
             $this->assertTrue(false);
         } catch (SyckException $e) {
             $this->assertTrue(true);
@@ -225,7 +200,7 @@ class TestLoad extends PHPUnit_Framework_TestCase
 
     public function testSerializable()
     {
-        $obj = syck_load('!php:MySerializable teststring');
+        $obj = syck_load('!php/object::MySerializable teststring');
 
         $this->assertType('MySerializable', $obj);
         $this->assertSame('teststring', $obj->test());
