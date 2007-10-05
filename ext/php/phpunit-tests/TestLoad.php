@@ -164,7 +164,7 @@ class TestLoad extends PHPUnit_Framework_TestCase
         $this->assertType('DateTime', syck_load("2002-12-14"));
 
         // explicit
-        $this->assertType('DateTime', syck_load("!php:YAML::Datetime 2002-12-14"));
+        $this->assertType('DateTime', syck_load("!php:Datetime 2002-12-14"));
     }
 
     public function testArray()

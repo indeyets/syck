@@ -359,7 +359,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				ZVAL_DOUBLE(o, inf());
 			} else if (strcmp(n->type_id, "float#neginf") == 0) {
 				ZVAL_DOUBLE(o, -inf());
-			} else if (strncmp(n->type_id, "timestamp", 9) == 0 || strcmp(n->type_id, "php:YAML::Datetime") == 0) {
+			} else if (strncmp(n->type_id, "timestamp", 9) == 0 || strcmp(n->type_id, "php:Datetime") == 0) {
 				zval fname, param, *params[1];
 				TSRMLS_FETCH();
 
@@ -373,6 +373,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				zval_dtor(&fname);
 				zval_dtor(params[0]);
 			} else if (strncmp(n->type_id, "php:", 4) == 0) {
+				/* Some custom php-class packed in a string. Only ones implementing Serializable ar supported */
 				size_t classname_len = strlen(n->type_id) - 4;
 				char *classname = emalloc(classname_len + 1);
 				zend_class_entry **ce;
