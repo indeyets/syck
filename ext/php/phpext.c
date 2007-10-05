@@ -395,7 +395,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 					add_index_zval(o, i, o2);
 				}
 			} else if (strncmp(n->type_id, "php/array:", 10) == 0) {
-				/* some class which implements ArrayIterator */
+				/* some class which implements ArrayAccess */
 				size_t i;
 				size_t classname_len = strlen(n->type_id) - 10;
 				char *classname = emalloc(classname_len + 1);
@@ -427,8 +427,12 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 						zval_ptr_dtor(&o2);
 						efree(key);
 					}
+
+					if (zend_hash_exists(&(*ce)->function_table, "__wakeup", 9)) {
+						zend_call_method_with_0_params(&o, *ce, NULL, "__wakeup", NULL);
+					}
 				} else {
-					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement ArrayIterator on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement ArrayAccess on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
 					efree(classname);
 					break;
 				}
@@ -472,6 +476,9 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				}
 			} else if (strncmp(n->type_id, "php/hash:", 9) == 0) {
 				/* some classm which implements ArrayAccess */
+				SYMID oid;
+				size_t i;
+				zval *o2, *o3;
 				size_t classname_len = strlen(n->type_id) - 9;
 				char *classname = emalloc(classname_len + 1);
 				zend_class_entry **ce;
@@ -491,10 +498,26 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 					break;
 				}
 
-				/*
-				 * TODO: add filling of ArrayAccess object with values
-				 */
-				array_init(o);
+				object_init_ex(o, *ce);
+
+				for (i = 0; i < n->data.pairs->idx; i++) {
+					oid = syck_map_read(n, map_key, i);
+					syck_lookup_sym(p, oid, (char **) &o2); /* retrieving key-node */
+
+					if (o2->type == IS_STRING || o2->type == IS_LONG) {
+						oid = syck_map_read(n, map_value, i);
+						syck_lookup_sym(p, oid, (char **) &o3); /* retrieving value-node */
+
+						zend_call_method_with_2_params(&o, *ce, NULL, "offsetset", NULL, o2, o3);
+						zval_ptr_dtor(&o3);
+					}
+
+					zval_ptr_dtor(&o2);
+				}
+
+				if (zend_hash_exists(&(*ce)->function_table, "__wakeup", 9)) {
+					zend_call_method_with_0_params(&o, *ce, NULL, "__wakeup", NULL);
+				}
 
 				efree(classname);
 			} else {

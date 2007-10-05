@@ -8,7 +8,8 @@
     - fixed dumping of mixed arrays and numeric-arrays starting from non-zero digit
     - added support for loading explicitly typed DateTime (with timestamp-compatible value)
     - fixed loading of maps with numeric keys
-    - added support for loading sequences into classes which implement ArrayAccess 
+    - added support for loading sequences into classes which implement ArrayAccess (!php/array:ClassName)
+    - added support for loading maps into classes which implement ArrayAccess (!php/hash:ClassName)
 
 - version: 0.9.1
   date: 2007-07-15
