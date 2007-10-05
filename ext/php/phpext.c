@@ -141,7 +141,7 @@ zval * psex_pop_obj(php_syck_emitter_xtra *ptr)
  * returns
  *   0 for sequential numeric arrays
  *   1 for insequential or associative arrays
- */
+**/
 static int psex_determine_array_type(HashTable *myht TSRMLS_DC) /* {{{ */
 {
 	int i = myht ? zend_hash_num_elements(myht) : 0;
@@ -372,6 +372,31 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 				zval_dtor(&fname);
 				zval_dtor(params[0]);
+			} else if (strncmp(n->type_id, "php:", 4) == 0) {
+				size_t classname_len = strlen(n->type_id) - 4;
+				char *classname = emalloc(classname_len + 1);
+				zend_class_entry **ce;
+				zval param;
+				TSRMLS_FETCH();
+
+				strncpy(classname, n->type_id + 4, classname_len + 1);
+
+				if (FAILURE == zend_lookup_class_ex(classname, classname_len, 1, &ce TSRMLS_CC)) {
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Couldn't find %s class on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					efree(classname);
+					break;
+				}
+
+				if (0 == instanceof_function_ex(*ce, zend_ce_serializable, 1 TSRMLS_CC)) {
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement Serializable on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					efree(classname);
+					break;
+				}
+				efree(classname);
+
+				object_init_ex(o, *ce);
+				ZVAL_STRINGL(&param, n->data.str->ptr, n->data.str->len, 1);
+				zend_call_method_with_1_params(&o, *ce, NULL, "unserialize", NULL, &param);
 			} else {
 				php_error(E_NOTICE, "syck extension didn't handle %s type => treating as a string", n->type_id);
 				ZVAL_STRINGL(o, n->data.str->ptr, n->data.str->len, 1);

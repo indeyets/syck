@@ -9,6 +9,30 @@ error_reporting(E_ALL);
 
 class SyckTestSomeClass {}
 
+class MySerializable implements Serializable
+{
+    private $string = null;
+
+    public function __construct()
+    {
+        throw new Exception('This is not supposed to be called');
+    }
+
+    public function serialize()
+    {
+        return 'test';
+    }
+
+    public function unserialize($string)
+    {
+        $this->string = $string;
+    }
+
+    public function test()
+    {
+        return $this->string;
+    }
+}
 
 class TestLoad extends PHPUnit_Framework_TestCase
 {
@@ -197,5 +221,13 @@ class TestLoad extends PHPUnit_Framework_TestCase
         } catch (SyckException $e) {
             $this->assertTrue(true);
         }
+    }
+
+    public function testSerializable()
+    {
+        $obj = syck_load('!php:MySerializable teststring');
+
+        $this->assertType('MySerializable', $obj);
+        $this->assertSame('teststring', $obj->test());
     }
 }
