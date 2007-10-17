@@ -31,6 +31,11 @@
 #include "ext/standard/info.h"
 #include "php_syck.h"
 
+#ifndef true
+# define true 1
+# define false 0
+#endif
+
 #define PHP_SYCK_VERSION "0.9.2-dev"
 
 /**
@@ -686,9 +691,11 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
 					zval **ppzval, kzval;
 					char *key;
-					size_t key_len, idx, key_type;
+					uint key_len;
+					ulong idx;
+					size_t key_type;
 
-					zend_hash_get_current_key_ex(tbl, (char **)&key, (uint *)&key_len, &idx, 0, NULL);
+					zend_hash_get_current_key_ex(tbl, (char **)&key, &key_len, &idx, 0, NULL);
 					zend_hash_get_current_data(tbl, (void **)&ppzval);
 					key_type = zend_hash_get_current_key_type_ex(tbl, NULL);
 
