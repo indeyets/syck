@@ -59,4 +59,10 @@ class TestDump extends PHPUnit_Framework_TestCase
         $obj = new MySerializable('some string');
         $this->assertEquals($obj, syck_load(syck_dump($obj)));
     }
+
+    public function testDatetime()
+    {
+        $obj = new DateTime();
+        $this->assertEquals($obj, syck_load(syck_dump($obj)));
+    }
 }

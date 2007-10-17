@@ -382,7 +382,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				size_t classname_len = strlen(n->type_id) - 12;
 				char *classname = emalloc(classname_len + 1);
 				zend_class_entry **ce;
-				zval param;
+				zval *param;
 				TSRMLS_FETCH();
 
 				strncpy(classname, n->type_id + 12, classname_len + 1);
@@ -401,8 +401,10 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				efree(classname);
 
 				object_init_ex(o, *ce);
-				ZVAL_STRINGL(&param, n->data.str->ptr, n->data.str->len, 1);
-				zend_call_method_with_1_params(&o, *ce, NULL, "unserialize", NULL, &param);
+				MAKE_STD_ZVAL(param);
+				ZVAL_STRINGL(param, n->data.str->ptr, n->data.str->len, 1);
+				zend_call_method_with_1_params(&o, *ce, NULL, "unserialize", NULL, param);
+				zval_ptr_dtor(&param);
 			} else {
 				php_error(E_NOTICE, "syck extension didn't handle %s type => treating as a string", n->type_id);
 				ZVAL_STRINGL(o, n->data.str->ptr, n->data.str->len, 1);
