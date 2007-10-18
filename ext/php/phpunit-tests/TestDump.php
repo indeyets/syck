@@ -65,4 +65,16 @@ class TestDump extends PHPUnit_Framework_TestCase
         $obj = new DateTime();
         $this->assertEquals($obj, syck_load(syck_dump($obj)));
     }
+
+    public function testNumericStrings()
+    {
+        $obj = '73,123';
+        $this->assertSame($obj, syck_load(syck_dump($obj)));
+    }
+
+    public function testLargeArrays()
+    {
+        $obj = range(1, 10000);
+        $this->assertSame($obj, syck_load(syck_dump($obj)));
+    }
 }
