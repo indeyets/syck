@@ -3,10 +3,12 @@
 if (!extension_loaded('syck'))
     dl('syck.so');
 
+date_default_timezone_set('GMT');
+
 require_once "PHPUnit/Framework/TestCase.php";
 require 'helpers.php';
 
-error_reporting(E_ALL);
+error_reporting(E_ALL | E_STRICT);
 
 
 class TestLoad extends PHPUnit_Framework_TestCase
