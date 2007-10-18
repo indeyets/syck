@@ -149,8 +149,8 @@ class TestLoad extends PHPUnit_Framework_TestCase
         $this->assertEquals(syck_load('!php/array []'), array());
 
         // ArrayObject implements ArrayAccess: OK
-        $this->assertEquals(syck_load('!php/array::ArrayObject []'), new ArrayObject());
-        $this->assertEquals(syck_load('!php/array::ArrayObject [1, 2, 3]'), new ArrayObject(array(1, 2, 3)));
+        $this->assertEquals(new ArrayObject(), syck_load('!php/array::ArrayObject []'));
+        $this->assertEquals(new ArrayObject(array(1, 2, 3), syck_load('!php/array::ArrayObject [1, 2, 3]')));
 
         // SyckTestSomeClass doesn't implement ArrayAccess: FAILURE
         try {
@@ -171,8 +171,8 @@ class TestLoad extends PHPUnit_Framework_TestCase
 
     public function testHash()
     {
-        $this->assertEquals(syck_load('{}'), array());
-        $this->assertEquals(syck_load('{0: a, 1: b, 2: c}'), array('a', 'b', 'c'));
+        $this->assertEquals(array(), syck_load('{}'));
+        $this->assertEquals(array('a', 'b', 'c'), syck_load('{0: a, 1: b, 2: c}'));
 
         // ArrayObject implements ArrayAccess: OK
         $this->assertEquals(new ArrayObject(), syck_load('!php/hash::ArrayObject {}'));
