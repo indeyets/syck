@@ -152,7 +152,7 @@ static int psex_determine_array_type(HashTable *myht TSRMLS_DC) /* {{{ */
 	int i = myht ? zend_hash_num_elements(myht) : 0;
 
 	if (i > 0) {
-		char *key;
+		char *key = NULL;
 		uint key_len;
 		HashPosition pos;
 		ulong index, idx = 0;
@@ -291,7 +291,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				intVal = strtol(n->data.str->ptr, NULL, 16);
 				ZVAL_LONG(o, intVal);
 			} else if (strcmp(n->type_id, "int#base60") == 0) {
-				char *ptr, *end;
+				char *ptr = NULL, *end = NULL;
 				long sixty = 1;
 				long total = 0;
 
@@ -333,7 +333,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 				ZVAL_DOUBLE(o, f);
 			} else if (strcmp(n->type_id, "float#base60") == 0) {
-				char *ptr, *end;
+				char *ptr = NULL, *end = NULL;
 				long multiplier = 1;
 				double total = 0;
 
@@ -626,7 +626,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 		case IS_LONG:
 		{
 			size_t res_size;
-			char *res;
+			char *res = NULL;
 
 			res_size = snprintf(res, 0, "%ld", Z_LVAL_P(data)); /* getting size ("0" doesn't let output) */
 			res = emalloc(res_size + 1);
@@ -640,7 +640,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 		case IS_DOUBLE:
 		{
 			size_t res_size;
-			char *res;
+			char *res = NULL;
 
 			res_size = snprintf(res, 0, "%f", Z_DVAL_P(data)); /* getting size ("0" doesn't let output) */
 			res = emalloc(res_size + 1);
@@ -702,7 +702,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 
 				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
 					zval **ppzval = NULL, kzval;
-					char *key;
+					char *key = NULL;
 					uint key_len;
 					ulong idx;
 					size_t key_type;
@@ -743,7 +743,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 
 		case IS_OBJECT:
 		{
-			char *name;
+			char *name = NULL;
 			zend_uint name_len;
 			zend_class_entry *ce;
 			TSRMLS_FETCH();
