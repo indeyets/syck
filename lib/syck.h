@@ -57,7 +57,7 @@ extern "C" {
 #endif
 
 #if DEBUG
-  void syck_assert( char *, unsigned );
+  void syck_assert( const char *, unsigned );
 # define ASSERT(f) \
     if ( f ) \
         {}   \
@@ -180,8 +180,8 @@ typedef struct _syck_str SyckIoStr;
 typedef struct _syck_level SyckLevel;
 
 typedef SYMID (*SyckNodeHandler)(SyckParser *, SyckNode *);
-typedef void (*SyckErrorHandler)(SyckParser *, char *);
-typedef SyckNode * (*SyckBadAnchorHandler)(SyckParser *, char *);
+typedef void (*SyckErrorHandler)(SyckParser *, const char *);
+typedef SyckNode * (*SyckBadAnchorHandler)(SyckParser *, const char *);
 typedef long (*SyckIoFileRead)(char *, SyckIoFile *, long, long); 
 typedef long (*SyckIoStrRead)(char *, SyckIoStr *, long, long);
 
@@ -226,7 +226,7 @@ struct _syck_file {
 
 struct _syck_str {
     /* String buffer pointers */
-    char *beg, *ptr, *end;
+    const char *beg, *ptr, *end;
     /* Function which string -> buffer */
     SyckIoStrRead read;
 };
@@ -294,7 +294,7 @@ struct _syck_parser {
 typedef struct _syck_emitter SyckEmitter;
 typedef struct _syck_emitter_node SyckEmitterNode;
 
-typedef void (*SyckOutputHandler)(SyckEmitter *, char *, long); 
+typedef void (*SyckOutputHandler)(SyckEmitter *, const char *, long); 
 typedef void (*SyckEmitterHandler)(SyckEmitter *, st_data_t); 
 
 enum doc_stage {
@@ -378,7 +378,7 @@ int syck_lookup_sym( SyckParser *, SYMID, char ** );
 int syck_try_implicit( SyckNode * );
 char *syck_type_id_to_uri( char * );
 void try_tag_implicit( SyckNode *, int );
-char *syck_match_implicit( char *, size_t );
+char *syck_match_implicit( const char *, size_t );
 
 /*
  * API prototypes
@@ -386,8 +386,8 @@ char *syck_match_implicit( char *, size_t );
 char *syck_strndup( const char *, long );
 long syck_io_file_read( char *, SyckIoFile *, long, long );
 long syck_io_str_read( char *, SyckIoStr *, long, long );
-char *syck_base64enc( char *, long );
-char *syck_base64dec( char *, long );
+char *syck_base64enc( const char *, long );
+char *syck_base64dec( const char *, long );
 SyckEmitter *syck_new_emitter( void );
 SYMID syck_emitter_mark_node( SyckEmitter *, st_data_t );
 void syck_emitter_ignore_id( SyckEmitter *, SYMID );
@@ -396,17 +396,17 @@ void syck_emitter_handler( SyckEmitter *, SyckEmitterHandler );
 void syck_free_emitter( SyckEmitter * );
 void syck_emitter_clear( SyckEmitter * );
 void syck_emitter_write( SyckEmitter *, const char *, long );
-void syck_emitter_escape( SyckEmitter *, char *, long );
+void syck_emitter_escape( SyckEmitter *, const char *, long );
 void syck_emitter_flush( SyckEmitter *, long );
 void syck_emit( SyckEmitter *, st_data_t );
-void syck_emit_scalar( SyckEmitter *, char *, enum scalar_style, int, int, char, char *, long );
-void syck_emit_1quoted( SyckEmitter *, int, char *, long );
-void syck_emit_2quoted( SyckEmitter *, int, char *, long );
-void syck_emit_folded( SyckEmitter *, int, char, char *, long );
-void syck_emit_literal( SyckEmitter *, char, char *, long );
-void syck_emit_seq( SyckEmitter *, char *, enum seq_style );
+void syck_emit_scalar( SyckEmitter *, const char *, enum scalar_style, int, int, char, const char *, long );
+void syck_emit_1quoted( SyckEmitter *, int, const char *, long );
+void syck_emit_2quoted( SyckEmitter *, int, const char *, long );
+void syck_emit_folded( SyckEmitter *, int, char, const char *, long );
+void syck_emit_literal( SyckEmitter *, char, const char *, long );
+void syck_emit_seq( SyckEmitter *, const char *, enum seq_style );
 void syck_emit_item( SyckEmitter *, st_data_t );
-void syck_emit_map( SyckEmitter *, char *, enum map_style );
+void syck_emit_map( SyckEmitter *, const char *, enum map_style );
 void syck_emit_end( SyckEmitter * );
 void syck_emit_tag( SyckEmitter *, const char *, const char * );
 void syck_emit_indent( SyckEmitter * );
@@ -420,13 +420,13 @@ void syck_free_parser( SyckParser * );
 void syck_parser_set_root_on_error( SyckParser *, SYMID );
 void syck_parser_implicit_typing( SyckParser *, int );
 void syck_parser_taguri_expansion( SyckParser *, int );
-int syck_scan_scalar( int, char *, long );
+int syck_scan_scalar( int, const char *, long );
 void syck_parser_handler( SyckParser *, SyckNodeHandler );
 void syck_parser_error_handler( SyckParser *, SyckErrorHandler );
 void syck_parser_bad_anchor_handler( SyckParser *, SyckBadAnchorHandler );
 void syck_parser_file( SyckParser *, FILE *, SyckIoFileRead );
-void syck_parser_str( SyckParser *, char *, long, SyckIoStrRead );
-void syck_parser_str_auto( SyckParser *, char *, SyckIoStrRead );
+void syck_parser_str( SyckParser *, const char *, long, SyckIoStrRead );
+void syck_parser_str_auto( SyckParser *, const char *, SyckIoStrRead );
 SyckLevel *syck_parser_current_level( SyckParser * );
 void syck_parser_add_level( SyckParser *, int, enum syck_level_status );
 void syck_parser_pop_level( SyckParser * );
@@ -434,9 +434,9 @@ void free_any_io( SyckParser * );
 long syck_parser_read( SyckParser * );
 long syck_parser_readlen( SyckParser *, long );
 SYMID syck_parse( SyckParser * );
-void syck_default_error_handler( SyckParser *, char * );
+void syck_default_error_handler( SyckParser *, const char * );
 SYMID syck_yaml2byte_handler( SyckParser *, SyckNode * );
-char *syck_yaml2byte( char * );
+char *syck_yaml2byte( const char * );
 
 /*
  * Allocation prototypes
@@ -448,8 +448,8 @@ void syck_free_node( SyckNode * );
 void syck_free_members( SyckNode * );
 SyckNode *syck_new_str( const char *, enum scalar_style );
 SyckNode *syck_new_str2( const char *, long, enum scalar_style );
-void syck_replace_str( SyckNode *, char *, enum scalar_style );
-void syck_replace_str2( SyckNode *, char *, long, enum scalar_style );
+void syck_replace_str( SyckNode *, const char *, enum scalar_style );
+void syck_replace_str2( SyckNode *, const char *, long, enum scalar_style );
 void syck_str_blow_away_commas( SyckNode * );
 char *syck_str_read( SyckNode * );
 SyckNode *syck_new_map( SYMID, SYMID );
@@ -469,7 +469,7 @@ long syck_seq_count( SyckNode * );
 /*
  * Lexer prototypes
  */
-void syckerror( char * );
+void syckerror( const char * );
 int syckparse( void * );
 
 #if defined(__cplusplus)

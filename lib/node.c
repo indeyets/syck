@@ -120,13 +120,13 @@ syck_new_str2( const char *str, long len, enum scalar_style style )
 }
 
 void
-syck_replace_str( SyckNode *n, char *str, enum scalar_style style )
+syck_replace_str( SyckNode *n, const char *str, enum scalar_style style )
 {
     syck_replace_str2( n, str, strlen( str ), style );
 }
 
 void
-syck_replace_str2( SyckNode *n, char *str, long len, enum scalar_style style )
+syck_replace_str2( SyckNode *n, const char *str, long len, enum scalar_style style )
 {
     if ( n->data.str != NULL ) 
     {

@@ -106,7 +106,7 @@ void psex_free(php_syck_emitter_xtra *ptr)
 	ptr->level = 0;
 }
 
-void psex_add_output(php_syck_emitter_xtra *ptr, char *data, size_t len)
+void psex_add_output(php_syck_emitter_xtra *ptr, const char *data, size_t len)
 {
 	while (ptr->output_size + len > ptr->output_alloc) {
 		if (ptr->output_alloc == 0) {
@@ -564,7 +564,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 	return syck_add_sym(p, (char *)o); /* storing node */
 }
 
-SyckNode * php_syck_badanchor_handler(SyckParser *p, char *str)
+SyckNode * php_syck_badanchor_handler(SyckParser *p, const char *str)
 {
 	SyckNode *res;
 	char *endl = p->cursor;
@@ -582,7 +582,7 @@ SyckNode * php_syck_badanchor_handler(SyckParser *p, char *str)
 	return res;
 }
 
-void php_syck_ehandler(SyckParser *p, char *str)
+void php_syck_ehandler(SyckParser *p, const char *str)
 {
 	char *endl = p->cursor;
 	TSRMLS_FETCH();
@@ -781,7 +781,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 	}
 }
 
-void php_syck_output_handler(SyckEmitter *e, char *str, long len)
+void php_syck_output_handler(SyckEmitter *e, const char *str, long len)
 {
 	php_syck_emitter_xtra *bonus = (php_syck_emitter_xtra *) e->bonus;
 	psex_add_output(bonus, str, (size_t)len);

@@ -17,7 +17,7 @@ void syck_parser_pop_level( SyckParser * );
  * Custom assert
  */
 void 
-syck_assert( char *file_name, unsigned line_num )
+syck_assert( const char *file_name, unsigned line_num )
 {
     fflush( NULL );
     fprintf( stderr, "\nAssertion failed: %s, line %u\n",
@@ -62,7 +62,7 @@ syck_io_file_read( char *buf, SyckIoFile *file, long max_size, long skip )
 long
 syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
 {
-    char *beg;
+    const char *beg;
     long len = 0;
 
     ASSERT( str != NULL );
@@ -312,7 +312,7 @@ syck_parser_file( SyckParser *p, FILE *fp, SyckIoFileRead read )
 }
 
 void
-syck_parser_str( SyckParser *p, char *ptr, long len, SyckIoStrRead read )
+syck_parser_str( SyckParser *p, const char *ptr, long len, SyckIoStrRead read )
 {
     ASSERT( p != NULL );
     free_any_io( p );
@@ -333,7 +333,7 @@ syck_parser_str( SyckParser *p, char *ptr, long len, SyckIoStrRead read )
 }
 
 void
-syck_parser_str_auto( SyckParser *p, char *ptr, SyckIoStrRead read )
+syck_parser_str_auto( SyckParser *p, const char *ptr, SyckIoStrRead read )
 {
     syck_parser_str( p, ptr, strlen( ptr ), read );
 }
@@ -494,7 +494,7 @@ syck_parse( SyckParser *p )
 }
 
 void
-syck_default_error_handler( SyckParser *p, char *msg )
+syck_default_error_handler( SyckParser *p, const char *msg )
 {
     printf( "Error at [Line %d, Col %d]: %s\n", 
         p->linect,

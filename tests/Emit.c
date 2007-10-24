@@ -15,7 +15,7 @@
 // 1. Test the buffering -- print 10 bytes at a time
 //
 void
-TestSyckEmit_Output( SyckEmitter *e, char *str, long len )
+TestSyckEmit_Output( SyckEmitter *e, const char *str, long len )
 {
     // char *tmp = syck_strndup( str, len );
     // printf( "OUT: %s [%d]\n", tmp, len );

@@ -212,7 +212,7 @@ syck_yaml2byte_handler(p, n)
 }
 
 char *
-syck_yaml2byte(char *yamlstr)
+syck_yaml2byte(const char *yamlstr)
 {
     SYMID oid;
     char *ret;
