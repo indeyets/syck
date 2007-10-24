@@ -29,7 +29,7 @@ syck_base64enc( const char *s, long len )
 {
     long i = 0;
     int padding = '=';
-    char *buff = S_ALLOC_N(char, len * 4 / 3 + 6);
+    char *buff = S_ALLOC_N(char, 1 + len * 4 / 3 + 6);
 
     while (len >= 3) {
         buff[i++] = b64_table[077 & (*s >> 2)];
@@ -52,6 +52,9 @@ syck_base64enc( const char *s, long len )
         buff[i++] = padding;
     }
     buff[i++] = '\n';
+
+    buff[i] = '\0';
+
     return buff;
 }
 
