@@ -20,6 +20,8 @@
 #define SYCK_VERSION    "0.61"
 #define YAML_DOMAIN     "yaml.org,2002"
 
+#include "config.h"
+
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif
@@ -381,7 +383,7 @@ char *syck_match_implicit( char *, size_t );
 /*
  * API prototypes
  */
-char *syck_strndup( char *, long );
+char *syck_strndup( const char *, long );
 long syck_io_file_read( char *, SyckIoFile *, long, long );
 long syck_io_str_read( char *, SyckIoStr *, long, long );
 char *syck_base64enc( char *, long );

@@ -30,6 +30,7 @@ void CuStringAppendLen(CuString* str, char* text, long length);
 void CuStringAppendChar(CuString* str, char ch);
 void CuStringAppendFormat(CuString* str, char* format, ...);
 void CuStringResize(CuString* str, int newSize);
+void CuStringFree(CuString* str);
 
 void CuStringFree(CuString *str);
 
@@ -77,6 +78,7 @@ typedef struct
 
 void CuSuiteInit(CuSuite* testSuite);
 CuSuite* CuSuiteNew();
+void CuSuiteFree(CuSuite* testSuite);
 void CuSuiteAdd(CuSuite* testSuite, CuTest *testCase);
 void CuSuiteAddSuite(CuSuite* testSuite, CuSuite* testSuite2);
 void CuSuiteRun(CuSuite* testSuite);
