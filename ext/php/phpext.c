@@ -702,22 +702,22 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 
 				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
 					zval **ppzval = NULL, kzval;
-					char *key = NULL;
 					uint key_len;
 					ulong idx;
 					size_t key_type;
 
-					zend_hash_get_current_key_ex(tbl, (char **)&key, &key_len, &idx, 0, NULL);
-					zend_hash_get_current_data(tbl, (void **)&ppzval);
 					key_type = zend_hash_get_current_key_type_ex(tbl, NULL);
 
 					if (key_type == HASH_KEY_IS_LONG) {
-						key_len = 1 + snprintf(key, 0, "%ld", idx); /* getting size ("0" doesn't let output) */
-						key = emalloc(key_len);
-						snprintf(key, key_len, "%ld", idx);
+						zend_hash_get_current_key_ex(tbl, NULL, NULL, &idx, 0, NULL);
+						ZVAL_LONG(&kzval, idx);
+					} else {
+						char *skey = NULL;
+						zend_hash_get_current_key_ex(tbl, (char **)&skey, &key_len, NULL, 0, NULL);
+						ZVAL_STRINGL(&kzval, skey, key_len - 1, 1);
 					}
 
-					ZVAL_STRINGL(&kzval, key, key_len - 1, 1);
+					zend_hash_get_current_data(tbl, (void **)&ppzval);
 
 					if (psex_push_obj(bonus, &kzval)) {
 						syck_emit_item(e, bonus->level);
@@ -730,10 +730,6 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 					}
 
 					zval_dtor(&kzval);
-
-					if (key_type == HASH_KEY_IS_LONG) {
-						efree(key);
-					}
 				}
 
 				syck_emit_end(e);
