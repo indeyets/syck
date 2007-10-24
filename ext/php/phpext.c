@@ -747,8 +747,8 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 			ce = Z_OBJCE_P(data);
 			zend_get_object_classname(data, &name, &name_len TSRMLS_CC);
 
-			/* DateTime is encoded as timestamp */
 			if (strncmp(name, "DateTime", name_len) == 0) {
+				/* DateTime is encoded as timestamp */
 				zval *retval = NULL;
 				zval constant;
 
@@ -762,6 +762,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 				efree(retval);
 			} else {
 				if (0 != instanceof_function_ex(ce, zend_ce_serializable, 1 TSRMLS_CC)) {
+					/* Some class which implements Serializable interface */
 					char *prefix = "tag:php:object::";
 					size_t prefix_len = strlen(prefix) + 1;
 					char *tagname = emalloc(name_len + prefix_len);
@@ -854,6 +855,8 @@ PHP_FUNCTION(syck_dump)
 
 	emitter = syck_new_emitter();
 	emitter->bonus = extra;
+	emitter->use_header = 1;
+	emitter->use_version = 1;
 
 	syck_emitter_handler(emitter, php_syck_emitter_handler);
 	syck_output_handler(emitter, php_syck_output_handler);
