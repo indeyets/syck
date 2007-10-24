@@ -234,7 +234,7 @@ PHP_MINFO_FUNCTION(syck)
 
 SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 {
-	zval *o;
+	zval *o = NULL;
 
 	MAKE_STD_ZVAL(o);
 
@@ -382,7 +382,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				size_t classname_len = strlen(n->type_id) - 12;
 				char *classname = emalloc(classname_len + 1);
 				zend_class_entry **ce;
-				zval *param;
+				zval *param = NULL;
 				TSRMLS_FETCH();
 
 				strncpy(classname, n->type_id + 12, classname_len + 1);
@@ -421,7 +421,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 				for (i = 0; i < n->data.list->idx; i++) {
 					SYMID oid = syck_seq_read(n, i);
-					zval *o2;
+					zval *o2 = NULL;
 
 					syck_lookup_sym(p, oid, (char **) &o2); /* retrieving child-node */
 
@@ -448,8 +448,8 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 					for (i = 0; i < n->data.list->idx; i++) {
 						SYMID oid = syck_seq_read(n, i);
-						zval *o2;
-						zval *key;
+						zval *o2 = NULL;
+						zval *key = NULL;
 
 						syck_lookup_sym(p, oid, (char **) &o2); /* retrieving child-node */
 
@@ -485,8 +485,8 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 			if (NULL == n->type_id || strcmp(n->type_id, "php/hash") == 0) {
 				SYMID oid;
 				size_t i;
-				zval *o2, *o3;
-				zval *res;
+				zval *o2 = NULL, *o3 = NULL;
+				zval *res = NULL;
 
 				array_init(o);
 
@@ -511,7 +511,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				/* some classm which implements ArrayAccess */
 				SYMID oid;
 				size_t i;
-				zval *o2, *o3;
+				zval *o2 = NULL, *o3 = NULL;
 				size_t classname_len = strlen(n->type_id) - 10;
 				char *classname = emalloc(classname_len + 1);
 				zend_class_entry **ce;
@@ -582,6 +582,14 @@ SyckNode * php_syck_badanchor_handler(SyckParser *p, const char *str)
 	return res;
 }
 
+enum st_retval my_cleaner(char *key, char *value, char *smth)
+{
+	zval *ptr = (zval *)value;
+
+	zval_ptr_dtor(&ptr);
+	return ST_DELETE;
+}
+
 void php_syck_ehandler(SyckParser *p, const char *str)
 {
 	char *endl = p->cursor;
@@ -593,6 +601,8 @@ void php_syck_ehandler(SyckParser *p, const char *str)
 	endl[0] = '\0';
 
 	zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "%s on line %d, col %d: '%s'", str, p->linect, p->cursor - p->lineptr, p->lineptr);
+
+	st_foreach(p->syms, my_cleaner, NULL);
 }
 
 void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
@@ -655,7 +665,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 				flat_and_short = true;
 
 				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
-					zval **ppzval;
+					zval **ppzval = NULL;
 
 					zend_hash_get_current_data(tbl, (void **)&ppzval);
 
@@ -673,7 +683,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 					syck_emit_seq(e, "table", seq_none);
 
 				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
-					zval **ppzval;
+					zval **ppzval = NULL;
 
 					zend_hash_get_current_data(tbl, (void **)&ppzval);
 					if (psex_push_obj(bonus, *ppzval)) {
@@ -691,7 +701,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 					syck_emit_map(e, "table", map_none);
 
 				for (zend_hash_internal_pointer_reset(tbl); zend_hash_has_more_elements(tbl) == SUCCESS; zend_hash_move_forward(tbl)) {
-					zval **ppzval, kzval;
+					zval **ppzval = NULL, kzval;
 					char *key;
 					uint key_len;
 					ulong idx;
@@ -743,7 +753,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 
 			/* DateTime is encoded as timestamp */
 			if (strncmp(name, "DateTime", name_len) == 0) {
-				zval *retval;
+				zval *retval = NULL;
 				zval constant;
 
 				zend_get_constant("DateTime::ISO8601", 17, &constant TSRMLS_CC);
@@ -759,7 +769,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 					char *prefix = "tag:php:object::";
 					size_t prefix_len = strlen(prefix) + 1;
 					char *tagname = emalloc(name_len + prefix_len);
-					zval *serialized;
+					zval *serialized = NULL;
 
 					snprintf(tagname, name_len + prefix_len, "%s%s", prefix, name);
 
@@ -794,7 +804,7 @@ PHP_FUNCTION(syck_load)
 	char *arg = NULL;
 	int arg_len;
 	SYMID v;
-	zval *obj;
+	zval *obj = NULL;
 	SyckParser *parser;
 
 	if (ZEND_NUM_ARGS() != 1) {
@@ -823,6 +833,7 @@ PHP_FUNCTION(syck_load)
 		zval_copy_ctor(return_value);
 		zval_ptr_dtor(&obj);
 	}
+
 
 	syck_free_parser(parser);
 }
