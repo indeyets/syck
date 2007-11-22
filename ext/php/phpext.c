@@ -36,7 +36,7 @@
 # define false 0
 #endif
 
-#define PHP_SYCK_VERSION "0.9.2-dev"
+#define PHP_SYCK_VERSION "0.9.2"
 
 /**
  * SyckException class
