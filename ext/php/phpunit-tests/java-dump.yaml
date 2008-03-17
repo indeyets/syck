@@ -1,0 +1,950 @@
+--- 
+- !Placement
+  id: !java.lang.Long 614
+  modified: !java.util.Date 1162405177000
+  name: !java.lang.String Campaign-857-BVG1_ExitPop
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - &13 !PlacementInfo
+      id: !java.lang.Long 42
+      modified: !java.util.Date 1174506420000
+      placementInfoChildren: !APlacementInfo[] []
+      property: &14 !PropertyDeclaration
+        id: !java.lang.Long 1
+        modified: !java.util.Date 1186443552000
+        name: !java.lang.String Publisher
+        propertyChildren: !com.webamg.studio.inventory.PropertyDeclaration[] []
+        revision: 33
+      revision: 10
+      shortName: !java.lang.String Publisher
+      value: !java.lang.String WebAMG
+    - &4 !PlacementInfo
+      id: !java.lang.Long 43
+      modified: !java.util.Date 1177009268000
+      placementInfoChildren: !APlacementInfo[] []
+      property: &22 !PropertyDeclaration
+        id: !java.lang.Long 10
+        modified: !java.util.Date 1184350020000
+        name: !java.lang.String AdSize
+        propertyChildren: !com.webamg.studio.inventory.PropertyDeclaration[] []
+        revision: 3
+      revision: 28
+      shortName: !java.lang.String AdSize
+      value: !java.lang.String Multi
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  revision: 1
+  tag: !java.lang.String 857
+  type: &25 !PlacementType
+    base: &24 !PlacementType
+      abstract: true
+      base: &20 !PlacementType
+        abstract: true
+        id: !java.lang.Long 25
+        modified: !java.util.Date 1174310841000
+        name: !java.lang.String Assignments
+        optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[]
+          - &15 !PropertyDeclaration
+            id: !java.lang.Long 7
+            modified: !java.util.Date 1161113972000
+            name: !java.lang.String Project
+            propertyChildren: !com.webamg.studio.inventory.PropertyDeclaration[] []
+            revision: 3
+        placementSubTypes: !com.webamg.studio.inventory.PlacementType[]
+          - *24
+          - &19 !PlacementType
+            abstract: true
+            base: *20
+            id: !java.lang.Long 28
+            modified: !java.util.Date 1174309795000
+            name: !java.lang.String "Placements that are Rotations"
+            optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+            placementSubTypes: !com.webamg.studio.inventory.PlacementType[]
+              - !PlacementType
+                base: *19
+                id: !java.lang.Long 30
+                modified: !java.util.Date 1174309796000
+                name: !java.lang.String "Show Rotation"
+                optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+                placementSubTypes: !com.webamg.studio.inventory.PlacementType[] []
+                requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+                revision: 8
+              - !PlacementType
+                base: *19
+                id: !java.lang.Long 31
+                modified: !java.util.Date 1174309797000
+                name: !java.lang.String "Scene Rotation"
+                optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+                placementSubTypes: !com.webamg.studio.inventory.PlacementType[] []
+                requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[]
+                  - &12 !PropertyDeclaration
+                    id: !java.lang.Long 2
+                    modified: !java.util.Date 1174375925000
+                    name: !java.lang.String VerticalCluster
+                    propertyChildren: !com.webamg.studio.inventory.PropertyDeclaration[] []
+                    revision: 4
+                  - &6 !PropertyDeclaration
+                    id: !java.lang.Long 3
+                    modified: !java.util.Date 1161113973000
+                    name: !java.lang.String Vertical
+                    propertyChildren: !com.webamg.studio.inventory.PropertyDeclaration[] []
+                    revision: 3
+                revision: 10
+              - !PlacementType
+                base: *19
+                id: !java.lang.Long 32
+                modified: !java.util.Date 1174309797000
+                name: !java.lang.String "Intrascene Rotation"
+                optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+                placementSubTypes: !com.webamg.studio.inventory.PlacementType[] []
+                requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[]
+                  - *12
+                  - *6
+                revision: 8
+              - !PlacementType
+                base: *19
+                id: !java.lang.Long 53
+                modified: !java.util.Date 1174309803000
+                name: !java.lang.String "First Scene Rotation"
+                optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[]
+                  - *15
+                placementSubTypes: !com.webamg.studio.inventory.PlacementType[] []
+                requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[]
+                  - !PropertyDeclaration
+                    id: !java.lang.Long 5
+                    modified: !java.util.Date 1152209068000
+                    name: !java.lang.String MediaType
+                    propertyChildren: !com.webamg.studio.inventory.PropertyDeclaration[] []
+                    revision: 1
+                revision: 8
+            requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+            revision: 12
+        requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+        revision: 23
+      id: !java.lang.Long 26
+      modified: !java.util.Date 1184366671000
+      name: !java.lang.String "Placements that are Slots"
+      optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+      placementSubTypes: !com.webamg.studio.inventory.PlacementType[]
+        - *25
+        - !PlacementType
+          base: *24
+          id: !java.lang.Long 33
+          modified: !java.util.Date 1184366446000
+          name: !java.lang.String "Scene Slot"
+          optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+          placementSubTypes: !com.webamg.studio.inventory.PlacementType[] []
+          requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+          revision: 14
+        - !PlacementType
+          base: *24
+          id: !java.lang.Long 34
+          modified: !java.util.Date 1174309798000
+          name: !java.lang.String "Intrascene Slot"
+          optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+          placementSubTypes: !com.webamg.studio.inventory.PlacementType[] []
+          requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+          revision: 6
+        - &8 !PlacementType
+          base: *24
+          id: !java.lang.Long 50
+          modified: !java.util.Date 1174309801000
+          name: !java.lang.String "First Scene Slot (Banner)"
+          optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+          placementSubTypes: !com.webamg.studio.inventory.PlacementType[] []
+          reportingAttribute: !ReportingAttribute
+            appliedToPlacementTypes: !com.webamg.studio.inventory.PlacementType[]
+              - *8
+            id: !java.lang.Long 1
+            modified: !java.sql.Timestamp {}
+            name: !java.lang.String "Minimal Log for First Scene"
+            revision: 4
+            value: !java.lang.String "write here list of attributes needed to log for first scene"
+          requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+          revision: 20
+        - !PlacementType
+          base: *24
+          id: !java.lang.Long 67
+          modified: !java.util.Date 1184853827000
+          name: !java.lang.String InternalCampaign
+          optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+          placementSubTypes: !com.webamg.studio.inventory.PlacementType[] []
+          requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[]
+            - *14
+          revision: 16
+      requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+      revision: 16
+    id: !java.lang.Long 29
+    modified: !java.util.Date 1184798770000
+    name: !java.lang.String Campaign
+    optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+    placementSubTypes: !com.webamg.studio.inventory.PlacementType[]
+      - &1 !PlacementType
+        base: *25
+        id: !java.lang.Long 54
+        modified: !java.util.Date 1174309804000
+        name: !java.lang.String "Domain Direct Campaigns"
+        optionalPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+        placementSubTypes: !com.webamg.studio.inventory.PlacementType[] []
+        requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[] []
+        revision: 4
+    requiredPropertyDeclarations: !com.webamg.studio.inventory.PropertyDeclaration[]
+      - *14
+      - *22
+      - &11 !PropertyDeclaration
+        id: !java.lang.Long 6
+        modified: !java.util.Date 1181670130000
+        name: !java.lang.String MediaBuyer
+        propertyChildren: !com.webamg.studio.inventory.PropertyDeclaration[] []
+        revision: 3
+      - *6
+      - &7 !PropertyDeclaration
+        id: !java.lang.Long 11
+        modified: !java.util.Date 1183153686000
+        name: !java.lang.String "Payment Type"
+        propertyChildren: !com.webamg.studio.inventory.PropertyDeclaration[] []
+        revision: 5
+      - &16 !PropertyDeclaration
+        id: !java.lang.Long 13
+        modified: !java.util.Date 1184797395000
+        name: !java.lang.String Restricted
+        propertyChildren: !com.webamg.studio.inventory.PropertyDeclaration[] []
+        revision: 2
+    revision: 18
+  url: !java.lang.String rules/Campaign-857-BVG1_ExitPop.assignment
+- !Placement
+  id: !java.lang.Long 1059
+  modified: !java.util.Date 1166158042000
+  name: !java.lang.String Campaign-1512-BVG1_RegProcess_InternalCampaign
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *13
+    - *4
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 1512
+  type: *25
+  url: !java.lang.String rules/Campaign-1512-BVG1_RegProcess_InternalCampaign.assignment
+- !Placement
+  id: !java.lang.Long 1101
+  modified: !java.util.Date 1166498579000
+  name: !java.lang.String Campaign-1558-BVG2QAPLACEMENT
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *13
+    - &10 !PlacementInfo
+      id: !java.lang.Long 19
+      modified: !java.util.Date 1176929865000
+      placementInfoChildren: !APlacementInfo[] []
+      property: *22
+      revision: 71
+      value: !java.lang.String 300x250
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 1558
+  type: *25
+  url: !java.lang.String rules/Campaign-1558-BVG2QAPLACEMENT.assignment
+- !Placement
+  id: !java.lang.Long 1190
+  modified: !java.util.Date 1168365111000
+  name: !java.lang.String Campaign-1658-BVG1_Ringtones_Pixel
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *13
+    - *4
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 1658
+  type: *25
+  url: !java.lang.String rules/Campaign-1658-BVG1_Ringtones_Pixel.assignment
+- !Placement
+  id: !java.lang.Long 1257
+  modified: !java.util.Date 1169257808000
+  name: !java.lang.String Campaign-1734-CorporateWebsite
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *13
+    - !PlacementInfo
+      id: !java.lang.Long 57
+      modified: !java.util.Date 1169257808000
+      placementInfoChildren: !APlacementInfo[] []
+      property: *22
+      revision: 1
+      shortName: !java.lang.String Interstitial
+      value: !java.lang.String Interstitial
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 1734
+  type: *25
+  url: !java.lang.String rules/Campaign-1734-CorporateWebsite.assignment
+- !Placement
+  id: !java.lang.Long 1269
+  modified: !java.util.Date 1169511651000
+  name: !java.lang.String "Domain Direct Campaigns-1760-CorporateWebsite"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *13
+    - &21 !PlacementInfo
+      id: !java.lang.Long 20
+      modified: !java.util.Date 1174512046000
+      placementInfoChildren: !APlacementInfo[] []
+      property: *22
+      revision: 23
+      value: !java.lang.String "3rd Party Served"
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 1760
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-1760-CorporateWebsite.assignment
+- !Placement
+  id: !java.lang.Long 1270
+  modified: !java.util.Date 1169511752000
+  name: !java.lang.String "Domain Direct Campaigns-www.webamg.com-CorporateWebsite"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *13
+    - *4
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String www.webamg.com
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-www.webamg.com-CorporateWebsite.assignment
+- !Placement
+  id: !java.lang.Long 1271
+  modified: !java.util.Date 1169511795000
+  name: !java.lang.String "Domain Direct Campaigns-webamg.com-CorporateWebsite"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *13
+    - *4
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String webamg.com
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-webamg.com-CorporateWebsite.assignment
+- !Placement
+  id: !java.lang.Long 1750
+  modified: !java.util.Date 1173163129000
+  name: !java.lang.String "Domain Direct Campaigns-www.flingweb.com-www.flingweb.com"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *13
+    - *4
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String www.flingweb.com
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-www.flingweb.com-www.flingweb.com.assignment
+- !Placement
+  id: !java.lang.Long 1751
+  modified: !java.util.Date 1173173414000
+  name: !java.lang.String "Domain Direct Campaigns-flingweb.com-flingweb.com"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *13
+    - *4
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String flingweb.com
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-flingweb.com-flingweb.com.assignment
+- !Placement
+  id: !java.lang.Long 1933
+  modified: !java.util.Date 1174506420000
+  name: !java.lang.String Campaign-2507-BVG1_Ringtones_AzoogleGRO
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *13
+    - *4
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 2507
+  type: *25
+  url: !java.lang.String rules/Campaign-2507-BVG1_Ringtones_AzoogleGRO.assignment
+- !Placement
+  id: !java.lang.Long 2978
+  modified: !java.util.Date 1178151258000
+  name: !java.lang.String Campaign-3759-BVG1_RT_Cingular
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 3759
+  type: *25
+  url: !java.lang.String rules/Campaign-3759-BVG1_RT_Cingular.assignment
+- !Placement
+  id: !java.lang.Long 2979
+  modified: !java.util.Date 1178151285000
+  name: !java.lang.String Campaign-3760-BVG1_RT_Verizon
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 3760
+  type: *25
+  url: !java.lang.String rules/Campaign-3760-BVG1_RT_Verizon.assignment
+- !Placement
+  id: !java.lang.Long 2980
+  modified: !java.util.Date 1178151311000
+  name: !java.lang.String Campaign-3761-BVG1_RT_Sprint
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 3761
+  type: *25
+  url: !java.lang.String rules/Campaign-3761-BVG1_RT_Sprint.assignment
+- !Placement
+  id: !java.lang.Long 2981
+  modified: !java.util.Date 1178151335000
+  name: !java.lang.String Campaign-3762-BVG1_RT_Tmobile
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 3762
+  type: *25
+  url: !java.lang.String rules/Campaign-3762-BVG1_RT_Tmobile.assignment
+- !Placement
+  id: !java.lang.Long 2982
+  modified: !java.util.Date 1178151356000
+  name: !java.lang.String Campaign-3763-BVG1_RT_Nextel
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 3763
+  type: *25
+  url: !java.lang.String rules/Campaign-3763-BVG1_RT_Nextel.assignment
+- !Placement
+  id: !java.lang.Long 2983
+  modified: !java.util.Date 1178151390000
+  name: !java.lang.String Campaign-3764-BVG1_RT_Alltel
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 3764
+  type: *25
+  url: !java.lang.String rules/Campaign-3764-BVG1_RT_Alltel.assignment
+- !Placement
+  id: !java.lang.Long 2984
+  modified: !java.util.Date 1178151411000
+  name: !java.lang.String Campaign-3765-BVG1_RT_Boost
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 3765
+  type: *25
+  url: !java.lang.String rules/Campaign-3765-BVG1_RT_Boost.assignment
+- !Placement
+  id: !java.lang.Long 2985
+  modified: !java.util.Date 1178151439000
+  name: !java.lang.String Campaign-3766-BVG1_RT_CellularOne
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 3766
+  type: *25
+  url: !java.lang.String rules/Campaign-3766-BVG1_RT_CellularOne.assignment
+- !Placement
+  id: !java.lang.Long 2986
+  modified: !java.util.Date 1178151458000
+  name: !java.lang.String Campaign-3767-BVG1_RT_Other
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 3767
+  type: *25
+  url: !java.lang.String rules/Campaign-3767-BVG1_RT_Other.assignment
+- !Placement
+  id: !java.lang.Long 3863
+  modified: !java.util.Date 1180544692000
+  name: !java.lang.String "Domain Direct Campaigns-www.findyouradmirer.us-BVG1_Subs_Admirer_Direct"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *13
+    - *4
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String www.findyouradmirer.us
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-www.findyouradmirer.us-BVG1_Subs_Admirer_Direct.assignment
+- !Placement
+  id: !java.lang.Long 3165
+  modified: !java.util.Date 1180573750000
+  name: !java.lang.String Campaign-www.findyouradmirer.com-BVG1_Subs_Admirer_Google
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  revision: 2
+  tag: !java.lang.String www.findyouradmirer.com
+  type: *25
+  url: !java.lang.String rules/Campaign-www.findyouradmirer.com-BVG1_Subs_Admirer_Google.assignment
+- !Placement
+  id: !java.lang.Long 4020
+  modified: !java.util.Date 1181405064000
+  name: !java.lang.String Campaign-Findyouradmirer.com-BVG1_Subs_Admirer_Findyouradmirer.com
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String findyouradmirer.com
+  type: *25
+  url: !java.lang.String rules/Campaign-Findyouradmirer.com-BVG1_Subs_Admirer_Findyouradmirer.com.assignment
+- !Placement
+  id: !java.lang.Long 4340
+  modified: !java.util.Date 1182190255000
+  name: !java.lang.String "Domain Direct Campaigns-www.findyouradmirer.net-BVG1_Subs_Admirer_DomainDirect"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - &5 !PlacementInfo
+      id: !java.lang.Long 89
+      modified: !java.util.Date 1181670143000
+      placementInfoChildren: !APlacementInfo[] []
+      property: *11
+      revision: 4
+      shortName: !java.lang.String JoeF
+      value: !java.lang.String JoeF
+    - *13
+    - &23 !PlacementInfo
+      id: !java.lang.Long 70
+      modified: !java.util.Date 1176775891000
+      placementInfoChildren: !APlacementInfo[] []
+      property: *6
+      revision: 55
+      shortName: !java.lang.String Subscription
+      value: !java.lang.String Subscription
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String www.findyouradmirer.net
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-www.findyouradmirer.net-BVG1_Subs_Admirer_DomainDirect.assignment
+- !Placement
+  id: !java.lang.Long 4341
+  modified: !java.util.Date 1182190324000
+  name: !java.lang.String "Domain Direct Campaigns-findyouradmirer.net-BVG1_Subs_Admirer_DomainDirect"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *5
+    - *13
+    - *23
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String findyouradmirer.net
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-findyouradmirer.net-BVG1_Subs_Admirer_DomainDirect.assignment
+- !Placement
+  id: !java.lang.Long 5059
+  modified: !java.util.Date 1184181679000
+  name: !java.lang.String Campaign-www.deathclock.us-BVG1_Subs_Death_DomainDirect_DeathClock.US
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *5
+    - &3 !PlacementInfo
+      id: !java.lang.Long 96
+      modified: !java.util.Date 1183153660000
+      placementInfoChildren: !APlacementInfo[] []
+      property: *7
+      revision: 3
+      shortName: !java.lang.String CPA
+      value: !java.lang.String CPA
+    - *23
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  revision: 1
+  tag: !java.lang.String www.deathclock.us
+  type: *25
+  url: !java.lang.String rules/Campaign-www.deathclock.us-BVG1_Subs_Death_DomainDirect_DeathClock.US.assignment
+- !Placement
+  id: !java.lang.Long 5720
+  modified: !java.util.Date 1184894185000
+  name: !java.lang.String "Domain Direct Campaigns-www.swamipredicts.com-BVG1_Subs_Swami_DomainDirect"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *5
+    - *3
+    - *13
+    - &2 !PlacementInfo
+      id: !java.lang.Long 105
+      modified: !java.util.Date 1184797408000
+      placementInfoChildren: !APlacementInfo[] []
+      property: *16
+      revision: 2
+      shortName: !java.lang.String N
+      value: !java.lang.String N
+    - *23
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String www.swamipredicts.com
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-www.swamipredicts.com-BVG1_Subs_Swami_DomainDirect.assignment
+- !Placement
+  id: !java.lang.Long 5721
+  modified: !java.util.Date 1184894241000
+  name: !java.lang.String "Domain Direct Campaigns-swamipredicts.com-BVG1_Subs_Swami_DomainDirect"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *5
+    - *3
+    - *13
+    - *2
+    - *23
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String swamipredicts.com
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-swamipredicts.com-BVG1_Subs_Swami_DomainDirect.assignment
+- !Placement
+  id: !java.lang.Long 455
+  modified: !java.util.Date 1184894327000
+  name: !java.lang.String "Domain Direct Campaigns-www.nationaltelephoneadvisory.com-www.nationaltelephoneadvisory.com"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - !PlacementInfo
+      id: !java.lang.Long 28
+      modified: !java.util.Date 1176310901000
+      placementInfoChildren: !APlacementInfo[] []
+      property: *22
+      revision: 4
+      value: !java.lang.String 720x300
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  revision: 2
+  tag: !java.lang.String www.nationaltelephoneadvisory.com
+  type: *1
+  url: !java.lang.String bvg2/regpath/rules/Domain%20Direct%20Campaigns-www.nationaltelephoneadvisory.com.assignment
+- !Placement
+  id: !java.lang.Long 3565
+  modified: !java.util.Date 1184894373000
+  name: !java.lang.String "Domain Direct Campaigns-www.mysingleschat.com-BVG1_Dating_Google"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  revision: 1
+  tag: !java.lang.String www.mysingleschat.com
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-www.mysingleschat.com-BVG1_Dating_Google.assignment
+- !Placement
+  id: !java.lang.Long 1986
+  modified: !java.util.Date 1184894444000
+  name: !java.lang.String "Domain Direct Campaigns-www.findringtonesnow.com-www.findringtonesnow.com"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  revision: 1
+  tag: !java.lang.String www.findringtonesnow.com
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-www.findringtonesnow.com-www.findringtonesnow.com.assignment
+- !Placement
+  id: !java.lang.Long 3421
+  modified: !java.util.Date 1184894484000
+  name: !java.lang.String "Domain Direct Campaigns-www.cellpimper.com-BVG1_RT_Google_Display"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *21
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  revision: 1
+  tag: !java.lang.String www.cellpimper.com
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-www.cellpimper.com-BVG1_RT_Google_Display.assignment
+- !Placement
+  id: !java.lang.Long 4101
+  modified: !java.util.Date 1184894518000
+  name: !java.lang.String Campaign-www.admirercalculator.com-BVG1_Subs_Admirer_Direct
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  revision: 1
+  tag: !java.lang.String www.admirercalculator.com
+  type: *25
+  url: !java.lang.String rules/Campaign-www.admirercalculator.com-BVG1_Subs_Admirer_Direct.assignment
+- !Placement
+  id: !java.lang.Long 456
+  modified: !java.util.Date 1184894567000
+  name: !java.lang.String "Domain Direct Campaigns-nationaltelephoneadvisory.com-nationaltelephoneadvisory.com"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *10
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  revision: 2
+  tag: !java.lang.String nationaltelephoneadvisory.com
+  type: *1
+  url: !java.lang.String bvg2/regpath/rules/Domain%20Direct%20Campaigns-nationaltelephoneadvisory.com.assignment
+- !Placement
+  id: !java.lang.Long 4021
+  modified: !java.util.Date 1184894585000
+  name: !java.lang.String Campaign-Findyouradmirer.us-BVG1_Subs_Admirer_Findyouradmirer.us
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  revision: 1
+  tag: !java.lang.String findyouradmirer.us
+  type: *25
+  url: !java.lang.String rules/Campaign-Findyouradmirer.us-BVG1_Subs_Admirer_Findyouradmirer.us.assignment
+- !Placement
+  id: !java.lang.Long 1987
+  modified: !java.util.Date 1184894603000
+  name: !java.lang.String "Domain Direct Campaigns-findringtonesnow.com-findringtonesnow.com"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *10
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  revision: 1
+  tag: !java.lang.String findringtonesnow.com
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-findringtonesnow.com-findringtonesnow.com.assignment
+- !Placement
+  id: !java.lang.Long 4102
+  modified: !java.util.Date 1184894619000
+  name: !java.lang.String "Domain Direct Campaigns-admirercalculator.com-BVG1_Subs_Admirer_Direct"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *13
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  revision: 1
+  tag: !java.lang.String admirercalculator.com
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-admirercalculator.com-BVG1_Subs_Admirer_Direct.assignment
+- !Placement
+  id: !java.lang.Long 5723
+  modified: !java.util.Date 1184970902000
+  name: !java.lang.String Campaign-17361-BVG1_Subs_Swami_CrossSell
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *5
+    - *3
+    - *13
+    - *2
+    - *23
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 17361
+  type: *25
+  url: !java.lang.String rules/Campaign-17361-BVG1_Subs_Swami_CrossSell.assignment
+- !Placement
+  id: !java.lang.Long 5877
+  modified: !java.util.Date 1185494804000
+  name: !java.lang.String Campaign-17766-BVG1_Subs_Admirer_CrossSell
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *5
+    - *3
+    - *13
+    - *2
+    - *23
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 17766
+  type: *25
+  url: !java.lang.String rules/Campaign-17766-BVG1_Subs_Admirer_CrossSell.assignment
+- !Placement
+  id: !java.lang.Long 5879
+  modified: !java.util.Date 1185573042000
+  name: !java.lang.String Campaign-17768-BVG1_Subs_Admirer_CrossSell2
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *5
+    - *3
+    - *13
+    - *2
+    - *23
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 17768
+  type: *25
+  url: !java.lang.String rules/Campaign-17768-BVG1_Subs_Admirer_CrossSell2.assignment
+- !Placement
+  id: !java.lang.Long 5880
+  modified: !java.util.Date 1185573076000
+  name: !java.lang.String Campaign-17769-BVG1_Subs_Admirer_CrossSell3
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *5
+    - *3
+    - *13
+    - *2
+    - *23
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 17769
+  type: *25
+  url: !java.lang.String rules/Campaign-17769-BVG1_Subs_Admirer_CrossSell3.assignment
+- !Placement
+  id: !java.lang.Long 5881
+  modified: !java.util.Date 1185573165000
+  name: !java.lang.String Campaign-17771-BVG1_Subs_Swami_CrossSell2
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *5
+    - *3
+    - *13
+    - *2
+    - *23
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 17771
+  type: *25
+  url: !java.lang.String rules/Campaign-17771-BVG1_Subs_Swami_CrossSell2.assignment
+- !Placement
+  id: !java.lang.Long 5882
+  modified: !java.util.Date 1185573205000
+  name: !java.lang.String Campaign-17772-BVG1_Subs_Swami_CrossSell3
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *5
+    - *3
+    - *13
+    - *2
+    - *23
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 17772
+  type: *25
+  url: !java.lang.String rules/Campaign-17772-BVG1_Subs_Swami_CrossSell3.assignment
+- !Placement
+  id: !java.lang.Long 6143
+  modified: !java.util.Date 1185929306000
+  name: !java.lang.String Campaign-20604-BVG1_Ringtones_SwamiConfirmPage
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *5
+    - *3
+    - *13
+    - *2
+    - !PlacementInfo
+      id: !java.lang.Long 36
+      modified: !java.util.Date 1177008861000
+      placementInfoChildren: !APlacementInfo[] []
+      property: *6
+      revision: 269
+      shortName: !java.lang.String Ringtones
+      value: !java.lang.String Ringtones
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 20604
+  type: *25
+  url: !java.lang.String rules/Campaign-20604-BVG1_Ringtones_SwamiConfirmPage.assignment
+- !Placement
+  id: !java.lang.Long 6340
+  modified: !java.util.Date 1186092163000
+  name: !java.lang.String Campaign-20956-BVG1_FQ_Subs_TmobRedirect
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *5
+    - *3
+    - *13
+    - *2
+    - !PlacementInfo
+      id: !java.lang.Long 7
+      modified: !java.util.Date 1176758732000
+      placementInfoChildren: !APlacementInfo[] []
+      property: *6
+      revision: 424
+      value: !java.lang.String FlirtQuiz
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String 20956
+  type: *25
+  url: !java.lang.String rules/Campaign-20956-BVG1_FQ_Subs_TmobRedirect.assignment
+- !Placement
+  id: !java.lang.Long 6555
+  modified: !java.util.Date 1186433700000
+  name: !java.lang.String "Domain Direct Campaigns-www.swamipredicts.net-Swamipredicts.net"
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - &18 !PlacementInfo
+      id: !java.lang.Long 3
+      modified: !java.util.Date 1156348821000
+      placementInfoChildren: !APlacementInfo[] []
+      property: *11
+      revision: 5
+      value: !java.lang.String Foroughi
+    - *3
+    - *13
+    - *2
+    - *23
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String www.swamipredicts.net
+  type: *1
+  url: !java.lang.String rules/Domain%20Direct%20Campaigns-www.swamipredicts.net-Swamipredicts.net.assignment
+- !Placement
+  id: !java.lang.Long 6556
+  modified: !java.util.Date 1186433734000
+  name: !java.lang.String Campaign-swamipredicts.net-SwamiPredicts.net
+  placementChildren: !APlacement[] []
+  placementFeatures: !com.webamg.studio.inventory.PlacementFeature[] []
+  placementInfo: !APlacementInfo[]
+    - *4
+    - *18
+    - *3
+    - *13
+    - *2
+    - *23
+  placementTestValues: !com.webamg.studio.inventory.TestValue[] []
+  tag: !java.lang.String swamipredicts.net
+  type: *25
+  url: !java.lang.String rules/Campaign-swamipredicts.net-SwamiPredicts.net.assignment
