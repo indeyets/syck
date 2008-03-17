@@ -283,7 +283,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				}
 
 				if (Z_TYPE_P(o) != IS_BOOL) {
-					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "!bool specified, but value \"%s\" (len=%d) is incorrect on line %d, col %d: '%s'", ptr, len, p->linect, p->cursor - p->lineptr, p->lineptr);
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "!bool specified, but value \"%s\" (len=%d) is incorrect on line %d, col %d: '%s'", ptr, len, p->linect + 1, p->cursor - p->lineptr, p->lineptr);
 				}
 			} else if (strcmp(n->type_id, "int#hex") == 0) {
 				long intVal;
@@ -388,13 +388,13 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				strncpy(classname, n->type_id + 12, classname_len + 1);
 
 				if (FAILURE == zend_lookup_class_ex(classname, classname_len, 1, &ce TSRMLS_CC)) {
-					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Couldn't find %s class on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Couldn't find %s class on line %d, col %d: '%s'", classname, p->linect + 1, p->cursor - p->lineptr, p->lineptr);
 					efree(classname);
 					break;
 				}
 
 				if (0 == instanceof_function_ex(*ce, zend_ce_serializable, 1 TSRMLS_CC)) {
-					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement Serializable on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement Serializable on line %d, col %d: '%s'", classname, p->linect + 1, p->cursor - p->lineptr, p->lineptr);
 					efree(classname);
 					break;
 				}
@@ -438,7 +438,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				strncpy(classname, n->type_id + 11, classname_len + 1);
 
 				if (FAILURE == zend_lookup_class_ex(classname, classname_len, 1, &ce TSRMLS_CC)) {
-					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Couldn't find %s class on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Couldn't find %s class on line %d, col %d: '%s'", classname, p->linect + 1, p->cursor - p->lineptr, p->lineptr);
 					efree(classname);
 					break;
 				}
@@ -465,7 +465,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 						zend_call_method_with_0_params(&o, *ce, NULL, "__wakeup", NULL);
 					}
 				} else {
-					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement ArrayAccess on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement ArrayAccess on line %d, col %d: '%s'", classname, p->linect + 1, p->cursor - p->lineptr, p->lineptr);
 					efree(classname);
 					break;
 				}
@@ -520,13 +520,13 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 				strncpy(classname, n->type_id + 10, classname_len + 1);
 
 				if (FAILURE == zend_lookup_class_ex(classname, classname_len, 1, &ce TSRMLS_CC)) {
-					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Couldn't find %s class on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Couldn't find %s class on line %d, col %d: '%s'", classname, p->linect + 1, p->cursor - p->lineptr, p->lineptr);
 					efree(classname);
 					break;
 				}
 
 				if (0 == instanceof_function_ex(*ce, zend_ce_arrayaccess, 1 TSRMLS_CC)) {
-					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement ArrayAccess on line %d, col %d: '%s'", classname, p->linect, p->cursor - p->lineptr, p->lineptr);
+					zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "Class %s doesn't implement ArrayAccess on line %d, col %d: '%s'", classname, p->linect + 1, p->cursor - p->lineptr, p->lineptr);
 					efree(classname);
 					break;
 				}
@@ -577,7 +577,7 @@ SyckNode * php_syck_badanchor_handler(SyckParser *p, const char *str)
 
 	res = syck_alloc_str();
 
-	zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "bad anchor \"%s\" on line %d, col %d", str, p->linect, p->cursor - p->lineptr - strlen(str));
+	zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "bad anchor \"%s\" on line %d, col %d", str, p->linect + 1, p->cursor - p->lineptr - strlen(str));
 
 	return res;
 }
@@ -601,7 +601,7 @@ void php_syck_ehandler(SyckParser *p, const char *str)
 
 	endl[0] = '\0';
 
-	exc = zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "%s on line %d, col %d: '%s'", str, p->linect, p->cursor - p->lineptr, p->lineptr);
+	exc = zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "%s on line %d, col %d: '%s'", str, p->linect + 1, p->cursor - p->lineptr, p->lineptr);
 	exc->refcount = 2; // hack
 
 	st_foreach(p->syms, my_cleaner, NULL);
