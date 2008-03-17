@@ -36,7 +36,7 @@
 # define false 0
 #endif
 
-#define PHP_SYCK_VERSION "0.9.2"
+#define PHP_SYCK_VERSION "0.9.3-dev"
 
 /**
  * SyckException class
@@ -508,7 +508,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 					zval_ptr_dtor(&o2);
 				}
 			} else if (strncmp(n->type_id, "php/hash::", 10) == 0) {
-				/* some classm which implements ArrayAccess */
+				/* some class which implements ArrayAccess */
 				SYMID oid;
 				size_t i;
 				zval *o2 = NULL, *o3 = NULL;
@@ -593,6 +593,7 @@ enum st_retval my_cleaner(char *key, char *value, char *smth)
 void php_syck_ehandler(SyckParser *p, const char *str)
 {
 	char *endl = p->cursor;
+	zval *exc;
 	TSRMLS_FETCH();
 
 	while (*endl != '\0' && *endl != '\n')
@@ -600,7 +601,8 @@ void php_syck_ehandler(SyckParser *p, const char *str)
 
 	endl[0] = '\0';
 
-	zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "%s on line %d, col %d: '%s'", str, p->linect, p->cursor - p->lineptr, p->lineptr);
+	exc = zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "%s on line %d, col %d: '%s'", str, p->linect, p->cursor - p->lineptr, p->lineptr);
+	exc->refcount = 2; // hack
 
 	st_foreach(p->syms, my_cleaner, NULL);
 }
@@ -830,7 +832,6 @@ PHP_FUNCTION(syck_load)
 		zval_copy_ctor(return_value);
 		zval_ptr_dtor(&obj);
 	}
-
 
 	syck_free_parser(parser);
 }

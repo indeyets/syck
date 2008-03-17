@@ -207,4 +207,14 @@ class TestLoad extends PHPUnit_Framework_TestCase
         $this->assertType('MySerializable', $obj);
         $this->assertSame('teststring', $obj->test());
     }
+
+    public function testBug31()
+    {
+        try {
+            $obj = syck_load(file_get_contents(dirname(__FILE__).'/bug31.yaml'));
+            $this->assertTrue(false);
+        } catch (SyckException $e) {
+            $this->assertTrue(true);
+        }
+    }
 }
