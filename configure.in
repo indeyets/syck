@@ -1,9 +1,9 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(syck, 0.60)
+AC_INIT(syck, 0.61)
 AC_CONFIG_AUX_DIR(config)
 AC_PREREQ(2.50)
 
-AM_INIT_AUTOMAKE(syck, 0.60)
+AM_INIT_AUTOMAKE(syck, 0.61)
 AM_CONFIG_HEADER(config.h)
 
 # Checks for programs.
@@ -13,8 +13,12 @@ AC_PROG_LN_S
 AC_PROG_RANLIB
 AC_PROG_MAKE_SET
 AC_PROG_AWK
-AC_PROG_YACC
 AM_PROG_LEX
+
+AC_CHECK_PROGS(YACC, 'bison -y')
+if test "$YACC" != "bison -y"; then
+  AC_MSG_ERROR([bison not found])
+fi
 
 # Checks for libraries.
 
