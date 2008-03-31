@@ -20,6 +20,7 @@
 #endif
 
 #include "syck.h"
+#include "sycklex.h"
 
 void apply_seq_in_map( SyckParser *parser, SyckNode *n );
 

@@ -469,10 +469,8 @@ long syck_seq_count( SyckNode * );
 /*
  * Lexer prototypes
  */
-#include "gram.h"
 void syckerror( const char * );
 int syckparse( void * );
-int sycklex( YYSTYPE *sycklval, SyckParser *parser );
 
 #if defined(__cplusplus)
 }  /* extern "C" { */
