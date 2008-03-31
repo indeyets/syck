@@ -65,7 +65,7 @@ class TestDump extends PHPUnit_Framework_TestCase
     public function testDatetime()
     {
         $obj = new DateTime();
-        $this->assertEquals($obj, syck_load(syck_dump($obj)));
+        $this->assertEquals($obj->format('U'), syck_load(syck_dump($obj))->format('U'));
     }
 
     public function testNumericStrings()
