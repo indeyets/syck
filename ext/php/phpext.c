@@ -192,6 +192,7 @@ function_entry syck_functions[] = {
 static zend_module_dep syck_deps[] = {
 	ZEND_MOD_REQUIRED("spl")
 	ZEND_MOD_REQUIRED("hash")
+	ZEND_MOD_REQUIRED("date")
 	{NULL, NULL, NULL}
 };
 
@@ -602,7 +603,12 @@ void php_syck_ehandler(SyckParser *p, const char *str)
 	endl[0] = '\0';
 
 	exc = zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "%s on line %d, col %d: '%s'", str, p->linect + 1, p->cursor - p->lineptr, p->lineptr);
+
+#if ZEND_MODULE_API_NO >= 20071006
+	Z_SET_REFCOUNT_P(exc, 2);
+#else
 	exc->refcount = 2; // hack
+#endif
 
 	st_foreach(p->syms, my_cleaner, NULL);
 }
@@ -754,7 +760,7 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 				zval *retval = NULL;
 				zval constant;
 
-				zend_get_constant("DateTime::ISO8601", 17, &constant TSRMLS_CC);
+				zend_get_constant_ex("DateTime::ISO8601", 17, &constant, ce, 0 TSRMLS_CC);
 				zend_call_method_with_1_params(&data, ce, NULL, "format", &retval, &constant);
 
 				zval_dtor(&constant);
