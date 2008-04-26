@@ -1,0 +1,3 @@
+Edit Makefile as needed, run make, make install. rejoice.
+
+You'll need the syck library, if you haven't already got it. You can find it at http://whytheluckystiff.net/syck/

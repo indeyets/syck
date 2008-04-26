@@ -1,11 +1,6 @@
 -- borrow from lposix
 --
-local function so(x)
-	local SOPATH= os.getenv"LUA_SOPATH" or "./"
-	assert(loadlib(SOPATH.."l"..x..".so","luaopen_"..x))()
-end
-
-so"syck"
+require "syck"
 
 yaml = {}
 
