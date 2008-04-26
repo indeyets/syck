@@ -1,6 +1,6 @@
 # change these to reflect your Lua installation
 # Default installation prefix
-PREFIX=/home/leop/local
+PREFIX=/usr/local
 
 # System's libraries directory (where binary libraries are installed)
 LUA_LIBDIR= $(PREFIX)/lib/lua/5.1
