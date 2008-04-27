@@ -1,3 +1,3 @@
 all:
-	gcc -DTEST_YBEXT -L/usr/local/lib -I/usr/local/include ybext.c -lsyck
+	gcc -DTEST_YBEXT -L../../lib -I../../lib ybext.c -lsyck
 	./a.out
