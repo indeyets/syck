@@ -158,7 +158,10 @@ void CuStreamCompare( CuTest* tc, char *yaml, struct test_node *stream ) {
         if ( parser->eof == 1 ) break;
 
         /* Add document to stream */
-        syck_lookup_sym( parser, oid, (char **)&ydoc );
+        int res = syck_lookup_sym( parser, oid, (char **)&ydoc );
+        if (0 == res)
+            break;
+
         ystream[doc_ct] = ydoc[0];
         doc_ct++;
         S_REALLOC_N( ystream, struct test_node, doc_ct + 1 );
@@ -278,28 +281,21 @@ void CuRoundTrip( CuTest* tc, struct test_node *stream ) {
 void
 YtsFoldedScalars_7( CuTest *tc )
 {
-struct test_node map[] = {
-    { T_STR, 0, "a" },
+    struct test_node map[] = {
+        { T_STR, 0, "a" },
         { T_STR, 0, "b" },
-    end_node
-};
-struct test_node stream[] = {
-    { T_MAP, 0, 0, map },
-    end_node
-};
+        end_node
+    };
 
-    CuStreamCompare( tc,
+    struct test_node stream[] = {
+        { T_MAP, 0, 0, map },
+        end_node
+    };
 
-        /* YAML document */ 
-"a: b\t  \n"
-        ,
-
-        /* C structure of validations */
-        stream
-    );
-
+    CuStreamCompare( tc, "a: b\t  \n", stream );
     CuRoundTrip( tc, stream );
 }
+
 /*
  * Example : Empty Sequence
  */
