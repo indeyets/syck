@@ -223,7 +223,7 @@ ruby: |
 syck: |
   struct test_node map[] = {
       { T_STR, 0, "a" },
-          { T_STR, 0, "b" },
+      { T_STR, 0, "b" },
       end_node
   };
   struct test_node stream[] = {
