@@ -158,7 +158,10 @@ void CuStreamCompare( CuTest* tc, char *yaml, struct test_node *stream ) {
         if ( parser->eof == 1 ) break;
 
         /* Add document to stream */
-        syck_lookup_sym( parser, oid, (char **)&ydoc );
+        int res = syck_lookup_sym( parser, oid, (char **)&ydoc );
+        if (0 == res)
+            break;
+
         ystream[doc_ct] = ydoc[0];
         doc_ct++;
         S_REALLOC_N( ystream, struct test_node, doc_ct + 1 );

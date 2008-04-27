@@ -281,21 +281,28 @@ void CuRoundTrip( CuTest* tc, struct test_node *stream ) {
 void
 YtsFoldedScalars_7( CuTest *tc )
 {
-    struct test_node map[] = {
-        { T_STR, 0, "a" },
-        { T_STR, 0, "b" },
-        end_node
-    };
+struct test_node map[] = {
+    { T_STR, 0, "a" },
+    { T_STR, 0, "b" },
+    end_node
+};
+struct test_node stream[] = {
+    { T_MAP, 0, 0, map },
+    end_node
+};
 
-    struct test_node stream[] = {
-        { T_MAP, 0, 0, map },
-        end_node
-    };
+    CuStreamCompare( tc,
 
-    CuStreamCompare( tc, "a: b\t  \n", stream );
+        /* YAML document */ 
+"a: b\t  \n"
+        ,
+
+        /* C structure of validations */
+        stream
+    );
+
     CuRoundTrip( tc, stream );
 }
-
 /*
  * Example : Empty Sequence
  */
