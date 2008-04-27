@@ -20,8 +20,6 @@
 #define SYCK_VERSION    "0.61"
 #define YAML_DOMAIN     "yaml.org,2002"
 
-#include "config.h"
-
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif
