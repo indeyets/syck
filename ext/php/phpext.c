@@ -660,7 +660,18 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 		break;
 
 		case IS_STRING:
-			syck_emit_scalar(e, "str", scalar_2quote, 0, 0, 0, Z_STRVAL_P(data), Z_STRLEN_P(data));
+		{
+			enum scalar_style style = scalar_2quote;
+			const char *ptr;
+
+			for (ptr = Z_STRVAL_P(data); ptr != Z_STRVAL_P(data) + Z_STRLEN_P(data); ptr++) {
+				if (*ptr == '\n') {
+					style = scalar_fold;
+				}
+			}
+
+			syck_emit_scalar(e, "str", style, 0, 0, 0, Z_STRVAL_P(data), Z_STRLEN_P(data));
+		}
 		break;
 
 		case IS_ARRAY:

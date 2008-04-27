@@ -9,7 +9,6 @@ load:
   - add support for recursive anchors/aliases (see phpunit-tests/java-dump.yaml)
   - allow user to assign custom handler for loading any other type of objects (java, ruby, etc.)
 dump:
-  - export multiline strings in "folded" format
   - merge
   - objects:
     - Iterator:
