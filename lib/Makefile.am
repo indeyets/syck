@@ -5,7 +5,7 @@ SUFFIXES = .re
 CFLAGS = -fPIC
 
 .re.c:
-	$(REC) -b $< > $@.new && mv $@.new $@
+	$(REC) -bi $< > $@.new && mv $@.new $@
 
 lib_LIBRARIES = libsyck.a
 include_HEADERS = syck.h syck_st.h
