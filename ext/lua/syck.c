@@ -1,10 +1,11 @@
 /*
- * lsyck.c
+ * syck.c
  *
  * $Author$
  * $Date$
  *
  * Copyright (C) 2005 Zachary P. Landau <kapheine@divineinvasion.net>
+ * slact touched this in 2008. blame him.
  */
 
 #include <syck.h>
@@ -22,9 +23,41 @@ struct emitter_xtra {
 };
 
 struct parser_xtra {
-	lua_State *L;
+	lua_State *L; //syck parser thread state
+	lua_State *orig; //original API stack state
 };
 
+/*
+static void stackDump (lua_State *L) {
+      int i;
+      int top = lua_gettop(L);
+      for (i = 1; i <= top; i++) {  // repeat for each level 
+        int t = lua_type(L, i);
+		printf("%i:	", (top-i+1));
+		switch (t) {
+    
+          case LUA_TSTRING:  // strings 
+            printf("[string]");
+            break;
+    
+          case LUA_TBOOLEAN:  // booleans 
+            printf(lua_toboolean(L, i) ? "true" : "false");
+            break;
+    
+          case LUA_TNUMBER:  // numbers 
+            printf("%g", lua_tonumber(L, i));
+            break;
+    
+          default:  // other values 
+            printf("%s", lua_typename(L, t));
+            break;
+    
+        }
+        printf("\n");  // put a separator 
+      }
+      printf("\n----------\n");  // end the listing 
+	  }
+*/
 SYMID
 lua_syck_parser_handler(SyckParser *p, SyckNode *n)
 {
@@ -33,6 +66,9 @@ lua_syck_parser_handler(SyckParser *p, SyckNode *n)
 	SYMID oid;
 	int i;
 
+	if(!lua_checkstack(bonus->L, 1))
+		luaL_error(bonus->orig,"syck parser wanted too much stack space.");
+	
 	switch (n->kind) {
 		case syck_str_kind:
 			if (n->type_id == NULL || strcmp(n->type_id, "str") == 0) {
@@ -54,6 +90,14 @@ lua_syck_parser_handler(SyckParser *p, SyckNode *n)
 				lua_pushboolean(bonus->L, 0);
 				o = lua_gettop(bonus->L);
 			}
+			else if (strcmp(n->type_id, "float") == 0 || strcmp(n->type_id, "float#fix") == 0 || strcmp(n->type_id, "float#exp") == 0) 
+			{
+				double f;
+				syck_str_blow_away_commas(n);
+				f = strtod(n->data.str->ptr, NULL);
+				lua_pushnumber(bonus->L, f);
+				o = lua_gettop(bonus->L);
+			}
 			else if (strcmp(n->type_id, "int#hex") == 0)
 			{
 				long intVal = strtol(n->data.str->ptr, NULL, 16);
@@ -64,7 +108,7 @@ lua_syck_parser_handler(SyckParser *p, SyckNode *n)
 			{
 				long intVal = strtol(n->data.str->ptr, NULL, 10);
 				lua_pushnumber(bonus->L, intVal);
-				o = lua_gettop(bonus->L);
+				o = lua_gettop(bonus->L);                 
 			}
 			else
 			{
@@ -109,7 +153,7 @@ void lua_syck_emitter_handler(SyckEmitter *e, st_data_t data)
 {
 	struct emitter_xtra *bonus = (struct emitter_xtra *)e->bonus;
 	int type = lua_type(bonus->L, -1);
-	char buf[30];		/* find a better way, if possible */
+	char buf[32];		/* find a better way, if possible */
 	
 	switch (type)
 	{
@@ -124,8 +168,19 @@ void lua_syck_emitter_handler(SyckEmitter *e, st_data_t data)
 			syck_emit_scalar(e, "string", scalar_none, 0, 0, 0, (char *)lua_tostring(bonus->L, -1), lua_strlen(bonus->L, -1));
 			break;
 		case LUA_TNUMBER:
-			/* should handle floats as well */
-			snprintf(buf, sizeof(buf), "%i", (int)lua_tonumber(bonus->L, -1));
+			; lua_Number lnum; //is it an int or a float?
+			lnum = lua_tonumber(bonus->L, -1);
+			int asInt = lnum;
+			if(asInt == lnum)
+				snprintf(buf, sizeof(buf), "%i", asInt);
+			else
+			{
+				snprintf(buf, sizeof(buf), "%f", lnum);
+				/* Remove trailing zeroes after the decimal point */
+				int k;
+				for (k = strlen(buf) - 1; buf[k] == '0' && buf[k - 1] != '.'; k--)
+					buf[k] = '\0';
+			}
 			syck_emit_scalar(e, "number", scalar_none, 0, 0, 0, buf, strlen(buf));
 			break;
 		case LUA_TTABLE:
@@ -186,6 +241,13 @@ void lua_syck_output_handler(SyckEmitter *e, char *str, long len)
 	luaL_addlstring(&bonus->output, str, len);
 }
 
+void lua_syck_error_handler(SyckParser *p, char *msg)
+{
+	//struct parser_xtra *bonus = (struct parser_xtra *)p->bonus;
+	luaL_error(((struct parser_xtra *)p->bonus)->orig, "Error at [Line %d, Col %d]: %s\n", p->linect, p->cursor - p->lineptr, msg );
+}
+
+
 static int syck_load(lua_State *L)
 {
 	struct parser_xtra *bonus;
@@ -197,22 +259,30 @@ static int syck_load(lua_State *L)
 		luaL_typerror(L, 1, "string");
 
 	parser = syck_new_parser();
-	parser->bonus = S_ALLOC_N(struct emitter_xtra, 1);
+	parser->bonus = S_ALLOC_N(struct parser_xtra, 1);
 
 	bonus = (struct parser_xtra *)parser->bonus;
+	bonus->orig = L;
 	bonus->L = lua_newthread(L);
 
 	syck_parser_str(parser, (char *)lua_tostring(L, 1), lua_strlen(L, 1), NULL);
 	syck_parser_handler(parser, lua_syck_parser_handler);
+	syck_parser_error_handler(parser, lua_syck_error_handler);
 	v = syck_parse(parser);
 	syck_lookup_sym(parser, v, (char **)&obj);
 
 	syck_free_parser(parser);
 
+	lua_pop(L,1); //pop the thread, we don't need it anymore.
 	lua_xmove(bonus->L, L, 1);
 
+	if ( parser->bonus != NULL )
+		S_FREE( parser->bonus );
+	
 	return 1;
 }
+
+
 
 static int syck_dump(lua_State *L)
 {
@@ -221,6 +291,7 @@ static int syck_dump(lua_State *L)
 
 	emitter = syck_new_emitter();
 	emitter->bonus = S_ALLOC_N(struct emitter_xtra, 1);
+
 
 	bonus = (struct emitter_xtra *)emitter->bonus;
 	bonus->L = lua_newthread(L);
@@ -240,7 +311,12 @@ static int syck_dump(lua_State *L)
 	syck_emitter_flush(emitter, 0);
 
 	luaL_pushresult(&bonus->output);
+	
 	syck_free_emitter(emitter);
+	
+	if (bonus != NULL )
+		S_FREE( bonus );
+	
 
 	return 1;
 }
@@ -251,8 +327,24 @@ static const luaL_reg sycklib[] = {
 	{NULL, NULL}
 };
 
+
+static void set_info (lua_State *L)
+{
+// Assumes the table is on top of the stack.
+	lua_pushliteral (L, "_COPYRIGHT");
+	lua_pushliteral (L, "Copyright (C) why the lucky stiff");
+	lua_settable (L, -3);
+	lua_pushliteral (L, "_DESCRIPTION");
+	lua_pushliteral (L, "YAML handling through the syck library");
+	lua_settable (L, -3);
+	lua_pushliteral (L, "_VERSION");
+	lua_pushliteral (L, "0.56");
+	lua_settable (L, -3);
+}
+
 LUALIB_API int luaopen_syck(lua_State *L)
 {
 	luaL_openlib(L, "syck", sycklib, 0);
+	set_info(L);
 	return 1;
 }

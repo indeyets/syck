@@ -30,3 +30,5 @@ function yaml.load_file(file)
 	f:close()
 	return ret
 end
+
+setmetatable(yaml, {__index=syck})
