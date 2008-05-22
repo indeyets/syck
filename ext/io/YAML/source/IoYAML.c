@@ -13,24 +13,25 @@ YAML ioDoc(
 #include "IoList.h"
 #include "IoMap.h"
 #include "IoSeq.h"
-#include "ByteArray.h"
+#include "UArray.h"
 
 #define DATA(self) ((IoYAMLData *)IoObject_dataPointer(self))
 
-IoTag *IoYAML_tag(void *state)
+IoTag *IoYAML_newTag(void *state)
 {
 	IoTag *tag = IoTag_newWithName_("YAML");
-	tag->state = state;
-	tag->cloneFunc = (TagCloneFunc *)IoYAML_rawClone;
-	tag->freeFunc = (TagFreeFunc *)IoYAML_free;
-	tag->markFunc = (TagMarkFunc *)IoYAML_mark;
+	IoTag_state_(tag, state);
+	IoTag_cloneFunc_(tag, (IoTagCloneFunc *)IoYAML_rawClone);
+	IoTag_freeFunc_(tag, (IoTagFreeFunc *)IoYAML_free);
+	IoTag_markFunc_(tag, (IoTagMarkFunc *)IoYAML_mark);
 	return tag;
 }
 
 IoYAML *IoYAML_proto(void *state) 
 {
 	IoObject *self = IoObject_new(state);
-	self->tag = IoYAML_tag(state);
+	//self->tag = IoYAML_tag(state);
+	IoObject_tag_(self, IoYAML_newTag(state));
 	
 	IoObject_setDataPointer_(self, calloc(1, sizeof(IoYAMLData)));
 	DATA(self)->path = IOSYMBOL(".");
@@ -80,8 +81,7 @@ void IoYAML_mark(IoYAML *self)
 	IoObject_shouldMark((IoObject *)DATA(self)->path); 
 }
 
-SYMID
-IoYAML_parseHandler(SyckParser *p, SyckNode *n)
+SYMID IoYAML_parseHandler(SyckParser *p, SyckNode *n)
 {
   IoYAML *self = (IoYAML *)p->bonus;
 	IoSymbol *o, *o2, *o3;
@@ -147,7 +147,7 @@ IoYAML_parseHandler(SyckParser *p, SyckNode *n)
 			break;
 
 		case syck_seq_kind:
-      o = IoList_new(self->state);
+      o = IoList_new(IOSTATE);
 			for ( i=0; i < n->data.list->idx; i++ )
 			{
 				oid = syck_seq_read(n, i);
@@ -157,7 +157,7 @@ IoYAML_parseHandler(SyckParser *p, SyckNode *n)
 			break;
 
 		case syck_map_kind:
-      o = IoMap_new(self->state);
+      o = IoMap_new(IOSTATE);
 			for ( i=0; i < n->data.pairs->idx; i++ )
 			{
 				oid = syck_map_read(n, map_key, i);
@@ -207,11 +207,10 @@ IoObject *IoYAML_load(IoYAML *self, IoObject *locals, IoMessage *m)
 
 typedef struct {
   IoYAML *self;
-  ByteArray *buffer;
+  UArray *buffer;
 } IoYAMLout;
 
-void
-IoYAML_emitHandler(SyckEmitter *e, st_data_t data)
+static void IoYAML_emitHandler(SyckEmitter *e, st_data_t data)
 {
 	IoYAMLout *out = (IoYAMLout *)e->bonus;
   IoYAML *self = out->self;
@@ -228,7 +227,7 @@ IoYAML_emitHandler(SyckEmitter *e, st_data_t data)
   }
   else if (ISSEQ(obj))
   {
-    syck_emit_scalar(e, "string", scalar_none, 0, 0, 0, (char *)IOSEQ_BYTES(obj), IOSEQ_LENGTH(obj));
+     if(!obj) {} else syck_emit_scalar(e, "string", scalar_none, 0, 0, 0, (char *)IOSEQ_BYTES(obj), IOSEQ_LENGTH(obj));
   }
   else if (ISNUMBER(obj))
   {
@@ -264,16 +263,15 @@ IoYAML_emitHandler(SyckEmitter *e, st_data_t data)
   }
 }
 
-void
-IoYAML_outputHandler(SyckEmitter *e, char *str, long len)
+void IoYAML_outputHandler(SyckEmitter *e, char *str, long len)
 {
 	IoYAMLout *out = (IoYAMLout *)e->bonus;
-  ByteArray_appendBytes_size_(out->buffer, str, len);
+  UArray_appendBytes_size_(out->buffer, str, len);
 }
 
 IoObject *IoYAML_dump(IoYAML *self, IoObject *locals, IoMessage *m)
 {
-  ByteArray *buffer = ByteArray_new();
+  UArray *buffer = UArray_new();
 	IoObject *obj = IoMessage_locals_valueArgAt_(m, locals, 0);
 	SyckEmitter *emitter = syck_new_emitter();
   IoYAMLout *out = S_ALLOC(IoYAMLout);
@@ -288,5 +286,5 @@ IoObject *IoYAML_dump(IoYAML *self, IoObject *locals, IoMessage *m)
 	syck_free_emitter(emitter);
   S_FREE(out);
 
-  return IoSeq_newWithByteArray_copy_(self->state, buffer, 0);
+  return IoSeq_newWithUArray_copy_(IOSTATE, buffer, 0);
 }

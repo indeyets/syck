@@ -1,4 +1,3 @@
-Binding clone do(
+AddonBuilder clone do(
 	dependsOnLib("syck")
-	setIsServerBinding(true)
 )
