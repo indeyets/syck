@@ -414,21 +414,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 		case syck_seq_kind:
 		{
-			if (NULL == n->type_id || strcmp(n->type_id, "php/array") == 0) {
-				size_t i;
-
-				/* Just an array */
-				array_init(o);
-
-				for (i = 0; i < n->data.list->idx; i++) {
-					SYMID oid = syck_seq_read(n, i);
-					zval *o2 = NULL;
-
-					syck_lookup_sym(p, oid, (char **) &o2); /* retrieving child-node */
-
-					add_index_zval(o, i, o2);
-				}
-			} else if (strncmp(n->type_id, "php/array::", 11) == 0) {
+			if (strncmp(n->type_id, "php/array::", 11) == 0) {
 				/* some class which implements ArrayAccess */
 				size_t i;
 				size_t classname_len = strlen(n->type_id) - 11;
@@ -475,40 +461,30 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 				efree(classname);
 			} else {
-				/* something else */
-				php_error(E_NOTICE, "syck extension didn't handle %s type", n->type_id);
+				size_t i;
+
+				if (NULL != n->type_id && strcmp(n->type_id, "php/array") != 0) {
+					php_error(E_NOTICE, "syck extension didn't handle sequence of %s type. treating as php/array", n->type_id);
+				}
+
+				/* Just an array */
+				array_init(o);
+
+				for (i = 0; i < n->data.list->idx; i++) {
+					SYMID oid = syck_seq_read(n, i);
+					zval *o2 = NULL;
+
+					syck_lookup_sym(p, oid, (char **) &o2); /* retrieving child-node */
+
+					add_index_zval(o, i, o2);
+				}
 			}
 		}
 		break;
 
 		case syck_map_kind:
 		{
-			if (NULL == n->type_id || strcmp(n->type_id, "php/hash") == 0) {
-				SYMID oid;
-				size_t i;
-				zval *o2 = NULL, *o3 = NULL;
-				zval *res = NULL;
-
-				array_init(o);
-
-				for (i = 0; i < n->data.pairs->idx; i++) {
-					oid = syck_map_read(n, map_key, i);
-					syck_lookup_sym(p, oid, (char **) &o2); /* retrieving key-node */
-
-					if (o2->type == IS_STRING || o2->type == IS_LONG) {
-						oid = syck_map_read(n, map_value, i);
-						syck_lookup_sym(p, oid, (char **) &o3); /* retrieving value-node */
-
-						if (o2->type == IS_LONG) {
-							add_index_zval(o, Z_LVAL_P(o2), o3);
-						} else {
-							add_assoc_zval(o, Z_STRVAL_P(o2), o3);
-						}
-					}
-
-					zval_ptr_dtor(&o2);
-				}
-			} else if (strncmp(n->type_id, "php/hash::", 10) == 0) {
+			if (strncmp(n->type_id, "php/hash::", 10) == 0) {
 				/* some class which implements ArrayAccess */
 				SYMID oid;
 				size_t i;
@@ -555,8 +531,34 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 				efree(classname);
 			} else {
-				/* something else */
-				php_error(E_NOTICE, "syck extension didn't handle %s type", n->type_id);
+				SYMID oid;
+				size_t i;
+				zval *o2 = NULL, *o3 = NULL;
+				zval *res = NULL;
+
+				if (NULL != n->type_id && strcmp(n->type_id, "php/hash") != 0) {
+					php_error(E_NOTICE, "syck extension didn't handle map of %s type. treating as php/hash", n->type_id);
+				}
+
+				array_init(o);
+
+				for (i = 0; i < n->data.pairs->idx; i++) {
+					oid = syck_map_read(n, map_key, i);
+					syck_lookup_sym(p, oid, (char **) &o2); /* retrieving key-node */
+
+					if (o2->type == IS_STRING || o2->type == IS_LONG) {
+						oid = syck_map_read(n, map_value, i);
+						syck_lookup_sym(p, oid, (char **) &o3); /* retrieving value-node */
+
+						if (o2->type == IS_LONG) {
+							add_index_zval(o, Z_LVAL_P(o2), o3);
+						} else {
+							add_assoc_zval(o, Z_STRVAL_P(o2), o3);
+						}
+					}
+
+					zval_ptr_dtor(&o2);
+				}
 			}
 		}
 		break;
