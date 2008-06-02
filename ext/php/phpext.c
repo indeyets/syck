@@ -773,7 +773,11 @@ void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
 				zval *retval = NULL;
 				zval constant;
 
+#if ZEND_MODULE_API_NO >= 20071006
 				zend_get_constant_ex("DateTime::ISO8601", 17, &constant, ce, 0 TSRMLS_CC);
+#else
+				zend_get_constant_ex("DateTime::ISO8601", 17, &constant, ce TSRMLS_CC);
+#endif
 				zend_call_method_with_1_params(&data, ce, NULL, "format", &retval, &constant);
 
 				zval_dtor(&constant);
