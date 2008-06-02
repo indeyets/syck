@@ -851,9 +851,11 @@ PHP_FUNCTION(syck_load)
 	v = syck_parse(parser);
 
 	if (1 == syck_lookup_sym(parser, v, (char **) &obj)) {
-		*return_value = *obj;
-		zval_copy_ctor(return_value);
-		zval_ptr_dtor(&obj);
+		if (NULL != obj) {
+			*return_value = *obj;
+			zval_copy_ctor(return_value);
+			zval_ptr_dtor(&obj);
+		}
 	}
 
 	syck_free_parser(parser);
