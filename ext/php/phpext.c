@@ -613,6 +613,8 @@ void php_syck_ehandler(SyckParser *p, const char *str)
 	Z_SET_REFCOUNT_P(exc, 2);
 
 	st_foreach(p->syms, my_cleaner, NULL);
+
+	p->bonus = exc;
 }
 
 void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)
@@ -850,11 +852,17 @@ PHP_FUNCTION(syck_load)
 
 	v = syck_parse(parser);
 
-	if (1 == syck_lookup_sym(parser, v, (char **) &obj)) {
-		if (NULL != obj) {
-			*return_value = *obj;
-			zval_copy_ctor(return_value);
-			zval_ptr_dtor(&obj);
+	if (parser->bonus) {
+		*return_value = *((zval *)parser->bonus);
+		zval_copy_ctor(return_value);
+		// zval_ptr_dtor(&obj);
+	} else {
+		if (1 == syck_lookup_sym(parser, v, (char **) &obj)) {
+			if (NULL != &obj && NULL != obj) {
+				*return_value = *obj;
+				zval_copy_ctor(return_value);
+				zval_ptr_dtor(&obj);
+			}
 		}
 	}
 
