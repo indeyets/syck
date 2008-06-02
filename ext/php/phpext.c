@@ -414,7 +414,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 		case syck_seq_kind:
 		{
-			if (strncmp(n->type_id, "php/array::", 11) == 0) {
+			if (NULL != n->type_id && strncmp(n->type_id, "php/array::", 11) == 0) {
 				/* some class which implements ArrayAccess */
 				size_t i;
 				size_t classname_len = strlen(n->type_id) - 11;
@@ -484,7 +484,7 @@ SYMID php_syck_handler(SyckParser *p, SyckNode *n)
 
 		case syck_map_kind:
 		{
-			if (strncmp(n->type_id, "php/hash::", 10) == 0) {
+			if (NULL != n->type_id && strncmp(n->type_id, "php/hash::", 10) == 0) {
 				/* some class which implements ArrayAccess */
 				SYMID oid;
 				size_t i;
