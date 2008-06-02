@@ -31,6 +31,10 @@
 #include <ext/standard/info.h>
 #include "php_syck.h"
 
+#ifndef Z_SET_REFCOUNT_P
+# define Z_SET_REFCOUNT_P(x, y) (x)->refcount = (y)
+#endif
+
 #ifndef true
 # define true 1
 # define false 0
@@ -606,11 +610,7 @@ void php_syck_ehandler(SyckParser *p, const char *str)
 
 	exc = zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "%s on line %d, col %d: '%s'", str, p->linect + 1, p->cursor - p->lineptr, p->lineptr);
 
-#if ZEND_MODULE_API_NO >= 20071006
 	Z_SET_REFCOUNT_P(exc, 2);
-#else
-	exc->refcount = 2; // hack
-#endif
 
 	st_foreach(p->syms, my_cleaner, NULL);
 }
