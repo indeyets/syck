@@ -16,7 +16,7 @@
   |          Alexey Zakhlestin <indeyets@gmail.com>                      |
   +----------------------------------------------------------------------+
 
-  $Id$ 
+  $Id: phpext.c 330 2008-11-18 19:55:57Z indeyets $ 
 */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -40,7 +40,7 @@
 # define false 0
 #endif
 
-#define PHP_SYCK_VERSION "0.9.3-dev"
+#define PHP_SYCK_VERSION "0.9.4-dev"
 
 /**
  * SyckException class
@@ -51,6 +51,17 @@
 
 static zend_class_entry *spl_ce_RuntimeException;
 zend_class_entry *syck_exception_entry;
+
+/* {{{ arginfo */
+ZEND_BEGIN_ARG_INFO_EX(arginfo_syck_load, 0, 0, 1)
+	ZEND_ARG_INFO(0, string)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_syck_dump, 0, 0, 1)
+	ZEND_ARG_INFO(0, variable)
+ZEND_END_ARG_INFO()
+/* }}} */
+
 
 PHP_SYCK_API zend_class_entry *php_syck_get_exception_base()
 {
@@ -188,8 +199,8 @@ static int psex_determine_array_type(HashTable *myht TSRMLS_DC) /* {{{ */
 
 
 function_entry syck_functions[] = {
-	PHP_FE(syck_load, NULL)
-	PHP_FE(syck_dump, NULL)
+	PHP_FE(syck_load, arginfo_syck_load)
+	PHP_FE(syck_dump, arginfo_syck_dump)
 	{NULL, NULL, NULL}	/* Must be the last line in syck_functions[] */
 };
 
@@ -608,13 +619,17 @@ void php_syck_ehandler(SyckParser *p, const char *str)
 
 	endl[0] = '\0';
 
-	exc = zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "%s on line %d, col %d: '%s'", str, p->linect + 1, p->cursor - p->lineptr, p->lineptr);
+	if (NULL == p->bonus) {
+		/* silence second exceptions */
+		exc = zend_throw_exception_ex(syck_exception_entry, 0 TSRMLS_CC, "%s on line %d, col %d: '%s'", str, p->linect + 1, p->cursor - p->lineptr, p->lineptr);
 
-	Z_SET_REFCOUNT_P(exc, 2);
+		Z_SET_REFCOUNT_P(exc, 2);
 
-	st_foreach(p->syms, my_cleaner, NULL);
+		p->bonus = exc;
+	}
 
-	p->bonus = exc;
+	if (p->syms)
+		st_foreach(p->syms, my_cleaner, NULL);
 }
 
 void php_syck_emitter_handler(SyckEmitter *e, st_data_t id)

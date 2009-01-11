@@ -1,6 +1,12 @@
 --- %YAML:1.0
-- version: 0.9.3
+- version: 0.9.4
   date: 2008-??-??
+  status: beta
+  changes:
+    - nothing, yet
+
+- version: 0.9.3
+  date: 2008-11-18
   status: beta
   changes:
     - fixed bug#31 (broken yaml caused segfault)

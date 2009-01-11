@@ -81,6 +81,9 @@ class TestLoad extends PHPUnit_Framework_TestCase
 1\
 2"'), '12');
         $this->assertSame(syck_load("'12'"), '12');
+
+        // UTF-8
+        $this->assertSame('Привет', syck_load("'Привет'"));
     }
 
     public function testInteger()
@@ -176,6 +179,9 @@ class TestLoad extends PHPUnit_Framework_TestCase
         $this->assertEquals(array(), syck_load('{}'));
         $this->assertEquals(array('a', 'b', 'c'), syck_load('{0: a, 1: b, 2: c}'));
 
+        // UTF-8
+        $this->assertEquals(array('привет' => 'мир'), syck_load('{"привет": "мир"}'));
+
         // ArrayObject implements ArrayAccess: OK
         $this->assertEquals(new ArrayObject(), syck_load('!php/hash::ArrayObject {}'));
         $this->assertEquals(
@@ -212,6 +218,20 @@ class TestLoad extends PHPUnit_Framework_TestCase
     {
         try {
             $obj = syck_load(file_get_contents(dirname(__FILE__).'/bug31.yaml'));
+            $this->assertTrue(false);
+        } catch (SyckException $e) {
+            $this->assertTrue(true);
+        }
+    }
+
+    public function testBugPECL_14384()
+    {
+        $broken_string = 'test:
+	var: value
+	var2: value2';
+
+        try {
+            syck_load($broken_string);
             $this->assertTrue(false);
         } catch (SyckException $e) {
             $this->assertTrue(true);
