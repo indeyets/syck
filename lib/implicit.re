@@ -1,8 +1,8 @@
 /*
  * implicit.re
  *
- * $Author$
- * $Date$
+ * $Author: indeyets $
+ * $Date: 2007-10-24 23:56:48 +0400 (ср, 24 окт 2007) $
  *
  * Copyright (C) 2003 why the lucky stiff
  */
