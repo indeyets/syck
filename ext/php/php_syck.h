@@ -16,7 +16,7 @@
   |          Alexey Zakhlestin <indeyets@gmail.com>                      |
   +----------------------------------------------------------------------+
 
-  $Id$ 
+  $Id: php_syck.h 266 2007-07-10 21:41:32Z indeyets $ 
 */
 
 #ifndef PHP_SYCK_H

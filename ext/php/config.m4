@@ -1,4 +1,4 @@
-dnl $Id$
+dnl $Id: config.m4 264 2007-07-08 19:57:08Z indeyets $
 dnl config.m4 for extension syck
 
 PHP_ARG_WITH(syck, for syck support,
