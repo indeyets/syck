@@ -255,7 +255,7 @@ static void IoYAML_emitHandler(SyckEmitter *e, st_data_t data)
     size_t i = 0;
     for (i = 0; i < len; i++)
     {
-      IoSymbol *k = IoList_rawAt_(obj, i);
+      IoSymbol *k = IoList_rawAt_(keys, i);
       syck_emit_item(e, (st_data_t)k);
       syck_emit_item(e, (st_data_t)IoMap_rawAt(obj, k));
     }
