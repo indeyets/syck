@@ -1667,7 +1667,7 @@ EOY
             assert_equals( e1.message, e2.message )
         else
             # Ruby 1.9 and above
-            assert_equals( e1, YAML.load( YAML.dump( e1 ) ) )
+            assert_equals( e1, e2 )
         end
     end
 end
