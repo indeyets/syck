@@ -160,14 +160,6 @@ end
 class Exception
     yaml_as "tag:ruby.yaml.org,2002:exception"
 
-    # override exc_equal(), since it fails somehow, although message, backtrace and class are all equal.
-    def == obj
-        return false unless self.backtrace == obj.backtrace
-        return false unless self.message == obj.message
-        return false unless self.kind_of?(obj.class) || obj.kind_of?(self.class) # transitive
-        true
-    end
-    
     def Exception.yaml_new( klass, tag, val )
         o = eval("#{klass}.new(\"#{val.delete('message')}\")")
         o.set_backtrace(val.delete('backtrace'))
