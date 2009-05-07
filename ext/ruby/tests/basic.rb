@@ -1651,6 +1651,16 @@ EOY
     #        inspect_str = "[[...], [...]]"
     #        assert_equals( inspect_str, YAML::load( a.to_yaml ).inspect )
     #    end
+    
+    #
+    # Test Exception
+    #
+    def test_exception
+        require 'yaml'
+        e1 = Exception.new("hello")
+        e1.set_backtrace(["file1.rb", "file2.rb"])
+        assert_equals(e1, YAML.load( YAML.dump( e1 ) ) )
+    end
 end
 
 RUNIT::CUI::TestRunner.run( YAML_Unit_Tests.suite )
