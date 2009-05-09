@@ -1,9 +1,9 @@
 #import <Foundation/Foundation.h>
 
 #if TARGET_OS_IPHONE
-#import <YAMLCategories.h>
-#import <YAMLCocoaCategories.h>
-#import <GSNSDataExtensions.h>
+#import "YAMLCategories.h"
+#import "YAMLCocoaCategories.h"
+#import "GSNSDataExtensions.h"
 #else
 #import <YAML/YAMLCategories.h>
 #import <YAML/YAMLCocoaCategories.h>
