@@ -334,11 +334,9 @@ static char gEncodingTable[ 64 ] = {
     } // end while loop
 
 	// Make a string object out of the encoded data buffer.
-	result = [ [ NSString alloc ] initWithBytes:encodedData length:encodedLength
-				encoding:NSASCIIStringEncoding ];
-	free( encodedData );
-
-	return result;
+    result = (NSString *)CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, encodedData, encodedLength, kCFStringEncodingASCII, NO, kCFAllocatorMalloc);
+	
+    return [result autorelease];
 }
 
 @end

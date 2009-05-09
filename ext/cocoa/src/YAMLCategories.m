@@ -302,28 +302,28 @@ BOOL yamlClass(id object)
 
 -(NSString*) yamlDescriptionWithIndent:(int)indent
 {
+    if([self count] == 0)
+		return @"{}";
+
 	NSEnumerator		*enumerator;
 	NSArray				*allKeys = [self allKeys];
 	NSString			*key, *last;
 	
 	NSMutableString		*description = [NSMutableString stringWithString:@"\n"];
-	char				*strIndent = malloc(indent+1);
+	char				strIndent[indent+1];
 	//int					keyLength = 0;
-	
-	if([self count] == 0)
-		return @"{}";
-	
+		
 	memset(strIndent, ' ', indent);
 	strIndent[indent] = 0;
 	
 	//get longest key length
-    if([[allKeys objectAtIndex:0] respondsToSelector:@selector(caseInsensitiveCompare:)]) {
+    /*if([[allKeys objectAtIndex:0] respondsToSelector:@selector(caseInsensitiveCompare:)]) {
         allKeys = [allKeys sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)];
     } else {
         allKeys = [allKeys sortedArrayUsingSelector:@selector(compare:)];
-    }
+    }*/
 	last = [allKeys lastObject];
-	enumerator = [allKeys objectEnumerator];
+	//enumerator = [allKeys objectEnumerator];
 	/*while (key = [enumerator nextObject])
 	{
 		if([key length] > keyLength)
@@ -344,18 +344,18 @@ BOOL yamlClass(id object)
 		
 		object = [object toYAML];
 	
-	/*	[description appendFormat:@"%s%@: %@%@%s", strIndent, 
-			[key stringByPaddingToLength:keyLength withString:@" " startingAtIndex:0],
+        /*[description appendFormat:@"%s%@: %@%@%s", strIndent, 
+            [key stringByPaddingToLength:keyLength withString:@" " startingAtIndex:0],
 			tag,
-			[object yamlDescriptionWithIndent:indent+2], key == last? "" : "\n"];
-      */  [description appendFormat:@"%s%@: %@%@%s", strIndent, 
+			[object yamlDescriptionWithIndent:indent+2]];*/
+       
+        [description appendFormat:@"%s%@: %@%@\n", 
+         strIndent, 
          key,
          tag,
-         [object yamlDescriptionWithIndent:indent+2], key == last? "" : "\n"];
-        
+         [object yamlDescriptionWithIndent:indent+2]];
 	}
-	
-	free(strIndent);
+    [description deleteCharactersInRange:NSMakeRange([description length] - 1, 1)];
 	
 	return description;
 }
