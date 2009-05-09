@@ -252,6 +252,6 @@ id yaml_parse_raw_utf8(const char *str, long len)
 
 id yaml_parse(NSString *str)
 {
-    char *yamlstr = (char *)[str UTF8String];
+    const char *yamlstr = [str UTF8String];
     yaml_parse_raw_utf8(yamlstr, strlen(yamlstr));
 }
