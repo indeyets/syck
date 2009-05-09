@@ -322,7 +322,7 @@ BOOL yamlClass(id object)
     } else {
         allKeys = [allKeys sortedArrayUsingSelector:@selector(compare:)];
     }*/
-	last = [allKeys lastObject];
+	//last = [allKeys lastObject];
 	//enumerator = [allKeys objectEnumerator];
 	/*while (key = [enumerator nextObject])
 	{
