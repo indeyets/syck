@@ -43,6 +43,7 @@
 @end
 
 @interface NSObject (YAMLAdditions)
+- (id)yamlData;
 - (id)toYAML;
 - (NSString*)yamlDescription;
 - (NSString*)yamlDescriptionWithIndent:(int)indent;

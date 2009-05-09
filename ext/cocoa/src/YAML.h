@@ -1,7 +1,14 @@
 #import <Foundation/Foundation.h>
+
+#if TARGET_OS_IPHONE
+#import <YAMLCategories.h>
+#import <YAMLCocoaCategories.h>
+#import <GSNSDataExtensions.h>
+#else
 #import <YAML/YAMLCategories.h>
 #import <YAML/YAMLCocoaCategories.h>
 #import <YAML/GSNSDataExtensions.h>
+#endif
 
 id yaml_parse(NSString *str);
 

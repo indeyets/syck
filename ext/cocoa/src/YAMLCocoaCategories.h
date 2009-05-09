@@ -6,6 +6,10 @@
 //  Copyright 2004 __MyCompanyName__. All rights reserved.
 //
 
+#import <Foundation/Foundation.h>
+
+#if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
+
 #import <Cocoa/Cocoa.h>
 
 @interface NSColor (YAMLCocoaAdditions)
@@ -18,17 +22,24 @@
 - (id)toYAML;
 @end
 
+@interface NSPrinter (YAMLCocoaAdditions)
++ (id)objectWithYAML:(id)data;
+- (id)toYAML;
+@end
+
 @interface NSValue (YAMLCocoaAdditions)
 + (id)objectWithYAML:(id)data;
 - (id)toYAML;
 @end
 
-@interface NSNumber (YAMLCocoaAdditions)
+@interface NSDate (YAMLCocoaAdditions)
 + (id)objectWithYAML:(id)data;
 - (id)toYAML;
 @end
 
-@interface NSPrinter (YAMLCocoaAdditions)
+#endif
+
+@interface NSNumber (YAMLCocoaAdditions)
 + (id)objectWithYAML:(id)data;
 - (id)toYAML;
 @end

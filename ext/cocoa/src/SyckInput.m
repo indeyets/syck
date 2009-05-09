@@ -143,10 +143,12 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
             {
                 v = [NSDate dateWithNaturalLanguageString:[NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len]];
             }*/
+#if !TARGET_OS_IPHONE
             else if ( strncmp( type_id, "timestamp", 9 ) == 0 )
             {
                 v = [NSDate dateWithNaturalLanguageString:[NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len]];
             }
+#endif
             else if ( strncmp( type_id, "merge", 5 ) == 0 )
             {
                 v = @"MERGE"; //rely on constants being the same

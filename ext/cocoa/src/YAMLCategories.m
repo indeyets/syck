@@ -39,6 +39,7 @@ BOOL yamlClass(id object)
 - (void)dealloc
 {
 	[data release];
+    [super dealloc];
 }
 
 - (id)copyWithZone:(NSZone *)zone
@@ -63,7 +64,7 @@ BOOL yamlClass(id object)
 - (id)yamlParse
 {
 	NSLog(@"%@-%@",tag,data);
-	return [tag objectWithYAML:data];
+	return [tag performSelector:@selector(objectWithYAML:) withObject:data];
 }
 
 @end
@@ -102,7 +103,7 @@ BOOL yamlClass(id object)
 	memset(strIndent, ' ', indent);
 	strIndent[indent] = 0;
 	
-	stringIndent = [NSString stringWithCString:strIndent];
+	stringIndent = [NSString stringWithUTF8String:strIndent];
 	
 	while(i > 0)
 	{
@@ -210,7 +211,7 @@ BOOL yamlClass(id object)
 		if(yamlClass(anObject))
 			tag = @"";
 		else 
-			tag = [NSString stringWithFormat:@"!!%@ ", [anObject className]];
+			tag = [NSString stringWithFormat:@"!!%@ ", NSStringFromClass([anObject class])];
 		
 		anObject = [anObject toYAML];
 		
@@ -331,7 +332,7 @@ BOOL yamlClass(id object)
 		if(yamlClass(object))
 			tag = @"";
 		else 
-			tag = [NSString stringWithFormat:@"!!%@ ", [object className]];
+			tag = [NSString stringWithFormat:@"!!%@ ", NSStringFromClass([object class])];
 		
 		object = [object toYAML];
 	
@@ -400,10 +401,6 @@ BOOL yamlClass(id object)
 - (void)performSelector:(SEL)sel withEachObjectInSet:(NSSet *)set {
     [self performSelector:sel withEachObjectInArray:[set allObjects]];
 }
-
-@end
-
-@implementation NSObject (PublicYAMLAdditions)
 
 -(NSString*) yamlDescription
 {
