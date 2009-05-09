@@ -39,7 +39,7 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
 			{
 				v = [NSData dataWithBase64EncodedString:[NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len]];
             
-                NSString *string = [[NSString alloc] initWithBytes:[v bytes] length:[v length] encoding:NSUTF8StringEncoding];
+                NSString *string = [NSString stringWithUTF8String:[v bytes] length:[v length]];
                 if(string) 
                 {
                     v = [string autorelease];
