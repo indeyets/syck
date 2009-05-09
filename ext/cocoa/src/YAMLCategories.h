@@ -50,3 +50,8 @@
 - (void)performSelector:(SEL)sel withEachObjectInArray:(NSArray *)array;
 - (void)performSelector:(SEL)sel withEachObjectInSet:(NSSet *)set;
 @end
+
+@interface NSData (YAMLAdditions) 
+-(id) yamlDescriptionWithIndent:(int)indent;
+-(id) toYAML;
+@end

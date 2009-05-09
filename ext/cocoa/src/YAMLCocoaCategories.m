@@ -253,6 +253,7 @@
 
 @end
 
+#if 0
 @implementation NSData (YAMLCocoaAdditions)
 
 +(id) objectWithYAML:(id)data
@@ -284,3 +285,4 @@
 }
 
 @end
+#endif

@@ -7,6 +7,7 @@
 //
 
 #import "YAMLCategories.h"
+#import "GSNSDataExtensions.h"
 
 BOOL yamlClass(id object)
 {
@@ -17,6 +18,8 @@ BOOL yamlClass(id object)
 	if([object isKindOfClass:[NSString class]])
 		return YES;
 	if([object isKindOfClass:[NSNumber class]])
+		return YES;
+	if([object isKindOfClass:[NSData class]])
 		return YES;
 	return NO;
 }
@@ -435,4 +438,16 @@ BOOL yamlClass(id object)
 	return [self description];
 }
 
+@end
+
+@implementation NSData (YAMLAdditions) 
+-(id) yamlDescriptionWithIndent:(int)indent
+{
+    return [[@"!binary |\n" stringByAppendingString:[self base64EncodingWithLineLength:72]] indented:indent];
+}
+
+-(id) toYAML
+{
+	return self;
+}
 @end

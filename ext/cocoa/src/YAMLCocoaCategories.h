@@ -44,7 +44,9 @@
 - (id)toYAML;
 @end
 
+#if 0
 @interface NSData (YAMLCocoaAdditions)
 + (id)objectWithYAML:(id)data;
 - (id)toYAML;
 @end
+#endif
