@@ -38,6 +38,12 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
             else if ( strcmp( type_id, "binary" ) == 0 )
 			{
 				v = [NSData dataWithBase64EncodedString:[NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len]];
+            
+                NSString *string = [[NSString alloc] initWithBytes:[v bytes] length:[v length] encoding:NSUTF8StringEncoding];
+                if(string) 
+                {
+                    v = [string autorelease];
+                }
             }
 			else if ( strcmp( type_id, "bool#yes" ) == 0 )
 			{
