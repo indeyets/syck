@@ -8,7 +8,12 @@
  * Copyright (C) 2003 why the lucky stiff
  */
 #include "syck.h"
+
+#if GRAM_FILES_HAVE_TAB_SUFFIX
+#include "gram.tab.h"
+#else
 #include "gram.h"
+#endif
 
 #define QUOTELEN 128
 

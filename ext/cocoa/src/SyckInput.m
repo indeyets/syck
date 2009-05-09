@@ -4,7 +4,7 @@
 #import "YAMLCocoaCategories.h"
 #import <syck.h>
 
-void cocoa_syck_error_handler( SyckParser *p, char *msg )
+void cocoa_syck_error_handler( SyckParser *p, const char *msg )
 {
 	NSLog(@"syck error:%s position:(%d, %d)", msg, p->linect, p->cursor - p->lineptr);
 }
