@@ -224,23 +224,28 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
     return oid;
 }
 
-id yaml_parse(NSString *str)
+id yaml_parse_raw_utf8(const char *str, long len) 
 {
     id obj = NULL;
     SYMID v;
-    char *yamlstr = (char *)[str UTF8String];
     SyckParser *parser = syck_new_parser();
-
-    syck_parser_str_auto( parser, yamlstr, NULL );
+    
+    syck_parser_str( parser, str, len, NULL );
     syck_parser_handler( parser, cocoa_syck_parse_handler );
     syck_parser_error_handler( parser, cocoa_syck_error_handler);
     syck_parser_implicit_typing( parser, 1 );
     syck_parser_taguri_expansion( parser, 1 );
-
+    
     v = syck_parse( parser );
     if(v)
-         syck_lookup_sym( parser, v, (char **)&obj );
+        syck_lookup_sym( parser, v, (char **)&obj );
 	
     syck_free_parser( parser );
-    return obj;
+    return obj;    
+}
+
+id yaml_parse(NSString *str)
+{
+    char *yamlstr = (char *)[str UTF8String];
+    yaml_parse_raw_utf8(yamlstr, strlen(yamlstr));
 }

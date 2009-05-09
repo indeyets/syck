@@ -11,6 +11,7 @@
 #endif
 
 id yaml_parse(NSString *str);
+id yaml_parse_raw_utf8(const char *str, long len);
 
 @interface NSObject (PublicYAMLAdditions)
 // -toYAML and +fromYAML are the methods you will need to override for your classes
