@@ -42,7 +42,7 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
                 NSString *string = [NSString stringWithUTF8String:[v bytes] length:[v length]];
                 if(string) 
                 {
-                    v = [string autorelease];
+                    v = string;
                 }
             }
 			else if ( strcmp( type_id, "bool#yes" ) == 0 )
