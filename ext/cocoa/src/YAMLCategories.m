@@ -76,14 +76,14 @@ BOOL yamlClass(id object)
 
 @implementation NSString (YAMLAdditions)
 
-+ (id)stringWithUTF8String:(const char *)bytes length:(unsigned)length
++ (id)yamlStringWithUTF8String:(const char *)bytes length:(unsigned)length
 {
 	NSString *str = [[NSString alloc] initWithBytes:bytes length:length encoding:NSUTF8StringEncoding];
 	
 	return [str autorelease];
 }
 
--(int) indent
+-(int) yamlIndent
 {
 	int i;
 	//calculate the indent
@@ -94,7 +94,7 @@ BOOL yamlClass(id object)
 	return i;
 }
 
--(NSString*) indented:(int)indent
+-(NSString*) yamlIndented:(int)indent
 {
 	NSRange				lineRange;
 	int					i = [self length]-1;
@@ -120,26 +120,6 @@ BOOL yamlClass(id object)
 	return indented;
 }
 
--(NSString*) trim
-{
-	return [self stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-}
-
--(NSString*) firstWord
-{
-	NSRange space = [self rangeOfCharacterFromSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-	
-	if(space.location == NSNotFound)
-		space.location = [self length];
-		
-	return [self substringWithRange:NSMakeRange(0,space.location)];
-}
-
--(id) logicalValue
-{
-	return self;
-}
-
 -(NSString*)yamlDescriptionWithIndent:(int)indent
 {
 	NSRange		lineRange;
@@ -150,12 +130,7 @@ BOOL yamlClass(id object)
 	if(lineRange.length >= [self length])
 		return [NSString stringWithFormat:@"\"%@\"", [self stringByReplacingOccurrencesOfString:@"\"" withString:@"\\\""]];
 	
-	return [NSString stringWithFormat:@"|-\n%@", [self indented:indent]];
-}
-
--(BOOL) boolValue
-{
-	return [self intValue];
+	return [NSString stringWithFormat:@"|-\n%@", [self yamlIndented:indent]];
 }
 
 - (id)toYAML
@@ -191,7 +166,7 @@ BOOL yamlClass(id object)
 
 - (NSArray*)yamlParse
 {
-	return [self collectWithSelector:@selector(yamlParse)];
+	return [self yamlCollectWithSelector:@selector(yamlParse)];
 }
 
 -(NSString*) yamlDescriptionWithIndent:(int)indent
@@ -233,14 +208,7 @@ BOOL yamlClass(id object)
 	return self;
 }
 
-- (id)firstObject
-{
-	if([self count])
-		return [self objectAtIndex:0];
-	return NULL;
-}
-
-- (NSArray*)collectWithSelector:(SEL)aSelector withObject:(id)anObject
+- (NSArray*)yamlCollectWithSelector:(SEL)aSelector withObject:(id)anObject
 {
 	NSMutableArray  *array = [NSMutableArray array];
 	unsigned i, c = [self count];
@@ -253,7 +221,7 @@ BOOL yamlClass(id object)
     return array;
 }
 
-- (NSArray*)collectWithSelector:(SEL)aSelector
+- (NSArray*)yamlCollectWithSelector:(SEL)aSelector
 {
 	NSMutableArray  *array = [NSMutableArray array];
 	unsigned i, c = [self count];
@@ -297,7 +265,7 @@ BOOL yamlClass(id object)
 
 - (NSDictionary*)yamlParse
 {
-	return [self collectWithSelector:@selector(yamlParse)];
+	return [self yamlCollectWithSelector:@selector(yamlParse)];
 }
 
 -(NSString*) yamlDescriptionWithIndent:(int)indent
@@ -365,7 +333,7 @@ BOOL yamlClass(id object)
 	return self;
 }
 
-- (NSDictionary*)collectWithSelector:(SEL)aSelector withObject:(id)anObject
+- (NSDictionary*)yamlCollectWithSelector:(SEL)aSelector withObject:(id)anObject
 {
 	NSMutableDictionary  *dict = [NSMutableDictionary dictionary];
 	NSArray *allKeys = [self allKeys];
@@ -380,7 +348,7 @@ BOOL yamlClass(id object)
     return dict;
 }
 
-- (NSDictionary*)collectWithSelector:(SEL)aSelector
+- (NSDictionary*)yamlCollectWithSelector:(SEL)aSelector
 {
 	NSMutableDictionary  *dict = [NSMutableDictionary dictionary];
 	NSArray *allKeys = [self allKeys];
@@ -404,15 +372,15 @@ BOOL yamlClass(id object)
 	return [self toYAML];
 }
 
-- (void)performSelector:(SEL)sel withEachObjectInArray:(NSArray *)array {
+- (void)yamlPerformSelector:(SEL)sel withEachObjectInArray:(NSArray *)array {
     unsigned i, c = [array count];
     for (i=0; i<c; i++) {
         [self performSelector:sel withObject:[array objectAtIndex:i]];
     }
 }
 
-- (void)performSelector:(SEL)sel withEachObjectInSet:(NSSet *)set {
-    [self performSelector:sel withEachObjectInArray:[set allObjects]];
+- (void)yamlPerformSelector:(SEL)sel withEachObjectInSet:(NSSet *)set {
+    [self yamlPerformSelector:sel withEachObjectInArray:[set allObjects]];
 }
 
 -(NSString*) yamlDescription
@@ -443,7 +411,7 @@ BOOL yamlClass(id object)
 @implementation NSData (YAMLAdditions) 
 -(id) yamlDescriptionWithIndent:(int)indent
 {
-    return [[@"!binary |\n" stringByAppendingString:[self base64EncodingWithLineLength:72]] indented:indent];
+    return [[@"!binary |\n" stringByAppendingString:[self base64EncodingWithLineLength:72]] yamlIndented:indent];
 }
 
 -(id) toYAML

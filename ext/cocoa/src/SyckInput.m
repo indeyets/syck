@@ -29,7 +29,7 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
             transferred = 1;
 			if ( type_id == NULL || strcmp( type_id, "str" ) == 0 )
             {
-				v = [NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len];
+				v = [NSString yamlStringWithUTF8String:n->data.str->ptr length:n->data.str->len];
             }
             else if ( strcmp( type_id, "null" ) == 0 )
 			{
@@ -37,9 +37,9 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
 			}
             else if ( strcmp( type_id, "binary" ) == 0 )
 			{
-				v = [NSData dataWithBase64EncodedString:[NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len]];
+				v = [NSData dataWithBase64EncodedString:[NSString yamlStringWithUTF8String:n->data.str->ptr length:n->data.str->len]];
             
-                NSString *string = [NSString stringWithUTF8String:[v bytes] length:[v length]];
+                NSString *string = [NSString yamlStringWithUTF8String:[v bytes] length:[v length]];
                 if(string) 
                 {
                     v = string;
@@ -161,7 +161,7 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
             }
             else
             {
-				v = [NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len];
+				v = [NSString yamlStringWithUTF8String:n->data.str->ptr length:n->data.str->len];
 				transferred = 0;
             }
         break;
@@ -199,7 +199,7 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
 					if([o3 isKindOfClass:[NSDictionary class]])
 						[v addEntriesFromDictionary:o3];
 					else if([o3 isKindOfClass:[NSArray class]])
-						[v performSelector:@selector(addEntriesFromDictionary:) withEachObjectInArray:o3];
+						[v yamlPerformSelector:@selector(addEntriesFromDictionary:) withEachObjectInArray:o3];
 				}
 				else
 					[v setObject:o3 forKey:o2];
