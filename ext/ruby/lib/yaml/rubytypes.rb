@@ -159,17 +159,21 @@ end
 
 class Exception
     yaml_as "tag:ruby.yaml.org,2002:exception"
+
     def Exception.yaml_new( klass, tag, val )
-        o = YAML.object_maker( klass, { 'mesg' => val.delete( 'message' ) } )
+        o = eval("#{klass}.new(\"#{val.delete('message')}\")")
+        o.set_backtrace(val.delete('backtrace'))
+        
         val.each_pair do |k,v|
-            o.instance_variable_set("@#{k}", v)
+          o.instance_variable_set("@#{k}", v)
         end
         o
     end
 	def to_yaml( opts = {} )
-		YAML::quick_emit( object_id, opts ) do |out|
+		YAML::quick_emit( self, opts ) do |out|
             out.map( taguri, to_yaml_style ) do |map|
                 map.add( 'message', message )
+                map.add( 'backtrace', backtrace )
 				to_yaml_properties.each do |m|
                     map.add( m[1..-1], instance_variable_get( m ) )
                 end
