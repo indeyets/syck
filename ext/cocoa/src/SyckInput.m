@@ -4,7 +4,7 @@
 #import "YAMLCocoaCategories.h"
 #import <syck.h>
 
-void cocoa_syck_error_handler( SyckParser *p, char *msg )
+void cocoa_syck_error_handler( SyckParser *p, const char *msg )
 {
 	NSLog(@"syck error:%s position:(%d, %d)", msg, p->linect, p->cursor - p->lineptr);
 }
@@ -29,7 +29,7 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
             transferred = 1;
 			if ( type_id == NULL || strcmp( type_id, "str" ) == 0 )
             {
-				v = [NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len];
+				v = [NSString yamlStringWithUTF8String:n->data.str->ptr length:n->data.str->len];
             }
             else if ( strcmp( type_id, "null" ) == 0 )
 			{
@@ -37,7 +37,13 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
 			}
             else if ( strcmp( type_id, "binary" ) == 0 )
 			{
-				v = [NSData dataWithBase64EncodedString:[NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len]];
+				v = [NSData dataWithBase64EncodedString:[NSString yamlStringWithUTF8String:n->data.str->ptr length:n->data.str->len]];
+            
+                NSString *string = [NSString yamlStringWithUTF8String:[v bytes] length:[v length]];
+                if(string) 
+                {
+                    v = string;
+                }
             }
 			else if ( strcmp( type_id, "bool#yes" ) == 0 )
 			{
@@ -143,17 +149,19 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
             {
                 v = [NSDate dateWithNaturalLanguageString:[NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len]];
             }*/
+#if !TARGET_OS_IPHONE
             else if ( strncmp( type_id, "timestamp", 9 ) == 0 )
             {
                 v = [NSDate dateWithNaturalLanguageString:[NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len]];
             }
+#endif
             else if ( strncmp( type_id, "merge", 5 ) == 0 )
             {
                 v = @"MERGE"; //rely on constants being the same
             }
             else
             {
-				v = [NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len];
+				v = [NSString yamlStringWithUTF8String:n->data.str->ptr length:n->data.str->len];
 				transferred = 0;
             }
         break;
@@ -191,7 +199,7 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
 					if([o3 isKindOfClass:[NSDictionary class]])
 						[v addEntriesFromDictionary:o3];
 					else if([o3 isKindOfClass:[NSArray class]])
-						[v performSelector:@selector(addEntriesFromDictionary:) withEachObjectInArray:o3];
+						[v yamlPerformSelector:@selector(addEntriesFromDictionary:) withEachObjectInArray:o3];
 				}
 				else
 					[v setObject:o3 forKey:o2];
@@ -222,23 +230,28 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
     return oid;
 }
 
-id yaml_parse(NSString *str)
+id yaml_parse_raw_utf8(const char *str, long len) 
 {
     id obj = NULL;
     SYMID v;
-    char *yamlstr = (char *)[str UTF8String];
     SyckParser *parser = syck_new_parser();
-
-    syck_parser_str_auto( parser, yamlstr, NULL );
+    
+    syck_parser_str( parser, str, len, NULL );
     syck_parser_handler( parser, cocoa_syck_parse_handler );
     syck_parser_error_handler( parser, cocoa_syck_error_handler);
     syck_parser_implicit_typing( parser, 1 );
     syck_parser_taguri_expansion( parser, 1 );
-
+    
     v = syck_parse( parser );
     if(v)
-         syck_lookup_sym( parser, v, (char **)&obj );
+        syck_lookup_sym( parser, v, (char **)&obj );
 	
     syck_free_parser( parser );
-    return obj;
+    return obj;    
+}
+
+id yaml_parse(NSString *str)
+{
+    const char *yamlstr = [str UTF8String];
+    yaml_parse_raw_utf8(yamlstr, strlen(yamlstr));
 }

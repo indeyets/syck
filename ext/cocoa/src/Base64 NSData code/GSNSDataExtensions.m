@@ -97,7 +97,7 @@ static char gEncodingTable[ 64 ] = {
         unsigned long		ixtext;
         unsigned long		lentext;
         unsigned char		ch;
-        unsigned char		inbuf [3], outbuf [4];
+        unsigned char		inbuf [4], outbuf [3];
         short				ixinbuf;
         NSData				*base64Data;
 		unsigned char		*preprocessed, *decodedBytes;
@@ -197,7 +197,7 @@ static char gEncodingTable[ 64 ] = {
     unsigned long		ixtext;
     unsigned long		lengthData;
     long				ctremaining;
-    unsigned char		inbuf [3], outbuf [4];
+    unsigned char		inbuf [4], outbuf [3];
     short				i;
     short				charsonline = 0, ctcopy;
     unsigned long		ix;
@@ -334,11 +334,9 @@ static char gEncodingTable[ 64 ] = {
     } // end while loop
 
 	// Make a string object out of the encoded data buffer.
-	result = [ [ NSString alloc ] initWithBytes:encodedData length:encodedLength
-				encoding:NSASCIIStringEncoding ];
-	free( encodedData );
-
-	return result;
+    result = (NSString *)CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, encodedData, encodedLength, kCFStringEncodingASCII, NO, kCFAllocatorMalloc);
+	
+    return [result autorelease];
 }
 
 @end

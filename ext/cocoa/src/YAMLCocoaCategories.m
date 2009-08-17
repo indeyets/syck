@@ -6,7 +6,9 @@
 //  Copyright 2004 __MyCompanyName__. All rights reserved.
 //
 
+#import <Foundation/Foundation.h>
 #import "YAMLCocoaCategories.h"
+#if !TARGET_OS_IPHONE
 
 @implementation NSColor (YAMLCocoaAdditions)
 
@@ -159,6 +161,20 @@
 
 @end
 
+@implementation NSPrinter (YAMLCocoaAdditions)
+
++(id) objectWithYAML:(id)data
+{
+	return [NSPrinter printerWithName:[data objectForKey:@"Name"]];
+}
+
+-(id) toYAML
+{
+	return [self deviceDescription];
+}
+
+@end
+
 @implementation NSValue (YAMLCocoaAdditions)
 
 +(id) objectWithYAML:(id)data
@@ -180,7 +196,7 @@
 	{
 		return  [NSValue valueWithRange:NSMakeRange([[data objectForKey:@"p"] floatValue], [[data objectForKey:@"l"] floatValue])];
 	}
-		
+    
 	return nil;
 }
 
@@ -207,6 +223,22 @@
 
 @end
 
+@implementation NSDate (YAMLCocoaAdditions)
+
++(id) objectWithYAML:(id)data
+{
+	return [NSDate dateWithNaturalLanguageString:data];
+}
+
+-(id) toYAML
+{
+	return [self description];
+}
+
+@end
+
+#endif
+
 @implementation NSNumber (YAMLCocoaAdditions)
 
 +(id) objectWithYAML:(id)data
@@ -221,29 +253,16 @@
 
 @end
 
-@implementation NSPrinter (YAMLCocoaAdditions)
-
-+(id) objectWithYAML:(id)data
-{
-	return [NSPrinter printerWithName:[data objectForKey:@"Name"]];
-}
-
--(id) toYAML
-{
-	return [self deviceDescription];
-}
-
-@end
-
+#if 0
 @implementation NSData (YAMLCocoaAdditions)
 
 +(id) objectWithYAML:(id)data
 {
 	char		*buffer;
 	int			ptr = 0, index = 1, length;
-	char		*dataString;
+	const char		*dataString;
 	
-	dataString = [data cString];
+	dataString = [data UTF8String];
 	length = [data length];
 	buffer = malloc(length);
 
@@ -266,17 +285,4 @@
 }
 
 @end
-
-@implementation NSDate (YAMLCocoaAdditions)
-
-+(id) objectWithYAML:(id)data
-{
-	return [NSDate dateWithNaturalLanguageString:data];
-}
-
--(id) toYAML
-{
-	return [self description];
-}
-
-@end
+#endif

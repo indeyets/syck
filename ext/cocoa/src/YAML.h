@@ -1,9 +1,17 @@
 #import <Foundation/Foundation.h>
-#import <YAML/YAMLCategories.h>
-#import <YAML/YAMLCocoaCategories.h>
-#import <YAML/GSNSDataExtensions.h>
+
+//#if TARGET_OS_IPHONE
+#import "YAMLCategories.h"
+#import "YAMLCocoaCategories.h"
+#import "GSNSDataExtensions.h"
+//#else
+//#import <YAML/YAMLCategories.h>
+//#import <YAML/YAMLCocoaCategories.h>
+//#import <YAML/GSNSDataExtensions.h>
+//#endif
 
 id yaml_parse(NSString *str);
+id yaml_parse_raw_utf8(const char *str, long len);
 
 @interface NSObject (PublicYAMLAdditions)
 // -toYAML and +fromYAML are the methods you will need to override for your classes

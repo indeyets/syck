@@ -7,6 +7,7 @@
 //
 
 #import "YAMLCategories.h"
+#import "GSNSDataExtensions.h"
 
 BOOL yamlClass(id object)
 {
@@ -17,6 +18,8 @@ BOOL yamlClass(id object)
 	if([object isKindOfClass:[NSString class]])
 		return YES;
 	if([object isKindOfClass:[NSNumber class]])
+		return YES;
+	if([object isKindOfClass:[NSData class]])
 		return YES;
 	return NO;
 }
@@ -39,6 +42,7 @@ BOOL yamlClass(id object)
 - (void)dealloc
 {
 	[data release];
+    [super dealloc];
 }
 
 - (id)copyWithZone:(NSZone *)zone
@@ -63,7 +67,7 @@ BOOL yamlClass(id object)
 - (id)yamlParse
 {
 	NSLog(@"%@-%@",tag,data);
-	return [tag objectWithYAML:data];
+	return [tag performSelector:@selector(objectWithYAML:) withObject:data];
 }
 
 @end
@@ -72,14 +76,14 @@ BOOL yamlClass(id object)
 
 @implementation NSString (YAMLAdditions)
 
-+ (id)stringWithUTF8String:(const char *)bytes length:(unsigned)length
++ (id)yamlStringWithUTF8String:(const char *)bytes length:(unsigned)length
 {
 	NSString *str = [[NSString alloc] initWithBytes:bytes length:length encoding:NSUTF8StringEncoding];
 	
 	return [str autorelease];
 }
 
--(int) indent
+-(int) yamlIndent
 {
 	int i;
 	//calculate the indent
@@ -90,7 +94,7 @@ BOOL yamlClass(id object)
 	return i;
 }
 
--(NSString*) indented:(int)indent
+-(NSString*) yamlIndented:(int)indent
 {
 	NSRange				lineRange;
 	int					i = [self length]-1;
@@ -102,7 +106,7 @@ BOOL yamlClass(id object)
 	memset(strIndent, ' ', indent);
 	strIndent[indent] = 0;
 	
-	stringIndent = [NSString stringWithCString:strIndent];
+	stringIndent = [NSString stringWithUTF8String:strIndent];
 	
 	while(i > 0)
 	{
@@ -116,26 +120,6 @@ BOOL yamlClass(id object)
 	return indented;
 }
 
--(NSString*) trim
-{
-	return [self stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-}
-
--(NSString*) firstWord
-{
-	NSRange space = [self rangeOfCharacterFromSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-	
-	if(space.location == NSNotFound)
-		space.location = [self length];
-		
-	return [self substringWithRange:NSMakeRange(0,space.location)];
-}
-
--(id) logicalValue
-{
-	return self;
-}
-
 -(NSString*)yamlDescriptionWithIndent:(int)indent
 {
 	NSRange		lineRange;
@@ -144,14 +128,9 @@ BOOL yamlClass(id object)
 	
 	//if no line breaks in string
 	if(lineRange.length >= [self length])
-		return self;
+		return [NSString stringWithFormat:@"\"%@\"", [self stringByReplacingOccurrencesOfString:@"\"" withString:@"\\\""]];
 	
-	return [NSString stringWithFormat:@"|-\n%@", [self indented:indent]];
-}
-
--(BOOL) boolValue
-{
-	return [self intValue];
+	return [NSString stringWithFormat:@"|-\n%@", [self yamlIndented:indent]];
 }
 
 - (id)toYAML
@@ -187,11 +166,12 @@ BOOL yamlClass(id object)
 
 - (NSArray*)yamlParse
 {
-	return [self collectWithSelector:@selector(yamlParse)];
+	return [self yamlCollectWithSelector:@selector(yamlParse)];
 }
 
 -(NSString*) yamlDescriptionWithIndent:(int)indent
 {
+    indent -= 2;
 	NSEnumerator		*enumerator = [self objectEnumerator];
 	id					anObject, last = [self lastObject];
 	NSMutableString		*description = [NSMutableString stringWithString:@"\n"];
@@ -210,7 +190,7 @@ BOOL yamlClass(id object)
 		if(yamlClass(anObject))
 			tag = @"";
 		else 
-			tag = [NSString stringWithFormat:@"!!%@ ", [anObject className]];
+			tag = [NSString stringWithFormat:@"!!%@ ", NSStringFromClass([anObject class])];
 		
 		anObject = [anObject toYAML];
 		
@@ -228,14 +208,7 @@ BOOL yamlClass(id object)
 	return self;
 }
 
-- (id)firstObject
-{
-	if([self count])
-		return [self objectAtIndex:0];
-	return NULL;
-}
-
-- (NSArray*)collectWithSelector:(SEL)aSelector withObject:(id)anObject
+- (NSArray*)yamlCollectWithSelector:(SEL)aSelector withObject:(id)anObject
 {
 	NSMutableArray  *array = [NSMutableArray array];
 	unsigned i, c = [self count];
@@ -248,7 +221,7 @@ BOOL yamlClass(id object)
     return array;
 }
 
-- (NSArray*)collectWithSelector:(SEL)aSelector
+- (NSArray*)yamlCollectWithSelector:(SEL)aSelector
 {
 	NSMutableArray  *array = [NSMutableArray array];
 	unsigned i, c = [self count];
@@ -292,34 +265,38 @@ BOOL yamlClass(id object)
 
 - (NSDictionary*)yamlParse
 {
-	return [self collectWithSelector:@selector(yamlParse)];
+	return [self yamlCollectWithSelector:@selector(yamlParse)];
 }
 
 -(NSString*) yamlDescriptionWithIndent:(int)indent
 {
+    if([self count] == 0)
+		return @"{}";
+
 	NSEnumerator		*enumerator;
 	NSArray				*allKeys = [self allKeys];
 	NSString			*key, *last;
 	
 	NSMutableString		*description = [NSMutableString stringWithString:@"\n"];
-	char				*strIndent = malloc(indent+1);
-	int					keyLength = 0;
-	
-	if([self count] == 0)
-		return @"{}";
-	
+	char				strIndent[indent+1];
+	//int					keyLength = 0;
+		
 	memset(strIndent, ' ', indent);
 	strIndent[indent] = 0;
 	
 	//get longest key length
-	allKeys = [allKeys sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)];
-	last = [allKeys lastObject];
-	enumerator = [allKeys objectEnumerator];
-	while (key = [enumerator nextObject])
+    /*if([[allKeys objectAtIndex:0] respondsToSelector:@selector(caseInsensitiveCompare:)]) {
+        allKeys = [allKeys sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)];
+    } else {
+        allKeys = [allKeys sortedArrayUsingSelector:@selector(compare:)];
+    }*/
+	//last = [allKeys lastObject];
+	//enumerator = [allKeys objectEnumerator];
+	/*while (key = [enumerator nextObject])
 	{
 		if([key length] > keyLength)
 			keyLength = [key length];
-	}
+	}*/
 	
 	//output
 	enumerator = [allKeys objectEnumerator];
@@ -331,17 +308,22 @@ BOOL yamlClass(id object)
 		if(yamlClass(object))
 			tag = @"";
 		else 
-			tag = [NSString stringWithFormat:@"!!%@ ", [object className]];
+			tag = [NSString stringWithFormat:@"!!%@ ", NSStringFromClass([object class])];
 		
 		object = [object toYAML];
 	
-		[description appendFormat:@"%s%@: %@%@%s", strIndent, 
-			[key stringByPaddingToLength:keyLength withString:@" " startingAtIndex:0],
+        /*[description appendFormat:@"%s%@: %@%@%s", strIndent, 
+            [key stringByPaddingToLength:keyLength withString:@" " startingAtIndex:0],
 			tag,
-			[object yamlDescriptionWithIndent:indent+2], key == last? "" : "\n"];
+			[object yamlDescriptionWithIndent:indent+2]];*/
+       
+        [description appendFormat:@"%s%@: %@%@\n", 
+         strIndent, 
+         key,
+         tag,
+         [object yamlDescriptionWithIndent:indent+2]];
 	}
-	
-	free(strIndent);
+    [description deleteCharactersInRange:NSMakeRange([description length] - 1, 1)];
 	
 	return description;
 }
@@ -351,7 +333,7 @@ BOOL yamlClass(id object)
 	return self;
 }
 
-- (NSDictionary*)collectWithSelector:(SEL)aSelector withObject:(id)anObject
+- (NSDictionary*)yamlCollectWithSelector:(SEL)aSelector withObject:(id)anObject
 {
 	NSMutableDictionary  *dict = [NSMutableDictionary dictionary];
 	NSArray *allKeys = [self allKeys];
@@ -366,7 +348,7 @@ BOOL yamlClass(id object)
     return dict;
 }
 
-- (NSDictionary*)collectWithSelector:(SEL)aSelector
+- (NSDictionary*)yamlCollectWithSelector:(SEL)aSelector
 {
 	NSMutableDictionary  *dict = [NSMutableDictionary dictionary];
 	NSArray *allKeys = [self allKeys];
@@ -390,20 +372,16 @@ BOOL yamlClass(id object)
 	return [self toYAML];
 }
 
-- (void)performSelector:(SEL)sel withEachObjectInArray:(NSArray *)array {
+- (void)yamlPerformSelector:(SEL)sel withEachObjectInArray:(NSArray *)array {
     unsigned i, c = [array count];
     for (i=0; i<c; i++) {
         [self performSelector:sel withObject:[array objectAtIndex:i]];
     }
 }
 
-- (void)performSelector:(SEL)sel withEachObjectInSet:(NSSet *)set {
-    [self performSelector:sel withEachObjectInArray:[set allObjects]];
+- (void)yamlPerformSelector:(SEL)sel withEachObjectInSet:(NSSet *)set {
+    [self yamlPerformSelector:sel withEachObjectInArray:[set allObjects]];
 }
-
-@end
-
-@implementation NSObject (PublicYAMLAdditions)
 
 -(NSString*) yamlDescription
 {
@@ -428,4 +406,16 @@ BOOL yamlClass(id object)
 	return [self description];
 }
 
+@end
+
+@implementation NSData (YAMLAdditions) 
+-(id) yamlDescriptionWithIndent:(int)indent
+{
+    return [[@"!binary |\n" stringByAppendingString:[self base64EncodingWithLineLength:72]] yamlIndented:indent];
+}
+
+-(id) toYAML
+{
+	return self;
+}
 @end
