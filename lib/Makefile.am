@@ -2,7 +2,7 @@ INCLUDES = -I$(top_srcdir)
 REC = re2c
 AM_YFLAGS = -d -t -v -p syck
 SUFFIXES = .re
-CFLAGS = -fPIC
+AM_CFLAGS = -fPIC
 
 .re.c:
 	$(REC) -i $< > $@.new && mv $@.new $@
