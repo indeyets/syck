@@ -16,19 +16,19 @@
   |          Alexey Zakhlestin <indeyets@gmail.com>                      |
   +----------------------------------------------------------------------+
 
-  $Id: phpext.c 330 2008-11-18 19:55:57Z indeyets $ 
 */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
-
-#include <syck.h>
 
 #include <php.h>
 #include <zend_exceptions.h>
 #include <zend_interfaces.h>
 #include <php_ini.h>
 #include <ext/standard/info.h>
+
+#include <syck.h>
+
 #include "php_syck.h"
 
 #ifndef Z_SET_REFCOUNT_P

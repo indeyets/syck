@@ -1,0 +1,24 @@
+// $Id$
+// vim:ft=javascript
+
+ARG_WITH("syck", "syck YAML parser support", "no");
+
+if (PHP_SYCK != "no") {
+	if (CHECK_LIB("syck.lib", "syck", PHP_SYCK) &&
+			(
+				CHECK_HEADER_ADD_INCLUDE("syck.h", "CFLAGS_SYCK") ||
+				CHECK_HEADER_ADD_INCLUDE("syck/syck.h", "CFLAGS_SYCK", null, null, true) ||
+				CHECK_HEADER_ADD_INCLUDE("libsyck/syck.h", "CFLAGS_SYCK", null, null, true)
+			)) {
+		EXTENSION("syck", "phpext.c");
+		ADD_EXTENSION_DEP('syck', 'hash');
+		ADD_EXTENSION_DEP('syck', 'spl');
+		AC_DEFINE('HAVE_SYCKLIB', 1, 'Have syck library');
+		if (!PHP_SYCK_SHARED) {
+			ADD_DEF_FILE("ext\\syck\\php_syck.def");
+		}
+	} else {
+		WARNING("syck not enabled; libraries and headers not found");
+	}
+}
+
