@@ -202,7 +202,7 @@
             syckerror("TAB found in your indentation, please remove"); \
             return 0; \
         } \
-        else if ( is_newline( ++indent ) ) \
+        else if ( is_newline( indent++ ) ) \
         { \
             NEWLINE(indent); \
         } \
@@ -966,7 +966,7 @@ ScalarBlock2:
 
 /*!re2c
 
-YINDENT             {   char *pacer;
+LF+ TAB* SPC*       {   char *pacer;
                         char *tok = YYTOKEN;
                         int indt_len = 0, nl_count = 0, fold_nl = 0, nl_begin = 0;
                         GOBBLE_UP_YAML_INDENT( indt_len, tok );
