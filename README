@@ -11,6 +11,7 @@
 
 INSTALLATION
 
+   ./bootstrap
    ./configure
    make
    make check
