@@ -275,7 +275,7 @@ BOOL yamlClass(id object)
 
 	NSEnumerator		*enumerator;
 	NSArray				*allKeys = [self allKeys];
-	NSString			*key, *last;
+	NSString			*key/*, *last*/;
 	
 	NSMutableString		*description = [NSMutableString stringWithString:@"\n"];
 	char				strIndent[indent+1];
