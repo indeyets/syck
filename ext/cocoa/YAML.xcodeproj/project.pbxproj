@@ -153,6 +153,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5611607C1283DDE800F01AD0 /* Build configuration list for PBXNativeTarget "YAML" */;
 			buildPhases = (
+				3A811AF412AE869C00BC08AE /* ShellScript */,
 				8DC2EF500486A6940098B216 /* Headers */,
 				8DC2EF520486A6940098B216 /* Resources */,
 				8DC2EF540486A6940098B216 /* Sources */,
@@ -215,6 +216,25 @@
 		};
 /* End PBXRezBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		3A811AF412AE869C00BC08AE /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../../lib/syck.h",
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/libsyck/libsyck.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "export YACC=\"\" # yacc/bison with Xcode 3.2.4 is broken\ncd ../.. || exit $?\nNARCHS=0\nLIPO_INFILES=\n\nfor ARCH in $ARCHS; do\n  CFLAGS=\"$CFLAGS -arch $ARCH\" ./configure || exit $?\n  make clean || exit $?\n  make || exit $?\n  mv -f lib/libsyck.a lib/libsyck-$ARCH.a\n  LIPO_INFILES=\"$LIPO_INFILES lib/libsyck-$ARCH.a\"\n  NARCHS=$(expr $NARCHS + 1)\ndone\n\nmkdir -p \"$DERIVED_FILE_DIR/libsyck\" || exit $?\nDST_PATH=\"$DERIVED_FILE_DIR/libsyck/libsyck.a\"\nif [ $NARCHS -gt 1 ]; then\n  lipo $LIPO_INFILES -output \"$DST_PATH\" -create || exit $?\nelse\n  mv -f lib/libsyck-$ARCH.a \"$DST_PATH\"\nfi\necho \"Created $ARCHS libsyck.a at $DST_PATH\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		8DC2EF540486A6940098B216 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -252,6 +272,7 @@
 		561160781283DDE800F01AD0 /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
 				COPY_PHASE_STRIP = NO;
 				DEBUGGING_SYMBOLS = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -268,18 +289,20 @@
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
 				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
 				GCC_WARN_UNKNOWN_PRAGMAS = NO;
-				HEADER_SEARCH_PATHS = "";
+				HEADER_SEARCH_PATHS = ../../lib;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "@executable_path/../Frameworks";
-				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = "$(DERIVED_FILE_DIR)/libsyck";
 				LIBRARY_STYLE = Dynamic;
 				MACH_O_TYPE = mh_dylib;
+				ONLY_ACTIVE_ARCH_PRE_XCODE_3_1 = "$(NATIVE_ARCH_ACTUAL)";
 				OTHER_LDFLAGS = (
 					"-seg1addr",
 					0xc9000000,
 				);
 				PRODUCT_NAME = YAML;
 				SECTORDER_FLAGS = "";
+				VALID_ARCHS = "i386 x86_64";
 				WARNING_CFLAGS = (
 					"-Wmost",
 					"-Wno-four-char-constants",
@@ -293,6 +316,8 @@
 		561160791283DDE800F01AD0 /* Deployment */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1)";
+				ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1 = "x86_64 i386 ppc";
 				COPY_PHASE_STRIP = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -306,10 +331,10 @@
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
 				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
 				GCC_WARN_UNKNOWN_PRAGMAS = NO;
-				HEADER_SEARCH_PATHS = "";
+				HEADER_SEARCH_PATHS = ../../lib;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "@executable_path/../Frameworks";
-				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = "$(DERIVED_FILE_DIR)/libsyck";
 				LIBRARY_STYLE = Dynamic;
 				MACH_O_TYPE = mh_dylib;
 				OTHER_LDFLAGS = (
@@ -318,6 +343,7 @@
 				);
 				PRODUCT_NAME = YAML;
 				SECTORDER_FLAGS = "";
+				VALID_ARCHS = "i386 x86_64";
 				WARNING_CFLAGS = (
 					"-Wmost",
 					"-Wno-four-char-constants",
@@ -331,6 +357,8 @@
 		5611607A1283DDE800F01AD0 /* Default */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1)";
+				ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1 = "x86_64 i386 ppc";
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_SEARCH_PATHS = "";
@@ -342,10 +370,10 @@
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
 				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
 				GCC_WARN_UNKNOWN_PRAGMAS = NO;
-				HEADER_SEARCH_PATHS = "";
+				HEADER_SEARCH_PATHS = ../../lib;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "@executable_path/../Frameworks";
-				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = "$(DERIVED_FILE_DIR)/libsyck";
 				LIBRARY_STYLE = Dynamic;
 				MACH_O_TYPE = mh_dylib;
 				OTHER_LDFLAGS = (
@@ -354,6 +382,7 @@
 				);
 				PRODUCT_NAME = YAML;
 				SECTORDER_FLAGS = "";
+				VALID_ARCHS = "i386 x86_64";
 				WARNING_CFLAGS = (
 					"-Wmost",
 					"-Wno-four-char-constants",
