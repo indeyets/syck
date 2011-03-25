@@ -152,7 +152,7 @@ SYMID cocoa_syck_parse_handler(SyckParser *p, SyckNode *n)
 #if !TARGET_OS_IPHONE
             else if ( strncmp( type_id, "timestamp", 9 ) == 0 )
             {
-                v = [NSDate dateWithNaturalLanguageString:[NSString stringWithUTF8String:n->data.str->ptr length:n->data.str->len]];
+                v = [NSDate dateWithNaturalLanguageString:[[[NSString alloc] initWithData:[NSData dataWithBytes:n->data.str->ptr length:n->data.str->len] encoding:NSUTF8StringEncoding] autorelease]];
             }
 #endif
             else if ( strncmp( type_id, "merge", 5 ) == 0 )
@@ -253,5 +253,5 @@ id yaml_parse_raw_utf8(const char *str, long len)
 id yaml_parse(NSString *str)
 {
     const char *yamlstr = [str UTF8String];
-    yaml_parse_raw_utf8(yamlstr, strlen(yamlstr));
+    return yaml_parse_raw_utf8(yamlstr, strlen(yamlstr));
 }

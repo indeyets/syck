@@ -1651,6 +1651,25 @@ EOY
     #        inspect_str = "[[...], [...]]"
     #        assert_equals( inspect_str, YAML::load( a.to_yaml ).inspect )
     #    end
+    
+    #
+    # Test Exception
+    #
+    def test_exception
+        e1 = Exception.new( "hello" )
+        e1.set_backtrace( ["file1.rb", "file2.rb"] )
+        e2 = YAML.load( YAML.dump( e1 ))
+        
+        if RUBY_VERSION.match( /^1\.[012345678]/ )
+            # Ruby 1.8 uses Object.== for Exception.==, so is not valid
+            assert_equals( e1.class, e2.class )
+            assert_equals( e1.backtrace, e2.backtrace )
+            assert_equals( e1.message, e2.message )
+        else
+            # Ruby 1.9 and above
+            assert_equals( e1, e2 )
+        end
+    end
 end
 
 RUNIT::CUI::TestRunner.run( YAML_Unit_Tests.suite )

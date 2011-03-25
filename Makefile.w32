@@ -1,0 +1,63 @@
+# Makefile - syck
+
+CL=cl.exe 
+LINK=link.exe 
+NMAKE=nmake.exe 
+MAKE_LIB=lib.exe 
+BISON=bison.exe 
+BUILD_DIR=build
+
+CFLAGS=/Ox /Ob2 /Oi /Ot /Oy /GL /D "WIN32" /D "NDEBUG" /D "_LIB" /D "HAVE_CONFIG_H" /D "_CRT_SECURE_NO_WARNINGS" /D "_UNICODE" /D "UNICODE" /FD /EHsc /MD /Gy /Fo"$(BUILD_DIR)\\" /Fd"$(BUILD_DIR)\syck.pdb" /W3 /nologo /c /Zi /TC 
+LDFLAGS=/OUT:"$(BUILD_DIR)\syck.lib" /NOLOGO /LTCG
+
+TARGET=$(BUILD_DIR)\syck.lib
+
+all: $(BUILD_DIR) $(TARGET)
+
+SOURCE_FILES= \
+	lib\bytecode.c \
+	lib\emitter.c \
+	lib\gram.y \
+	lib\handler.c \
+	lib\implicit.c \
+	lib\node.c \
+	lib\syck.c \
+	lib\syck_st.c \
+	lib\token.c \
+	lib\yaml2byte.c
+
+HEADER_FILES= \
+	lib\syck.h \
+	lib\syck_st.h \
+	lib\sycklex.h \
+	lib\yamlbyte.h
+
+SRCS=$(SOURCE_FILES) $(HEADER_FILES) 
+
+OBJS=\
+	$(BUILD_DIR)\bytecode.obj \
+	$(BUILD_DIR)\emitter.obj \
+	$(BUILD_DIR)\gram.tab.obj \
+	$(BUILD_DIR)\handler.obj \
+	$(BUILD_DIR)\implicit.obj \
+	$(BUILD_DIR)\node.obj \
+	$(BUILD_DIR)\syck.obj \
+	$(BUILD_DIR)\syck_st.obj \
+	$(BUILD_DIR)\token.obj \
+	$(BUILD_DIR)\yaml2byte.obj
+
+lib\gram.tab.c: lib\gram.y
+	$(BISON) -d -t -v -p syck -o $@ $**
+	
+{lib\}.c{$(BUILD_DIR)\}.obj::
+	$(CL) $(CFLAGS) $<
+
+$(BUILD_DIR): 
+	@if not exist $(BUILD_DIR) @mkdir $(BUILD_DIR)
+	
+$(TARGET): $(SRCS) $(OBJS)
+	$(MAKE_LIB) $(LDFLAGS) $(OBJS) /OUT:"$(TARGET)" /LTCG
+
+.PHONY: clean
+clean:
+	-del $(OBJS) $(TARGET)

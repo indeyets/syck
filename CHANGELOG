@@ -1,4 +1,9 @@
 --- %YAML:1.0
+- version: 0.70
+  date: 2009-09-30
+  changes:
+    - 64-bit compatibility
+
 - version: 0.60
   date: 2005-09-19
   changes:
