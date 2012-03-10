@@ -7,6 +7,7 @@ AM_CFLAGS = -fPIC
 .re.c:
 	$(REC) -i $< > $@.new && mv $@.new $@
 
+lib_LTLIBRARIES = libsyck.la
 lib_LIBRARIES = libsyck.a
 include_HEADERS = syck.h syck_st.h
 
@@ -21,4 +22,8 @@ libsyck_a_SOURCES = \
 	yaml2byte.c \
 	token.re \
 	implicit.re
+
+libsyck_la_CFLAGS = $(AM_CFLAGS)
+libsyck_la_LDFLAGS = -version-info $(SYCK_SO_VERSION)
+libsyck_la_SOURCES = $(libsyck_a_SOURCES)
 

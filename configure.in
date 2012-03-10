@@ -3,6 +3,9 @@ AC_INIT(syck, 0.70)
 AC_CONFIG_AUX_DIR(config)
 AC_PREREQ(2.50)
 
+LT_INIT
+AC_SUBST([SYCK_SO_VERSION], [0:0:0])
+
 AM_INIT_AUTOMAKE(syck, 0.70)
 AM_CONFIG_HEADER(config.h)
 
@@ -10,10 +13,12 @@ AM_CONFIG_HEADER(config.h)
 AC_PROG_CC_STDC
 AC_PROG_INSTALL
 AC_PROG_LN_S
-AC_PROG_RANLIB
+# `AC_PROG_RANLIB' is rendered obsolete by `LT_INIT'
+# AC_PROG_RANLIB
 AC_PROG_MAKE_SET
 AC_PROG_AWK
 AM_PROG_LEX
+AC_PROG_LIBTOOL
 
 AC_CHECK_PROGS(YACC, 'bison -y')
 if test "$YACC" != "bison -y"; then
@@ -33,7 +38,7 @@ AC_CHECK_SIZEOF(long, 4)
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_VPRINTF
-
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_FILES([Makefile 
                  lib/Makefile 
                  tests/Makefile])
