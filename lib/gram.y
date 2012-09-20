@@ -9,6 +9,8 @@
 
 %start doc
 %pure-parser
+%parse-param {void* parser}
+%lex-param {void* parser}
 
 
 %{
@@ -23,9 +25,6 @@
 #include "sycklex.h"
 
 void apply_seq_in_map( SyckParser *parser, SyckNode *n );
-
-#define YYPARSE_PARAM   parser
-#define YYLEX_PARAM     parser
 
 #define NULL_NODE(parser, node) \
         SyckNode *node = syck_new_str( "", scalar_plain ); \
