@@ -467,7 +467,7 @@ long syck_seq_count( SyckNode * );
 /*
  * Lexer prototypes
  */
-void syckerror( const char * );
+void syckerror( void *, const char * );
 int syckparse( void * );
 
 #if defined(__cplusplus)
