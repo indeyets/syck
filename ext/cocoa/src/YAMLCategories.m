@@ -66,7 +66,7 @@ BOOL yamlClass(id object)
 
 - (id)yamlParse
 {
-	NSLog(@"%@-%@",tag,data);
+	//NSLog(@"%@-%@",tag,data);
 	return [tag performSelector:@selector(objectWithYAML:) withObject:data];
 }
 
@@ -98,15 +98,8 @@ BOOL yamlClass(id object)
 {
 	NSRange				lineRange;
 	int					i = [self length]-1;
-	NSMutableString		*indented = [NSMutableString stringWithString:self];
-	
-	NSString			*stringIndent;
-	char				*strIndent = malloc(indent+1);
-	
-	memset(strIndent, ' ', indent);
-	strIndent[indent] = 0;
-	
-	stringIndent = [NSString stringWithUTF8String:strIndent];
+	NSMutableString		*indented = [self mutableCopy];	
+	NSString            *stringIndent = [@"" stringByPaddingToLength:indent withString:@" " startingAtIndex:0];
 	
 	while(i > 0)
 	{
@@ -117,7 +110,7 @@ BOOL yamlClass(id object)
 		i = lineRange.location - 1;
 	}
 	
-	return indented;
+	return [indented autorelease];
 }
 
 -(NSString*)yamlDescriptionWithIndent:(int)indent
@@ -142,29 +135,20 @@ BOOL yamlClass(id object)
 
 @implementation NSArray (YAMLAdditions)
 
--(NSArray*) yamlData
-{
-	NSEnumerator		*enumerator;
-	NSString			*object;
+-(NSArray*) yamlData 
+{    
+	NSMutableArray *array = [NSMutableArray arrayWithCapacity:[self count]];
 	
-	NSMutableArray		*array = [NSMutableArray array];
-	
-	//output
-	enumerator = [self objectEnumerator];
-	while (object = [enumerator nextObject])
-	{
-		/*if(!yamlClass(object))
-		{
-			[array addObject:[YAMLWrapper wrapperWithData:[object yamlData] tag:[object class]]];
-		}
-		else*/
-			[array addObject:[object yamlData]];
+	NSEnumerator *enumerator = [self objectEnumerator];
+    id object;
+	while (object = [enumerator nextObject]) {
+		[array addObject:[object yamlData]];
 	}
 	
 	return array;
 }
 
-- (NSArray*)yamlParse
+- (NSArray*) yamlParse
 {
 	return [self yamlCollectWithSelector:@selector(yamlParse)];
 }
@@ -210,26 +194,22 @@ BOOL yamlClass(id object)
 
 - (NSArray*)yamlCollectWithSelector:(SEL)aSelector withObject:(id)anObject
 {
-	NSMutableArray  *array = [NSMutableArray array];
-	unsigned i, c = [self count];
-	
-    for (i=0; i<c; i++)
-	{
-        [array addObject:
-			[[self objectAtIndex:i] performSelector:aSelector withObject:anObject]];
+	NSMutableArray *array = [NSMutableArray arrayWithCapacity:[self count]];
+    NSEnumerator *enumerator = [self objectEnumerator];
+    id object;
+    while((object = [enumerator nextObject])) {
+        [array addObject:[object performSelector:aSelector withObject:anObject]];
     }
     return array;
 }
 
 - (NSArray*)yamlCollectWithSelector:(SEL)aSelector
 {
-	NSMutableArray  *array = [NSMutableArray array];
-	unsigned i, c = [self count];
-	
-    for (i=0; i<c; i++)
-	{
-        [array addObject:
-			[[self objectAtIndex:i] performSelector:aSelector]];
+	NSMutableArray *array = [NSMutableArray arrayWithCapacity:[self count]];
+    NSEnumerator *enumerator = [self objectEnumerator];
+    id object;
+    while((object = [enumerator nextObject])) {
+        [array addObject:[object performSelector:aSelector]];
     }
     return array;
 }
@@ -240,24 +220,12 @@ BOOL yamlClass(id object)
 
 -(NSDictionary*) yamlData
 {
-	NSEnumerator		*enumerator;
-	NSArray				*allKeys = [self allKeys];
-	NSString			*key;
+	NSMutableDictionary	*dict = [NSMutableDictionary dictionaryWithCapacity:[self count]];
 	
-	NSMutableDictionary	*dict = [NSMutableDictionary dictionary];
-	
-	//output
-	enumerator = [allKeys objectEnumerator];
-	while (key = [enumerator nextObject])
-	{
-		id object = [self objectForKey:key];
-
-		/*if(!yamlClass(object))
-		{
-			[dict setObject:[YAMLWrapper wrapperWithData:[object yamlData] tag:[object class]] forKey:key];
-		}
-		else*/
-			[dict setObject:[object yamlData] forKey:key];
+	NSEnumerator *enumerator = [self keyEnumerator];
+    id key;
+	while (key = [enumerator nextObject]) {
+		[dict setObject:[[self objectForKey:key] yamlData] forKey:key];
 	}
 	
 	return dict;
@@ -273,57 +241,29 @@ BOOL yamlClass(id object)
     if([self count] == 0)
 		return @"{}";
 
-	NSEnumerator		*enumerator;
-	NSArray				*allKeys = [self allKeys];
-	NSString			*key/*, *last*/;
-	
-	NSMutableString		*description = [NSMutableString stringWithString:@"\n"];
-	char				strIndent[indent+1];
-	//int					keyLength = 0;
-		
-	memset(strIndent, ' ', indent);
-	strIndent[indent] = 0;
-	
-	//get longest key length
-    /*if([[allKeys objectAtIndex:0] respondsToSelector:@selector(caseInsensitiveCompare:)]) {
-        allKeys = [allKeys sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)];
-    } else {
-        allKeys = [allKeys sortedArrayUsingSelector:@selector(compare:)];
-    }*/
-	//last = [allKeys lastObject];
-	//enumerator = [allKeys objectEnumerator];
-	/*while (key = [enumerator nextObject])
-	{
-		if([key length] > keyLength)
-			keyLength = [key length];
-	}*/
-	
+	NSMutableString *description = [NSMutableString string];
+	NSString *strIndent = nil;
+    if(indent > 0) {
+        [@"" stringByPaddingToLength:indent withString:@" " startingAtIndex:0];   
+    }
+    
 	//output
-	enumerator = [allKeys objectEnumerator];
-	while (key = [enumerator nextObject])
-	{
-		id object = [self objectForKey:key];
-		NSString	*tag;
-		
-		if(yamlClass(object))
-			tag = @"";
-		else 
-			tag = [NSString stringWithFormat:@"!!%@ ", NSStringFromClass([object class])];
-		
-		object = [object toYAML];
-	
-        /*[description appendFormat:@"%s%@: %@%@%s", strIndent, 
-            [key stringByPaddingToLength:keyLength withString:@" " startingAtIndex:0],
-			tag,
-			[object yamlDescriptionWithIndent:indent+2]];*/
-       
-        [description appendFormat:@"%s%@: %@%@\n", 
-         strIndent, 
-         key,
-         tag,
-         [object yamlDescriptionWithIndent:indent+2]];
+    NSEnumerator *enumerator = [self keyEnumerator];
+    NSString *key;
+	while((key = [enumerator nextObject])) {
+        id object = [self objectForKey:key];
+
+        [description appendString:@"\n"];
+        if(strIndent) {
+            [description appendString:strIndent];
+        }
+
+        [description appendFormat:@"%@: ", key];
+        if(!yamlClass(object)) {
+            [description appendFormat:@"!!%@ ", NSStringFromClass([object class])];
+        }
+        [description appendString:[[object toYAML] yamlDescriptionWithIndent:indent+2]];
 	}
-    [description deleteCharactersInRange:NSMakeRange([description length] - 1, 1)];
 	
 	return description;
 }
@@ -335,30 +275,26 @@ BOOL yamlClass(id object)
 
 - (NSDictionary*)yamlCollectWithSelector:(SEL)aSelector withObject:(id)anObject
 {
-	NSMutableDictionary  *dict = [NSMutableDictionary dictionary];
-	NSArray *allKeys = [self allKeys];
-	unsigned i, c = [allKeys count];
-	
-    for (i=0; i<c; i++)
-	{
-		id key = [allKeys objectAtIndex:i];
+	NSMutableDictionary  *dict = [NSMutableDictionary dictionaryWithCapacity:[self count]];
+    
+    NSEnumerator *keyEnumerator = [self keyEnumerator];
+    id key;
+    while((key = [keyEnumerator nextObject])) {
         [dict setObject: [[self objectForKey:key] performSelector:aSelector withObject:anObject]
-			  forKey: key];
+                 forKey: key];
     }
     return dict;
 }
 
 - (NSDictionary*)yamlCollectWithSelector:(SEL)aSelector
 {
-	NSMutableDictionary  *dict = [NSMutableDictionary dictionary];
-	NSArray *allKeys = [self allKeys];
-	unsigned i, c = [allKeys count];
-	
-    for (i=0; i<c; i++)
-	{
-		id key = [allKeys objectAtIndex:i];
+	NSMutableDictionary  *dict = [NSMutableDictionary dictionaryWithCapacity:[self count]];
+    
+    NSEnumerator *keyEnumerator = [self keyEnumerator];
+    id key;
+    while((key = [keyEnumerator nextObject])) {
         [dict setObject: [[self objectForKey:key] performSelector:aSelector]
-			  forKey: key];
+                 forKey: key];
     }
     return dict;
 }
@@ -373,9 +309,10 @@ BOOL yamlClass(id object)
 }
 
 - (void)yamlPerformSelector:(SEL)sel withEachObjectInArray:(NSArray *)array {
-    unsigned i, c = [array count];
-    for (i=0; i<c; i++) {
-        [self performSelector:sel withObject:[array objectAtIndex:i]];
+    NSEnumerator *enumerator = [array objectEnumerator];
+    id object;
+    while((object = [enumerator nextObject])) {
+        [self performSelector:sel withObject:object];
     }
 }
 
@@ -396,7 +333,7 @@ BOOL yamlClass(id object)
 -(id) yamlData
 {
 	if(!yamlClass(self))
-		 return [YAMLWrapper wrapperWithData:[self toYAML] tag:[self class]];
+        return [YAMLWrapper wrapperWithData:[self toYAML] tag:[self class]];
 	else
 		return [self toYAML];
 }

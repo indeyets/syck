@@ -190,27 +190,28 @@ static char gEncodingTable[ 64 ] = {
 
         Further, if it's 0, we don't add any line breaks at all.
     */
-        
     const unsigned char	*bytes = [ self bytes ];
 	unsigned char		*encodedData;
 	unsigned long		encodedLength;
     unsigned long		ixtext;
     unsigned long		lengthData;
     long				ctremaining;
-    unsigned char		inbuf [4], outbuf [3];
-    short				i;
-    short				charsonline = 0, ctcopy;
+    unsigned char		inbuf [4], outbuf [4];
+    int                 i;
+    int                 charsonline = 0, ctcopy;
     unsigned long		ix;
     NSString			*result = nil;
 
     lengthData = [ self length ];
+    if(!lengthData) {
+        return @"";
+    }
 
-	if ( inLineLength > 0 )
-		// Allocate a buffer large enough to hold everything + line endings.
-		encodedData = malloc( ( ( ( lengthData + 1 ) * 4 ) / 3 ) + ( ( ( ( lengthData + 1 ) * 4 ) / 3 ) / inLineLength ) + 1 );
-	else
-		// Allocate a buffer large enough to hold everything.
-		encodedData = malloc( ( ( lengthData + 1 ) * 4 ) / 3 );
+    unsigned long       bufferLength = ( ( (lengthData - 1) / 3 ) + 1) * 4;
+    if(inLineLength > 0) {
+        bufferLength += bufferLength / inLineLength;
+    }
+    encodedData = malloc(bufferLength);
 
 #if defined( COMPILE_FOR_ALTIVEC ) && ( COMPILE_FOR_ALTIVEC == 1 )
 	if ( lengthData > 12 && local_AltiVec_IsPresent( ) )
@@ -333,6 +334,8 @@ static char gEncodingTable[ 64 ] = {
         }
     } // end while loop
 
+    NSCParameterAssert(encodedLength == bufferLength);
+    
 	// Make a string object out of the encoded data buffer.
     result = (NSString *)CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, encodedData, encodedLength, kCFStringEncodingASCII, NO, kCFAllocatorMalloc);
 	
