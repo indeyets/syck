@@ -50,6 +50,14 @@ YAML(tm) (rhymes with "camel") is a straightforward machine parsable data serial
       <pearinstaller>
         <min>1.4.0</min>
       </pearinstaller>
+      <package>
+        <name>hash</name>
+        <providesextension>Hash</providesextension>
+      </package>
+      <package>
+        <name>spl</name>
+        <providesextension>SPL</providesextension>
+      </package>
     </required>
   </dependencies> 
   <providesextension>syck</providesextension>
