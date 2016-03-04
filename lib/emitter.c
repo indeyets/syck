@@ -16,6 +16,8 @@
 
 #define DEFAULT_ANCHOR_FORMAT "id%03d"
 
+#define STR_EQC(str, cstr) (strncmp( (str), cstr, sizeof(cstr)-1 ) == 0)
+
 const unsigned char hex_table[] = 
 "0123456789ABCDEF";
 static unsigned char b64_table[] =
@@ -467,7 +469,7 @@ void syck_emit_tag( SyckEmitter *e, const char *tag, const char *ignore )
         syck_emitter_write( e, "! ", 2 );
 
     /* global types */
-    } else if ( strncmp( tag, "tag:", 4 ) == 0 ) {
+    } else if ( STR_EQC(tag, "tag:") ) {
         int taglen = strlen( tag );
         syck_emitter_write( e, "!", 1 );
         if ( strncmp( tag + 4, YAML_DOMAIN, strlen( YAML_DOMAIN ) ) == 0 ) {
@@ -495,7 +497,7 @@ void syck_emit_tag( SyckEmitter *e, const char *tag, const char *ignore )
         syck_emitter_write( e, " ", 1 );
 
     /* private types */
-    } else if ( strncmp( tag, "x-private:", 10 ) == 0 ) {
+    } else if ( STR_EQC( tag, "x-private:" ) ) {
         syck_emitter_write( e, "!!", 2 );
         syck_emitter_write( e, tag + 10, strlen( tag ) - 10 );
         syck_emitter_write( e, " ", 1 );
@@ -595,7 +597,7 @@ syck_scan_scalar( int req_width, const char *cursor, long len )
     }
 
     /* opening doc sep */
-    if ( len >= 3 && strncmp( cursor, "---", 3 ) == 0 )
+    if ( len >= 3 && STR_EQC( cursor, "---" ) )
         flags |= SCAN_DOCSEP;
 
     /* scan string */
@@ -612,7 +614,7 @@ syck_scan_scalar( int req_width, const char *cursor, long len )
         }
         else if ( cursor[i] == '\n' ) {
             flags |= SCAN_NEWLINE;
-            if ( len - i >= 3 && strncmp( &cursor[i+1], "---", 3 ) == 0 )
+            if ( len - i >= 3 && STR_EQC( &cursor[i+1], "---" ) )
                 flags |= SCAN_DOCSEP;
             if ( cursor[i+1] == ' ' || cursor[i+1] == '\t' ) 
                 flags |= SCAN_INDENTED;
@@ -680,17 +682,11 @@ void syck_emit_scalar( SyckEmitter *e, const char *tag, enum scalar_style force_
     implicit = syck_match_implicit( str, len );
 
     /* quote strings which default to implicits */
-#ifdef PERL
-    if (
-            (
-                (strncmp( implicit, "bool", 4 ) == 0) || 
-                (strncmp( implicit, "null", 4 ) == 0)
-            )
-            &&
-            (force_style != scalar_plain)
-            &&
-            (len > 0)
-            ) {
+#ifdef PERL_VERSION
+    if ( (STR_EQC( implicit, "bool" ) || 
+          STR_EQC( implicit, "null" ))
+         && force_style != scalar_plain
+         && len > 0 )  {
         force_style = (force_style == scalar_2quote) ? scalar_2quote : scalar_1quote;
 #else
     implicit = syck_taguri( YAML_DOMAIN, implicit, strlen( implicit ) );
@@ -777,7 +773,7 @@ void syck_emit_scalar( SyckEmitter *e, const char *tag, enum scalar_style force_
      * these with quotes.
      */
     if ( force_style == scalar_plain &&
-         strncmp( implicit, "str", 4 ) == 0 &&
+         STR_EQC( implicit, "str" ) &&
          str[0] == ':' ) {
         force_style = scalar_literal;
     }
@@ -837,7 +833,7 @@ syck_emitter_escape( SyckEmitter *e, const char *src, long len )
         }
         else
         {
-            syck_emitter_write( e, src + i, 1 );
+            syck_emitter_write( e, (const char*)(src + i), 1 );
             if( '\\' == src[i] )
                 syck_emitter_write( e, "\\", 1 );
         }
