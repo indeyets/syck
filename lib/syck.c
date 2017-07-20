@@ -1,8 +1,8 @@
 /*
  * syck.c
  *
- * $Author$
- * $Date$
+ * $Author: why $
+ * $Date: 2005-01-01 10:06:25 +0800 (六, 01  1 2005) $
  *
  * Copyright (C) 2003 why the lucky stiff
  */
@@ -496,9 +496,27 @@ syck_parse( SyckParser *p )
 void
 syck_default_error_handler( SyckParser *p, const char *msg )
 {
-    printf( "Error at [Line %d, Col %d]: %s\n", 
+    printf( "Error at [Line %d, Col %ld]: %s\n",
         p->linect,
-        p->cursor - p->lineptr,
+        (long)(p->cursor - p->lineptr),
         msg );
 }
 
+int syck_str_is_unquotable_integer(char* str, long len) {
+    int idx;
+
+    if(!str) return 0; /* Don't parse null strings */
+    if(len < 1) return 0; /* empty strings can't be numbers */
+    if(len > 9) return 0; /* Ints larger than 9 digits (32bit) might not portable. Force a string. */
+
+    if(str[0] == '0' && len == 1) return 1; /* 0 is unquoted. */
+    if(str[0] == '-') {str++; len --;} /* supress the leading '-' sign if detected for testing purposes only. */
+    if(str[0]  == '0') return 0; /* Octals need to be quoted or you lose data converting them to an integer. This also accidentally blocks -0 which probably needs to be quoted. */
+
+    /* Look for illegal characters */
+    for ( idx = 1; idx < len; idx++ ) {
+        if(!isdigit(str[idx])) return 0;
+    }
+
+    return 1;
+}

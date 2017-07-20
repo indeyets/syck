@@ -6,12 +6,14 @@ config.h
 config.h.in
 config.log
 config.status
+config/compile
 config/config.guess
 config/config.sub
 config/depcomp
 config/install-sh
 config/ltmain.sh
 config/missing
+config/test-driver
 config/ylwrap
 configure
 lib/.deps/
@@ -37,3 +39,6 @@ tests/test-basic
 tests/test-emit
 tests/test-parse
 tests/test-yts
+tests/test-*.log
+tests/test-*.trs
+tests/test-*.dSYM
