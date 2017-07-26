@@ -1,6 +1,6 @@
+[![Build Status](https://travis-ci.org/stereobooster/syck.svg?branch=master)](https://travis-ci.org/stereobooster/syck)
 
- 
-
+```
                              . syck .
 
                          [ version 0.70 ]
@@ -29,7 +29,7 @@ much care if the acronym works, as long as the library does!
 The whole point of Syck is to make parsing and emitting YAML very
 simple for scripting languages through C bindings.  It doesn't strive
 to be a pull parser or very extendible.  It just is concerned with
-loading a YAML document into a C structure which can be easily 
+loading a YAML document into a C structure which can be easily
 translated into a scripting language's internal native data type.
 
 RUBY INSTALLATION
@@ -107,3 +107,4 @@ basic YAML serialization to PHP, Tcl, Cocoa, etc.
 
 Instructions for using Syck's API are available in the
 README.EXT in this very same directory.
+```
