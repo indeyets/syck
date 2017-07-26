@@ -1,0 +1,12 @@
+language: c
+
+matrix:
+  include:
+    - os: linux
+    - os: osx
+
+script:
+  - ./bootstrap
+  - ./configure
+  - make
+  - make check
